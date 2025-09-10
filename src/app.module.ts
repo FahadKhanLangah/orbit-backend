@@ -62,6 +62,7 @@ import {UserFilesModule} from "./api/user_modules/user_files/user_files.module";
 import {LoyaltyPointsModule} from "./api/user_modules/loyalty_points/loyalty_points.module";
 import {GiftModule} from "./api/gifts/gift.module";
 import {LiveStreamModule} from "./api/live_stream/live_stream.module";
+import { CommunityModule } from "./community/community.module";
 
 
 @Module({
@@ -132,6 +133,7 @@ import {LiveStreamModule} from "./api/live_stream/live_stream.module";
         LoyaltyPointsModule,
         GiftModule,
         LiveStreamModule,
+        CommunityModule,
 
 
     ],

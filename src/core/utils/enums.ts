@@ -59,6 +59,7 @@ export enum S3UploaderTypes {
   smallImage = "si400",
   mediumImage = "mi500",
   media = "media600",
+  communityImage = "c-img",
 }
 
 export enum Platform {
@@ -266,4 +267,6 @@ export enum MessageInfoType {
   AddToBroadcast = "addToBroadcast",
   OneSeenEnabled = "oneSeenEnabled",
   OneSeenDisabled = "oneSeenDisabled",
+
+  UpdateCommunityImage = "UpdatedCommunityImage",
 }
