@@ -63,6 +63,9 @@ import {LoyaltyPointsModule} from "./api/user_modules/loyalty_points/loyalty_poi
 import {GiftModule} from "./api/gifts/gift.module";
 import {LiveStreamModule} from "./api/live_stream/live_stream.module";
 import { CommunityModule } from "./community/community.module";
+import { OrbitChannelModule } from './orbit-channel/orbit-channel.module';
+
+
 
 
 @Module({
@@ -134,6 +137,8 @@ import { CommunityModule } from "./community/community.module";
         GiftModule,
         LiveStreamModule,
         CommunityModule,
+        OrbitChannelModule,
+     
 
 
     ],
