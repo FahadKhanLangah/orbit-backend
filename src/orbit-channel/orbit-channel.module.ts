@@ -6,6 +6,8 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { OrbitChannelSchema } from "./entities/orbit-channel.entity";
 import { ChannelMemberSchema } from "./entities/channel-member.entity";
 import { FileUploaderModule } from "src/common/file_uploader/file_uploader.module";
+import { OrbitChannelGateway } from './orbit-channel.gateway';
+import { ChannelMessageSchema } from "./entities/channel-message.entity";
 
 @Module({
   imports: [
@@ -14,9 +16,10 @@ import { FileUploaderModule } from "src/common/file_uploader/file_uploader.modul
     MongooseModule.forFeature([
       { name: "OrbitChannel", schema: OrbitChannelSchema },
       { name: "ChannelMember", schema: ChannelMemberSchema },
+      { name: 'ChannelMessage', schema: ChannelMessageSchema },
     ]),
   ],
   controllers: [OrbitChannelController],
-  providers: [OrbitChannelService],
+  providers: [OrbitChannelService, OrbitChannelGateway],
 })
 export class OrbitChannelModule {}

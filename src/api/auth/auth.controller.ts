@@ -126,6 +126,52 @@ export class AuthController {
     return this.authService.twitterLogin(dto);
   }
 
+  // New endpoints
+
+  @Post("/linkedin")
+  @HttpCode(200)
+  async linkedinLogin(
+    @Body() dto: SocialLoginDto,
+    @IpAddress() ipAddress: any
+  ) {
+    dto.ip = ipAddress;
+    dto.registerMethod = RegisterMethod.linkedin;
+    return this.authService.linkedinLogin(dto);
+  }
+
+  @Post("/microsoft")
+  @HttpCode(200)
+  async microsoftLogin(
+    @Body() dto: SocialLoginDto,
+    @IpAddress() ipAddress: any
+  ) {
+    dto.ip = ipAddress;
+    dto.registerMethod = RegisterMethod.microsoft;
+    return this.authService.microsoftLogin(dto);
+  }
+
+  @Post("/reddit")
+  @HttpCode(200)
+  async redditLogin(
+    @Body() dto: SocialLoginDto,
+    @IpAddress() ipAddress: any
+  ) {
+    dto.ip = ipAddress;
+    dto.registerMethod = RegisterMethod.reddit;
+    return this.authService.redditLogin(dto);
+  }
+
+  @Post("/instagram")
+  @HttpCode(200)
+  async instagramLogin(
+    @Body() dto: SocialLoginDto,
+    @IpAddress() ipAddress: any
+  ) {
+    dto.ip = ipAddress;
+    dto.registerMethod = RegisterMethod.instagram;
+    return this.authService.instagramLogin(dto);
+  }
+
   @Post("/send-otp-admin-reset")
   async sendOtpAdminReset(
     @Body("email") email: string,

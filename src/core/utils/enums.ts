@@ -87,6 +87,14 @@ export enum RegisterMethod {
   apple = "apple",
   google = "google",
   twitter = "twitter",
+  //
+  instagram = "instagram",
+  tiktok = "tiktok",
+  linkedin = "linkedin",
+  microsoft = "microsoft",
+  yahoo = "yahoo",
+  reddit = "reddit",
+  snapchat = "snapchat",
 }
 
 export enum RegisterStatus {

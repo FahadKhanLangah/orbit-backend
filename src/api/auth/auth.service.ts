@@ -168,7 +168,7 @@ export class AuthService {
       user,
     };
   }
-
+  // Check out this bro for login with google, facebook and twitter
   async googleLogin(dto: SocialLoginDto) {
     const { accessToken } = dto;
     try {
@@ -223,6 +223,99 @@ export class AuthService {
       throw new UnauthorizedException("Invalid Twitter token");
     }
   }
+  // Adding new methods also
+  // Add these methods to your auth.service.ts
+
+  async linkedinLogin(dto: SocialLoginDto) {
+    const { accessToken } = dto;
+    try {
+      // LinkedIn uses the /userinfo endpoint for OpenID Connect
+      const response = await axios.get("https://api.linkedin.com/v2/userinfo", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const profile = response.data;
+      return this.handleSocialLogin(
+        {
+          id: profile.sub, // 'sub' is the standard OIDC field for user ID
+          name: profile.name,
+          email: profile.email,
+        },
+        RegisterMethod.linkedin,
+        dto
+      );
+    } catch (error) {
+      throw new UnauthorizedException("Invalid LinkedIn token");
+    }
+  }
+
+  async microsoftLogin(dto: SocialLoginDto) {
+    const { accessToken } = dto;
+    try {
+      // Microsoft Graph API endpoint
+      const response = await axios.get("https://graph.microsoft.com/v1.0/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const profile = response.data;
+      return this.handleSocialLogin(
+        {
+          id: profile.id,
+          name: profile.displayName,
+          email: profile.mail || profile.userPrincipalName, // Fallback to userPrincipalName
+        },
+        RegisterMethod.microsoft,
+        dto
+      );
+    } catch (error) {
+      throw new UnauthorizedException("Invalid Microsoft token");
+    }
+  }
+
+  async redditLogin(dto: SocialLoginDto) {
+    const { accessToken } = dto;
+    try {
+      const response = await axios.get("https://oauth.reddit.com/api/v1/me", {
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+      const profile = response.data;
+      // IMPORTANT: Reddit API does not provide an email address.
+      // We create a placeholder email, similar to your Twitter implementation.
+      return this.handleSocialLogin(
+        {
+          id: profile.id,
+          name: profile.name,
+          email: `${profile.name}@reddit.com`,
+        },
+        RegisterMethod.reddit,
+        dto
+      );
+    } catch (error) {
+      throw new UnauthorizedException("Invalid Reddit token");
+    }
+  }
+
+  async instagramLogin(dto: SocialLoginDto) {
+    const { accessToken } = dto;
+    try {
+      // Instagram Basic Display API
+      const response = await axios.get(
+        `https://graph.instagram.com/me?fields=id,username&access_token=${accessToken}`
+      );
+      const profile = response.data;
+      // IMPORTANT: Instagram's Basic Display API does NOT provide email.
+      return this.handleSocialLogin(
+        {
+          id: profile.id,
+          name: profile.username,
+          email: `${profile.username}@instagram.com`, // Placeholder email
+        },
+        RegisterMethod.instagram,
+        dto
+      );
+    } catch (error) {
+      throw new UnauthorizedException("Invalid Instagram token");
+    }
+  }
+
 
   async sendOtpAdminReset(email: string, isDev: boolean) {
     const admin = await this.userService.findOne(

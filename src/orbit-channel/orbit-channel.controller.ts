@@ -19,11 +19,39 @@ import {
   UpdateOrbitChannelDto,
 } from "./dto/orbit.channel.dto";
 import { FileInterceptor } from "@nestjs/platform-express";
+import { SendBroadcastDto } from "./dto/send-broadcast.dto";
 
 @Controller("orbit-channel")
 @UseGuards(VerifiedAuthGuard)
 export class OrbitChannelController {
   constructor(private readonly orbitChannelService: OrbitChannelService) {}
+  @Get(":channelId/messages")
+  async getMessages(
+    @Param("channelId") channelId: string,
+    @Req() req: any,
+    @Query("page") page: number = 1,
+    @Query("limit") limit: number = 20
+  ) {
+    const user = req.user;
+    const options = { page, limit };
+    return this.orbitChannelService.getChannelMessages(
+      channelId,
+      user,
+      options
+    );
+  }
+
+  @Post(':channelId/broadcast')
+  @UseInterceptors(FileInterceptor('media')) 
+  async sendBroadcast(
+    @Param('channelId') channelId: string,
+    @Req() req: any,
+    @Body() dto: SendBroadcastDto,
+    @UploadedFile() file?: Express.Multer.File, // 4. Inject the optional file
+  ) {
+    const user = req.user;
+    return this.orbitChannelService.sendBroadcastMessage(channelId, user, dto, file);
+  }
   @Get("my-channels")
   async getMyChannels(
     @Req() req: any,
@@ -82,13 +110,12 @@ export class OrbitChannelController {
     const user = req.user;
     return this.orbitChannelService.updateChannel(channelId, updateDto, user);
   }
-   // 2. Add the new endpoint for image upload
-  @Patch(':channelId/image')
-  @UseInterceptors(FileInterceptor('image')) // 3. This is the magic!
+  @Patch(":channelId/image")
+  @UseInterceptors(FileInterceptor("image"))
   async updateChannelImage(
-    @Param('channelId') channelId: string,
+    @Param("channelId") channelId: string,
     @Req() req: any,
-    @UploadedFile() file: Express.Multer.File, // 4. Inject the uploaded file
+    @UploadedFile() file: Express.Multer.File
   ) {
     const user = req.user;
     return this.orbitChannelService.updateChannelImage(channelId, user, file);
