@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import pM from "mongoose-paginate-v2";
 import {
   MailType,
+  profileVisibleType,
   RegisterMethod,
   RegisterStatus,
   UserPrivacyTypes,
@@ -50,6 +51,7 @@ export interface IUser {
   claimedGifts: string[];
   roles: UserRole[];
   userPrivacy: UserPrivacy;
+  isAgeVerified: boolean;
   //not saved in db
   currentDevice: IUserDevice;
   resetPasswordOTP?: string;
@@ -77,7 +79,11 @@ export const UserSchema = new mongoose.Schema(
       type: Object,
       default: UserGlobalCallStatus.createEmpty(),
     },
-    gender: { type: String, enum: ["male", "female", "other"], default: "male" },
+    gender: {
+      type: String,
+      enum: ["male", "female", "other"],
+      default: "male",
+    },
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
     locationUpdatedAt: { type: Date, default: null },
@@ -115,6 +121,7 @@ export const UserSchema = new mongoose.Schema(
         publicSearch: true,
         showStory: UserPrivacyTypes.ForReq,
         lastSeen: true,
+        dpshow: profileVisibleType.AllUsers,
       },
     },
     lastSeenAt: { type: Date, default: Date.now },
@@ -124,6 +131,7 @@ export const UserSchema = new mongoose.Schema(
     updatedAt: { type: Date },
     resetPasswordOTP: { type: String, default: null },
     resetPasswordOTPExpiry: { type: Date, default: null },
+    isAgeVerified: { type: Boolean, default: false },
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
   },

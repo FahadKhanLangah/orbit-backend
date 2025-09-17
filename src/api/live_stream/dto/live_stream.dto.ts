@@ -4,8 +4,9 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { IsString, IsOptional, IsBoolean, IsArray, MaxLength, MinLength, IsNumber, Min, Max } from 'class-validator';
+import { IsString, IsOptional, IsBoolean, IsArray, MaxLength, MinLength, IsNumber, Min, Max, IsNotEmpty, IsEnum } from 'class-validator';
 import { IUser } from '../../user_modules/user/entities/user.entity';
+import { LiveStreamSavePreference, LiveStreamType } from '../interfaces/live_stream.interface';
 
 export class CreateLiveStreamDto {
     @IsString()
@@ -39,6 +40,34 @@ export class CreateLiveStreamDto {
     @IsOptional()
     @IsString()
     thumbnailUrl?: string;
+
+     @IsEnum(LiveStreamSavePreference)
+    @IsOptional()
+    savePreference?: LiveStreamSavePreference;
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    savedViewersInclude?: string[];
+
+    @IsArray()
+    @IsString({ each: true })
+    @IsOptional()
+    savedViewersExclude?: string[];
+    
+    @IsEnum(LiveStreamType)
+    @IsOptional()
+    streamType?: LiveStreamType;
+
+    @IsNumber()
+    @Min(0)
+    @IsOptional()
+    price?: number;
+
+    @IsString()
+    @IsNotEmpty()
+    @IsOptional()
+    currency?: string;
 
     // Set by middleware
     myUser?: IUser;

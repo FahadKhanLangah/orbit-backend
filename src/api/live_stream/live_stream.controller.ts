@@ -16,7 +16,10 @@ import {
     Req,
     UseGuards,
     UseInterceptors,
-    UploadedFile
+    UploadedFile,
+    BadRequestException,
+    DefaultValuePipe,
+    ParseIntPipe
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { VerifiedAuthGuard } from '../../core/guards/verified.auth.guard';
@@ -41,6 +44,34 @@ import {
 @V1Controller('live-stream')
 export class LiveStreamController {
     constructor(private readonly liveStreamService: LiveStreamService) {}
+
+     @Get('recorded/all')
+    async getSavedStreams(
+        @Query('page', new DefaultValuePipe(1), ParseIntPipe) page: number,
+        @Query('limit', new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    ) {
+        const result = await this.liveStreamService.getSavedStreams({ page, limit });
+        return resOK(result);
+    }
+
+    @Post(':id/upload-recording')
+    @UseInterceptors(FileInterceptor('video'))
+    async uploadLiveStreamRecording(
+        @Param() params: MongoIdDto,
+        @Req() req: any,
+        @UploadedFile() file: Express.Multer.File
+    ) {
+        if (!file) {
+            throw new BadRequestException('Video file is required.');
+        }
+        
+        const updatedStream = await this.liveStreamService.saveLiveStreamRecording(
+            params.id,
+            req.user,
+            file
+        );
+        return resOK(updatedStream);
+    }
 
     @Post()
     @UseInterceptors(FileInterceptor('thumbnail'))

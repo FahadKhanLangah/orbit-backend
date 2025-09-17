@@ -17,6 +17,13 @@ import { CreateS3UploaderDto } from "./create-s3_uploader.dto";
 @Injectable()
 export class FileUploaderService {
 
+  async uploadLiveStreamVideo(videoBuffer: Buffer, streamerId: string) {
+        const key = `live-stream-recordings/${streamerId}/${uuidv4()}.mp4`;
+        await this._putFile(videoBuffer, key, streamerId, true);
+        
+        return key;
+    }
+
 
   async putImageCropped(imageBuffer: Buffer, myId: string) {
     let key = `${S3UploaderTypes.profileImage}-${uuidv4()}.jpg`;
@@ -37,20 +44,22 @@ export class FileUploaderService {
     return key;
   }
 
-  async _putFile(fileData: Buffer, key:string, userId: string, isPublic?: boolean) {
-    let localPath = path.join(root.path, "public", isPublic ? "v-public" : "media", userId.toString());
-    if (!fs.existsSync(localPath)) {
-      fs.mkdirSync(localPath);
-    }
-    return await new Promise((resolve, reject) => {
-      let localPath = path.join(root.path, "public", isPublic ? "v-public" : "media", key);
-      fs.writeFile(localPath, fileData,  err => {
-        if (err) {
-          reject(err);
-          console.log(err);
+async _putFile(fileData: Buffer, key: string, userId: string, isPublic?: boolean) {
+      
+        const fullFilePath = path.join(root.path, "public", isPublic ? "v-public" : "media", key);
+        const directoryPath = path.dirname(fullFilePath);
+        if (!fs.existsSync(directoryPath)) {
+            fs.mkdirSync(directoryPath, { recursive: true });
         }
-        resolve(key);
-      });
-    });
-  }
+      
+        return new Promise<string>((resolve, reject) => {
+            fs.writeFile(fullFilePath, fileData, err => {
+                if (err) {
+                    console.log(err);
+                    return reject(err);
+                }
+                resolve(key);
+            });
+        });
+    }
 }

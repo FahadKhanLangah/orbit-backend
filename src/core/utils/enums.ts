@@ -278,3 +278,9 @@ export enum MessageInfoType {
 
   UpdateCommunityImage = "UpdatedCommunityImage",
 }
+
+export enum profileVisibleType {
+  Contact = "contacts",
+  NoOne = "noone",
+  AllUsers = "allusers",
+}

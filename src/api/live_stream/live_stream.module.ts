@@ -15,6 +15,7 @@ import { AuthModule } from '../auth/auth.module';
 import { UserModule } from '../user_modules/user/user.module';
 import { NotificationEmitterModule } from '../../common/notification_emitter/notification_emitter.module';
 import { UserDeviceModule } from '../user_modules/user_device/user_device.module';
+import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 
 @Module({
     imports: [
@@ -29,7 +30,8 @@ import { UserDeviceModule } from '../user_modules/user_device/user_device.module
         AuthModule,
         UserModule,
         NotificationEmitterModule,
-        UserDeviceModule
+        UserDeviceModule,
+        FileUploaderModule
     ],
     controllers: [LiveStreamController],
     providers: [LiveStreamService],
