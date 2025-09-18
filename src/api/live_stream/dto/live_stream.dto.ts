@@ -4,224 +4,243 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { IsString, IsOptional, IsBoolean, IsArray, MaxLength, MinLength, IsNumber, Min, Max, IsNotEmpty, IsEnum } from 'class-validator';
-import { IUser } from '../../user_modules/user/entities/user.entity';
-import { LiveStreamSavePreference, LiveStreamType } from '../interfaces/live_stream.interface';
+import {
+  IsString,
+  IsOptional,
+  IsBoolean,
+  IsArray,
+  MaxLength,
+  MinLength,
+  IsNumber,
+  Min,
+  Max,
+  IsNotEmpty,
+  IsEnum,
+} from "class-validator";
+import { IUser } from "../../user_modules/user/entities/user.entity";
+import {
+  LiveStreamSavePreference,
+  LiveStreamType,
+} from "../interfaces/live_stream.interface";
 
 export class CreateLiveStreamDto {
-    @IsString()
-    @MinLength(1)
-    @MaxLength(100)
-    title: string;
+  @IsString()
+  @MinLength(1)
+  @MaxLength(100)
+  title: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(500)
-    description?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    isPrivate?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
 
-    @IsOptional()
-    @IsBoolean()
-    requiresApproval?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  requiresApproval?: boolean;
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    allowedViewers?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedViewers?: string[];
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    tags?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
-    @IsOptional()
-    @IsString()
-    thumbnailUrl?: string;
+  @IsOptional()
+  @IsString()
+  thumbnailUrl?: string;
 
-     @IsEnum(LiveStreamSavePreference)
-    @IsOptional()
-    savePreference?: LiveStreamSavePreference;
+  @IsEnum(LiveStreamSavePreference)
+  @IsOptional()
+  savePreference?: LiveStreamSavePreference;
 
-    @IsArray()
-    @IsString({ each: true })
-    @IsOptional()
-    savedViewersInclude?: string[];
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  savedViewersInclude?: string[];
 
-    @IsArray()
-    @IsString({ each: true })
-    @IsOptional()
-    savedViewersExclude?: string[];
-    
-    @IsEnum(LiveStreamType)
-    @IsOptional()
-    streamType?: LiveStreamType;
+  @IsArray()
+  @IsString({ each: true })
+  @IsOptional()
+  savedViewersExclude?: string[];
 
-    @IsNumber()
-    @Min(0)
-    @IsOptional()
-    price?: number;
+  @IsEnum(LiveStreamType)
+  @IsOptional()
+  streamType?: LiveStreamType;
 
-    @IsString()
-    @IsNotEmpty()
-    @IsOptional()
-    currency?: string;
+  @IsNumber()
+  @Min(0)
+  @IsOptional()
+  price?: number;
 
-    // Set by middleware
-    myUser?: IUser;
+  @IsString()
+  @IsNotEmpty()
+  @IsOptional()
+  currency?: string;
+
+  @IsString()
+  @IsOptional({ message: "A category must be selected." })
+  categoryId: string;
+
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class JoinLiveStreamDto {
-    @IsString()
-    streamId: string;
+  @IsString()
+  streamId: string;
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class SendLiveStreamMessageDto {
-    @IsString()
-    @MinLength(1)
-    @MaxLength(500)
-    message: string;
+  @IsString()
+  @MinLength(1)
+  @MaxLength(500)
+  message: string;
 
-    @IsOptional()
-    @IsString()
-    messageType?: 'text' | 'emoji' | 'gift';
+  @IsOptional()
+  @IsString()
+  messageType?: "text" | "emoji" | "gift";
 
-    @IsOptional()
-    giftData?: {
-        giftId: string;
-        giftName: string;
-        giftImage: string;
-        giftPrice: number;
-    };
+  @IsOptional()
+  giftData?: {
+    giftId: string;
+    giftName: string;
+    giftImage: string;
+    giftPrice: number;
+  };
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class UpdateLiveStreamDto {
-    @IsOptional()
-    @IsString()
-    @MaxLength(100)
-    title?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(100)
+  title?: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(500)
-    description?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(500)
+  description?: string;
 
-    @IsOptional()
-    @IsBoolean()
-    isPrivate?: boolean;
+  @IsOptional()
+  @IsBoolean()
+  isPrivate?: boolean;
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    allowedViewers?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  allowedViewers?: string[];
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    tags?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class LiveStreamFilterDto {
-    @IsOptional()
-    @IsString()
-    search?: string;
+  @IsOptional()
+  @IsString()
+  search?: string;
 
-    @IsOptional()
-    @IsArray()
-    @IsString({ each: true })
-    tags?: string[];
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
 
-    @IsOptional()
-    @IsString()
-    status?: 'live' | 'scheduled' | 'ended';
+  @IsOptional()
+  @IsString()
+  status?: "live" | "scheduled" | "ended";
 
-    @IsOptional()
-    @IsString()
-    sortBy?: 'viewerCount' | 'createdAt' | 'startedAt';
+  @IsOptional()
+  @IsString()
+  sortBy?: "viewerCount" | "createdAt" | "startedAt";
 
-    @IsOptional()
-    @IsString()
-    sortOrder?: 'asc' | 'desc';
+  @IsOptional()
+  @IsString()
+  sortOrder?: "asc" | "desc";
 
-    page?: number = 1;
-    limit?: number = 20;
+  page?: number = 1;
+  limit?: number = 20;
 }
 
 export class RemoveParticipantDto {
-    @IsString()
-    participantId: string;
+  @IsString()
+  participantId: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(200)
-    reason?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reason?: string;
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class BanParticipantDto {
-    @IsString()
-    participantId: string;
+  @IsString()
+  participantId: string;
 
-    @IsOptional()
-    @IsString()
-    @MaxLength(200)
-    reason?: string;
+  @IsOptional()
+  @IsString()
+  @MaxLength(200)
+  reason?: string;
 
-    @IsOptional()
-    @IsString()
-    duration?: 'temporary' | 'permanent';
+  @IsOptional()
+  @IsString()
+  duration?: "temporary" | "permanent";
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class UpdateStreamFilterDto {
-    @IsString()
-    filterType: string;
+  @IsString()
+  filterType: string;
 
-    @IsString()
-    faceFilterType: string;
+  @IsString()
+  faceFilterType: string;
 
-    @IsNumber()
-    @Min(0)
-    @Max(2)
-    intensity: number;
+  @IsNumber()
+  @Min(0)
+  @Max(2)
+  intensity: number;
 
-    @IsBoolean()
-    isEnabled: boolean;
+  @IsBoolean()
+  isEnabled: boolean;
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class RequestJoinStreamDto {
-    @IsString()
-    streamId: string;
+  @IsString()
+  streamId: string;
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }
 
 export class RespondToJoinRequestDto {
-    @IsString()
-    requestId: string;
+  @IsString()
+  requestId: string;
 
-    @IsString()
-    action: 'approve' | 'deny';
+  @IsString()
+  action: "approve" | "deny";
 
-    // Set by middleware
-    myUser?: IUser;
+  // Set by middleware
+  myUser?: IUser;
 }

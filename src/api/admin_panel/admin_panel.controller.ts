@@ -1,5 +1,3 @@
-
-
 import {
   Get,
   Post,
@@ -24,11 +22,46 @@ import { CreateAdminNotificationDto } from "../admin_notification/dto/create-adm
 import { MongoRoomIdDto } from "../../core/common/dto/mongo.room.id.dto";
 import { imageFileInterceptor } from "../../core/utils/upload_interceptors";
 import { UserRole } from "src/core/utils/enums";
+import { CreateCategoryDto, UpdateCategoryDto } from "./category/category.dto";
+import { CategoryService } from "./category/category.service";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
 export class AdminPanelController {
-  constructor(private readonly adminPanelService: AdminPanelService) {}
+  constructor(
+    private readonly adminPanelService: AdminPanelService,
+    private readonly categoryService: CategoryService
+  ) {}
+
+  @Post('/categories')
+  async create(@Body() createCategoryDto: CreateCategoryDto) {
+    const category = await this.categoryService.create(createCategoryDto);
+    return resOK(category);
+  }
+
+  @Get('/categories')
+  async findAll() {
+    const categories = await this.categoryService.findAll();
+    return resOK(categories);
+  }
+
+  @Patch("/categories/:id")
+  async update(
+    @Param() params: MongoIdDto,
+    @Body() updateCategoryDto: UpdateCategoryDto
+  ) {
+    const updatedCategory = await this.categoryService.update(
+      params.id,
+      updateCategoryDto
+    );
+    return resOK(updatedCategory);
+  }
+
+  @Delete("/categories/:id")
+  async remove(@Param() params: MongoIdDto) {
+    const result = await this.categoryService.remove(params.id);
+    return resOK(result);
+  }
 
   @Patch("/config")
   async updateConfig(@Req() req: any, @Body() dto: UpdateConfigDto) {

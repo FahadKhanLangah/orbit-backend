@@ -39,11 +39,19 @@ import {
     RespondToJoinRequestDto,
     UpdateStreamFilterDto
 } from './dto/live_stream.dto';
+import { CategoryService } from '../admin_panel/category/category.service';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('live-stream')
 export class LiveStreamController {
-    constructor(private readonly liveStreamService: LiveStreamService) {}
+    constructor(private readonly liveStreamService: LiveStreamService,
+        private readonly categoryService: CategoryService
+    ) {}
+@Get('/categories')
+  async findAll() {
+    const categories = await this.categoryService.findAll();
+    return resOK(categories);
+  }
 
      @Get('recorded/all')
     async getSavedStreams(
@@ -82,7 +90,6 @@ export class LiveStreamController {
     ) {
         dto.myUser = req.user;
         
-        // Handle thumbnail upload if provided
         if (file) {
             // You can implement S3 upload here similar to other parts of your app
             // dto.thumbnailUrl = await this.s3Service.uploadFile(file);

@@ -4,7 +4,7 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { Injectable } from "@nestjs/common";
+import { Injectable, NotFoundException } from "@nestjs/common";
 import { UpdateConfigDto } from "./dto/update_config_dto";
 import { AppConfigService } from "../app_config/app_config.service";
 import { UserService } from "../user_modules/user/user.service";
@@ -34,6 +34,10 @@ import { GroupSettingsService } from "../../chat/group_settings/group_settings.s
 import { StoryService } from "../stories/story/story.service";
 import { GiftService } from "../gifts/gift.service";
 import { CreateS3UploaderDto } from "../../common/file_uploader/create-s3_uploader.dto";
+import { CreateCategoryDto, UpdateCategoryDto } from "./category/category.dto";
+import { Category } from "./category/category.schema";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model } from "mongoose";
 
 @Injectable()
 export class AdminPanelService {
@@ -59,8 +63,13 @@ export class AdminPanelService {
     private readonly groupSettingsService: GroupSettingsService,
     private readonly storyService: StoryService,
     private readonly socketIoService: SocketIoService,
-    private readonly giftService: GiftService
+    private readonly giftService: GiftService,
+    
   ) {}
+
+ 
+
+  // Finished line
 
   async updateConfig(dto: UpdateConfigDto) {
     let config = await this.appConfigService.getConfig();

@@ -5,7 +5,7 @@
  */
 
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
-import { Document } from "mongoose";
+import mongoose, { Document } from "mongoose";
 import {
   LiveStreamSavePreference,
   LiveStreamStatus,
@@ -122,6 +122,9 @@ export class LiveStream extends Document {
 
   @Prop()
   currency: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: "Category" })
+  categoryId: string;
 }
 
 @Schema({ timestamps: true })

@@ -16,6 +16,8 @@ import { UserModule } from '../user_modules/user/user.module';
 import { NotificationEmitterModule } from '../../common/notification_emitter/notification_emitter.module';
 import { UserDeviceModule } from '../user_modules/user_device/user_device.module';
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
+import { CategoryService } from '../admin_panel/category/category.service';
+import { Category, CategorySchema } from '../admin_panel/category/category.schema';
 
 @Module({
     imports: [
@@ -23,7 +25,8 @@ import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.modul
             { name: 'LiveStream', schema: LiveStreamSchema },
             { name: 'LiveStreamParticipant', schema: LiveStreamParticipantSchema },
             { name: 'LiveStreamMessage', schema: LiveStreamMessageSchema },
-            { name: 'LiveStreamJoinRequest', schema: LiveStreamJoinRequestSchema }
+            { name: 'LiveStreamJoinRequest', schema: LiveStreamJoinRequestSchema },
+            { name: Category.name, schema: CategorySchema },
         ]),
         AgoraModule,
         SocketIoModule,
@@ -34,7 +37,7 @@ import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.modul
         FileUploaderModule
     ],
     controllers: [LiveStreamController],
-    providers: [LiveStreamService],
+    providers: [LiveStreamService,CategoryService],
     exports: [LiveStreamService]
 })
 export class LiveStreamModule {}

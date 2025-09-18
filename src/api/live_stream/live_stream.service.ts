@@ -44,6 +44,7 @@ import { UserDeviceService } from "../user_modules/user_device/user_device.servi
 import { NotificationData } from "../../common/notification_emitter/notification.event";
 import { PushKeyAndProvider } from "../../core/utils/interfaceces";
 import { FileUploaderService } from "src/common/file_uploader/file_uploader.service";
+import { CategoryService } from "../admin_panel/category/category.service";
 
 @Injectable()
 export class LiveStreamService {
@@ -61,7 +62,8 @@ export class LiveStreamService {
     private readonly userService: UserService,
     private readonly notificationEmitterService: NotificationEmitterService,
     private readonly userDeviceService: UserDeviceService,
-    private readonly fileUploaderService: FileUploaderService
+    private readonly fileUploaderService: FileUploaderService,
+    private readonly categoryService: CategoryService
   ) {}
 
   async saveLiveStreamRecording(
@@ -104,34 +106,35 @@ export class LiveStreamService {
   }
 
   async getSavedStreams(options: { page: number; limit: number }) {
-        const { page, limit } = options;
-        const skip = (page - 1) * limit;
+    const { page, limit } = options;
+    const skip = (page - 1) * limit;
 
-        // 1. Find all documents where the status is 'RECORDED'
-        const savedStreams = await this.liveStreamModel
-            .find({
-                status: LiveStreamStatus.RECORDED,
-            })
-            .sort({ endedAt: -1 }) // Show the newest recordings first
-            .skip(skip)
-            .limit(limit)
-            .select( // Select only the fields the client needs
-                'title description thumbnailUrl streamerData duration recordingUrl streamType price currency'
-            )
-            .exec();
-        
-        // 2. Get a total count for pagination purposes
-        const total = await this.liveStreamModel.countDocuments({
-            status: LiveStreamStatus.RECORDED,
-        });
+    // 1. Find all documents where the status is 'RECORDED'
+    const savedStreams = await this.liveStreamModel
+      .find({
+        status: LiveStreamStatus.RECORDED,
+      })
+      .sort({ endedAt: -1 }) // Show the newest recordings first
+      .skip(skip)
+      .limit(limit)
+      .select(
+        // Select only the fields the client needs
+        "title description thumbnailUrl streamerData duration recordingUrl streamType price currency"
+      )
+      .exec();
 
-        return {
-            data: savedStreams,
-            total,
-            page,
-            limit,
-        };
-    }
+    // 2. Get a total count for pagination purposes
+    const total = await this.liveStreamModel.countDocuments({
+      status: LiveStreamStatus.RECORDED,
+    });
+
+    return {
+      data: savedStreams,
+      total,
+      page,
+      limit,
+    };
+  }
 
   async createLiveStream(dto: CreateLiveStreamDto): Promise<ILiveStream> {
     if (dto.streamType === LiveStreamType.PAID) {
@@ -140,6 +143,12 @@ export class LiveStreamService {
           "A valid price and currency are required for a paid stream."
         );
       }
+    }
+    const category = await this.categoryService.findById(dto.categoryId);
+    if (!category || !category.isActive) {
+      throw new BadRequestException(
+        "The selected category is not valid or has been disabled."
+      );
     }
     // Generate unique channel name
     const channelName = `live_${uuidv4().replace(/-/g, "")}`;
@@ -178,6 +187,7 @@ export class LiveStreamService {
       streamType: dto.streamType,
       price: dto.price,
       currency: dto.currency,
+      categoryId: dto.categoryId,
     });
 
     // Create streamer as participant
@@ -290,14 +300,9 @@ export class LiveStreamService {
       throw new BadRequestException("Stream is not currently live");
     }
 
-    // Check if stream is private and user is allowed
-    if (
-      stream.isPrivate &&
-      !stream.allowedViewers.includes(dto.myUser._id) &&
-      stream.streamerId !== dto.myUser._id
-    ) {
+    if (stream.streamerId === dto.myUser._id) {
       throw new ForbiddenException(
-        "You are not allowed to view this private stream"
+        `You are not allowed to view this private stream ${stream.isPrivate}`
       );
     }
 
@@ -306,13 +311,39 @@ export class LiveStreamService {
       throw new ForbiddenException("You are banned from this stream");
     }
 
-    // Check if public stream requires approval and user is not the streamer
+    if (stream.streamType === LiveStreamType.PAID) {
+      // Fetch viewer and streamer
+      const viewer = await this.userService.findById(dto.myUser._id, "balance");
+      const streamer = await this.userService.findById(
+        stream.streamerId,
+        "balance"
+      );
+
+      if (!viewer) {
+        throw new NotFoundException("Viewer not found");
+      }
+      if (!streamer) {
+        throw new NotFoundException("Streamer not found");
+      }
+      if (viewer.balance < stream.price) {
+        throw new ForbiddenException(
+          "Insufficient balance to join this stream"
+        );
+      }
+      await this.userService.findByIdAndUpdate(viewer._id, {
+        $inc: { balance: -stream.price },
+      });
+
+      await this.userService.findByIdAndUpdate(streamer._id, {
+        $inc: { balance: stream.price },
+      });
+    }
+
     if (
       !stream.isPrivate &&
       stream.requiresApproval &&
       stream.streamerId !== dto.myUser._id
     ) {
-      // Check if user has an approved join request
       const approvedRequest = await this.joinRequestModel.findOne({
         streamId: dto.streamId,
         userId: dto.myUser._id,
@@ -325,15 +356,12 @@ export class LiveStreamService {
         );
       }
     }
-
-    // Check if user is already a participant
     let participant = await this.participantModel.findOne({
       streamId: dto.streamId,
       userId: dto.myUser._id,
     });
 
     if (!participant) {
-      // Create new participant
       participant = await this.participantModel.create({
         streamId: dto.streamId,
         userId: dto.myUser._id,
@@ -346,14 +374,11 @@ export class LiveStreamService {
         joinedAt: new Date(),
         isActive: true,
       });
-
-      // Increment viewer count
       await this.liveStreamModel.findByIdAndUpdate(dto.streamId, {
         $inc: { viewerCount: 1 },
         $max: { maxViewers: stream.viewerCount + 1 },
       });
     } else {
-      // Reactivate existing participant
       participant.isActive = true;
       participant.joinedAt = new Date();
       participant.leftAt = undefined;
@@ -372,10 +397,6 @@ export class LiveStreamService {
       false
     );
 
-    // Join socket room
-    // Note: This would need to be handled in the socket gateway when user connects
-
-    // Emit socket event to notify other participants
     this.socketService.io.to(dto.streamId).emit("user_joined_stream", {
       streamId: dto.streamId,
       userData: participant.userData,
