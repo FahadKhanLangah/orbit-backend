@@ -7,11 +7,18 @@
 import mongoose from "mongoose";
 
 export const isValidMongoId = (id) => {
-  console.log('isValidMongoId called with:', id, 'type:', typeof id, 'isValid:', mongoose.Types.ObjectId.isValid(id));
+  console.log(
+    "isValidMongoId called with:",
+    id,
+    "type:",
+    typeof id,
+    "isValid:",
+    mongoose.Types.ObjectId.isValid(id)
+  );
   return mongoose.Types.ObjectId.isValid(id);
 };
-export const newMongoObjId = (string?:string) => {
-  if(string){
+export const newMongoObjId = (string?: string) => {
+  if (string) {
     return new mongoose.Types.ObjectId(string);
   }
   return new mongoose.Types.ObjectId();
@@ -20,7 +27,11 @@ export const newMongoObjId = (string?:string) => {
 export const humanFileSize = (size: number) => {
   let i = Math.floor(Math.log(size) / Math.log(1024));
   // @ts-ignore
-  return (size / Math.pow(1024, i)).toFixed(2) * 1 + " " + ["B", "kB", "MB", "GB", "TB"][i];
+  return (
+    (size / Math.pow(1024, i)).toFixed(2) * 1 +
+    " " +
+    ["B", "kB", "MB", "GB", "TB"][i]
+  );
 };
 
 export const humanAudioTime = (time: number) => {
@@ -29,3 +40,9 @@ export const humanAudioTime = (time: number) => {
   let m = sec % 60;
   return Math.floor(sec / 60) + ":" + (m ? m : "00");
 };
+
+export function calculateAge(dateOfBirth: Date): number {
+  const diff_ms = Date.now() - new Date(dateOfBirth).getTime();
+  const age_dt = new Date(diff_ms);
+  return Math.abs(age_dt.getUTCFullYear() - 1970);
+}

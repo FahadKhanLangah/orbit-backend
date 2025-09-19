@@ -10,6 +10,12 @@ export enum UserType {
   SuperAdmin = "superAdmin",
 }
 
+export enum payoutType {
+  MPESA = "mpesa",
+  VISA = "visa",
+  STRIPE = "stripe",
+}
+
 export enum MailType {
   VerifyEmail = "verifyEmail",
   ResetPassword = "resetPassword",

@@ -45,6 +45,7 @@ import { NotificationData } from "../../common/notification_emitter/notification
 import { PushKeyAndProvider } from "../../core/utils/interfaceces";
 import { FileUploaderService } from "src/common/file_uploader/file_uploader.service";
 import { CategoryService } from "../admin_panel/category/category.service";
+import { calculateAge } from "src/core/utils/utils";
 
 @Injectable()
 export class LiveStreamService {
@@ -150,13 +151,33 @@ export class LiveStreamService {
         "The selected category is not valid or has been disabled."
       );
     }
-    // Generate unique channel name
+    const streamcreatorId = dto.myUser._id;
+    const streamCreator = await this.userService.findById(
+      streamcreatorId,
+      "-password"
+    );
+    if (streamCreator.banLiveTo && streamCreator.banLiveTo > new Date()) {
+      throw new ForbiddenException(
+        "You are banned from creating live streams until " +
+          streamCreator.banLiveTo
+      );
+    }
+
+    if (dto.streamType == LiveStreamType.PRIVATE) {
+      if (!streamCreator.isAgeVerified) {
+        throw new ForbiddenException(
+          "Please verify your age first to create a private show"
+        );
+      }
+      const age = calculateAge(streamCreator.dateOfBirth);
+      if (age < 18) {
+        throw new ForbiddenException("Your age is less than 18");
+      }
+    }
     const channelName = `live_${uuidv4().replace(/-/g, "")}`;
 
-    // Get Agora token for the channel
     const agoraAccess = this.agoraService.getAgoraAccessNew(channelName, true);
 
-    // Create live stream
     const liveStream = await this.liveStreamModel.create({
       title: dto.title,
       description: dto.description,
@@ -312,7 +333,6 @@ export class LiveStreamService {
     }
 
     if (stream.streamType === LiveStreamType.PAID) {
-      // Fetch viewer and streamer
       const viewer = await this.userService.findById(dto.myUser._id, "balance");
       const streamer = await this.userService.findById(
         stream.streamerId,

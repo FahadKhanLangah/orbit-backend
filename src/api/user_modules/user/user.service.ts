@@ -243,7 +243,7 @@ export class UserService extends BaseService<IUser> {
   }
 
   findById(id: string, select?: string, options?: {}): Promise<IUser | null> {
-    // Skip validation for balance-related queries
+   
     if (
       select === "balance" ||
       select === "claimedGifts" ||

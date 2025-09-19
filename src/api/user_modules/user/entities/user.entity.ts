@@ -3,6 +3,7 @@ import bcrypt from "bcrypt";
 import pM from "mongoose-paginate-v2";
 import {
   MailType,
+  payoutType,
   profileVisibleType,
   RegisterMethod,
   RegisterStatus,
@@ -52,7 +53,13 @@ export interface IUser {
   roles: UserRole[];
   userPrivacy: UserPrivacy;
   isAgeVerified: boolean;
-  //not saved in db
+  dateOfBirth?: Date;
+  payoutDetails?: {
+    method: payoutType;
+    accountId?: string;
+    phoneNumber?: string;
+    isVerified: boolean;
+  };
   currentDevice: IUserDevice;
   resetPasswordOTP?: string;
   resetPasswordOTPExpiry?: Date;
@@ -132,6 +139,14 @@ export const UserSchema = new mongoose.Schema(
     resetPasswordOTP: { type: String, default: null },
     resetPasswordOTPExpiry: { type: Date, default: null },
     isAgeVerified: { type: Boolean, default: false },
+    dateOfBirth: {
+      type: Date,
+      default: () => {
+        const d = new Date();
+        d.setFullYear(d.getFullYear() - 18);
+        return d;
+      },
+    },
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
   },
