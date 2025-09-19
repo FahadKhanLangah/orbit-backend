@@ -13,6 +13,7 @@ import {
 } from "../../../../core/utils/enums";
 import { IUserDevice } from "../../user_device/entities/user_device.entity";
 import { UserGlobalCallStatus } from "../../../../chat/call_modules/utils/user-global-call-status.model";
+import { ISubscriptionPlan } from "./subscription_plan.entity";
 
 export interface IUser {
   _id: string;
@@ -59,6 +60,11 @@ export interface IUser {
     accountId?: string;
     phoneNumber?: string;
     isVerified: boolean;
+  };
+  subscription?: {
+    plan: ISubscriptionPlan | string;
+    purchasedAt: Date;
+    expiresAt: Date;
   };
   currentDevice: IUserDevice;
   resetPasswordOTP?: string;

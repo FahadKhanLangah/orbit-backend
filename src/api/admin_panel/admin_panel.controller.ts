@@ -24,22 +24,49 @@ import { imageFileInterceptor } from "../../core/utils/upload_interceptors";
 import { UserRole } from "src/core/utils/enums";
 import { CreateCategoryDto, UpdateCategoryDto } from "./category/category.dto";
 import { CategoryService } from "./category/category.service";
+import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
+import { UpdateSubscriptionPlanDto } from "src/core/common/dto/update-subscription-plan.dto";
+import { CreateSubscriptionPlanDto } from "src/core/common/dto/subscription.plan.dto";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
 export class AdminPanelController {
   constructor(
     private readonly adminPanelService: AdminPanelService,
-    private readonly categoryService: CategoryService
+    private readonly categoryService: CategoryService,
+    private readonly subscriptionPlanService: SubscriptionPlanService
   ) {}
 
-  @Post('/categories')
+  @Post("/subscription-plans")
+  async createPlan(@Body() dto: CreateSubscriptionPlanDto) {
+    return resOK(await this.subscriptionPlanService.create(dto));
+  }
+
+  @Get("/subscription-plans")
+  async getAllPlans() {
+    return resOK(await this.subscriptionPlanService.findAll());
+  }
+
+  @Get("/subscription-plans/:id")
+  async getPlanById(@Param("id") id: string) {
+    return resOK(await this.subscriptionPlanService.findOne(id));
+  }
+
+  @Patch("/subscription-plans/:id")
+  async updatePlan(
+    @Param("id") id: string,
+    @Body() dto: UpdateSubscriptionPlanDto
+  ) {
+    return resOK(await this.subscriptionPlanService.update(id, dto));
+  }
+
+  @Post("/categories")
   async create(@Body() createCategoryDto: CreateCategoryDto) {
     const category = await this.categoryService.create(createCategoryDto);
     return resOK(category);
   }
 
-  @Get('/categories')
+  @Get("/categories")
   async findAll() {
     const categories = await this.categoryService.findAll();
     return resOK(categories);

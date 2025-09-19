@@ -359,6 +359,19 @@ export class LiveStreamService {
       });
     }
 
+    const user = await this.userService.findById(dto.myUser._id);
+
+    if (stream.streamType === LiveStreamType.PRIVATE) {
+      const hasActiveSubscription =
+        user.subscription && user.subscription.expiresAt > new Date();
+
+      if (!hasActiveSubscription) {
+        throw new ForbiddenException(
+          "You need an active subscription to join private shows."
+        );
+      }
+    }
+
     if (
       !stream.isPrivate &&
       stream.requiresApproval &&
@@ -411,7 +424,6 @@ export class LiveStreamService {
       }
     }
 
-    // Get fresh Agora token for the user
     const agoraAccess = this.agoraService.getAgoraAccessNew(
       stream.channelName,
       false

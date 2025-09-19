@@ -25,13 +25,10 @@ export const newMongoObjId = (string?: string) => {
 };
 
 export const humanFileSize = (size: number) => {
+  if (size === 0) return "0 B";
   let i = Math.floor(Math.log(size) / Math.log(1024));
-  // @ts-ignore
-  return (
-    (size / Math.pow(1024, i)).toFixed(2) * 1 +
-    " " +
-    ["B", "kB", "MB", "GB", "TB"][i]
-  );
+  let value = parseFloat((size / Math.pow(1024, i)).toFixed(2));
+  return `${value} ${["B", "kB", "MB", "GB", "TB"][i]}`;
 };
 
 export const humanAudioTime = (time: number) => {

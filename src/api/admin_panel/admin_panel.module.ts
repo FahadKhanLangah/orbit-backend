@@ -38,7 +38,8 @@ import { GiftModule } from "../gifts/gift.module";
 import { MongooseModule } from "@nestjs/mongoose";
 import { Category, CategorySchema } from "./category/category.schema";
 import { CategoryService } from "./category/category.service";
-
+import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
+import { SubscriptionPlan, SubscriptionPlanSchema } from '../user_modules/user/entities/subscription_plan.entity'
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -49,11 +50,14 @@ import { CategoryService } from "./category/category.service";
     UserDeviceAdminService,
     VersionsAdminService,
     ChannelAdminService,
-    CategoryService
+    CategoryService,
+    SubscriptionPlanService
   ],
   imports: [
     MongooseModule.forFeature([
       { name: Category.name, schema: CategorySchema },
+      { name: SubscriptionPlan.name, schema: SubscriptionPlanSchema },
+
     ]),
     UserModule,
     AuthModule,

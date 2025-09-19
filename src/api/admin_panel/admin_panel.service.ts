@@ -63,13 +63,8 @@ export class AdminPanelService {
     private readonly groupSettingsService: GroupSettingsService,
     private readonly storyService: StoryService,
     private readonly socketIoService: SocketIoService,
-    private readonly giftService: GiftService,
-    
+    private readonly giftService: GiftService
   ) {}
-
- 
-
-  // Finished line
 
   async updateConfig(dto: UpdateConfigDto) {
     let config = await this.appConfigService.getConfig();
