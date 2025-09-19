@@ -147,6 +147,7 @@ export const UserSchema = new mongoose.Schema(
         return d;
       },
     },
+    payoutDetails: { type: Object, default: {} },
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
   },

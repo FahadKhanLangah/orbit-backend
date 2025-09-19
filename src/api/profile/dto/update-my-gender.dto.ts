@@ -2,7 +2,7 @@
 import { IsEnum } from "class-validator";
 
 export class UpdateMyGenderDto {
-  myUser: any; // will be set from req.user in controller
+  myUser: any; 
 
   @IsEnum(["male", "female", "other"], {
     message: "Gender must be either male, female, or other",

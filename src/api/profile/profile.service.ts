@@ -55,6 +55,9 @@ import { UpdateMyGenderDto } from "./dto/update-my-gender.dto";
 import { UpdateMyLocationDto } from "./dto/update-my-location.dto";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import { calculateAge } from "src/core/utils/utils";
+import { UpdateMyDobDto } from "./dto/update-my-dob.dto";
+import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
 
 @Injectable()
 export class ProfileService {
@@ -80,6 +83,40 @@ export class ProfileService {
     @InjectModel("users") private readonly userModel: Model<IUser>
   ) {}
 
+  async updateMyPayoutDetails(dto: UpdateMyPayoutDto) {
+    const isVerified = true;
+    const payoutDetails = {
+      method: dto.method,
+      accountId: dto.accountId,
+      phoneNumber: dto.phoneNumber,
+      isVerified: isVerified,
+    };
+
+    await this.userService.findByIdAndUpdate(dto.myUser._id, {
+      payoutDetails: payoutDetails,
+    });
+
+    return this.userService.findById(dto.myUser._id);
+  }
+
+  async updateMyDob(dto: UpdateMyDobDto) {
+    const MINIMUM_AGE = 18;
+    const userAge = calculateAge(dto.dateOfBirth);
+
+    if (userAge < MINIMUM_AGE) {
+      throw new BadRequestException(
+        `You must be at least ${MINIMUM_AGE} years old.`
+      );
+    }
+
+    await this.userService.findByIdAndUpdate(dto.myUser._id, {
+      dateOfBirth: dto.dateOfBirth,
+      isAgeVerified: true,
+    });
+
+    return this.userService.findById(dto.myUser._id);
+  }
+
   async updateMyGender(dto: UpdateMyGenderDto) {
     const user = await this.userService.findById(dto.myUser._id);
     if (!user) {
@@ -96,41 +133,43 @@ export class ProfileService {
 
   async updateMyLocation(dto: UpdateMyLocationDto) {
     try {
-      console.log('Update location DTO:', JSON.stringify(dto, null, 2));
-      
+      console.log("Update location DTO:", JSON.stringify(dto, null, 2));
+
       if (!dto.myUser || !dto.myUser._id) {
-        throw new BadRequestException("User not authenticated. Missing user information in request.");
+        throw new BadRequestException(
+          "User not authenticated. Missing user information in request."
+        );
       }
 
       const userId = dto.myUser._id;
-      console.log('Updating location for user ID:', userId);
-      
+      console.log("Updating location for user ID:", userId);
+
       const user = await this.userService.findById(userId);
       if (!user) {
         throw new BadRequestException("User not found in database");
       }
 
-      console.log('Found user in database. Updating location...');
-      
+      console.log("Found user in database. Updating location...");
+
       const updateData = {
         latitude: dto.latitude,
         longitude: dto.longitude,
         locationUpdatedAt: new Date(),
       };
-      
-      console.log('Update data:', JSON.stringify(updateData, null, 2));
-      
+
+      console.log("Update data:", JSON.stringify(updateData, null, 2));
+
       await this.userService.findByIdAndUpdate(userId, updateData);
-      console.log('Location updated successfully');
+      console.log("Location updated successfully");
 
       const updatedUser = await this.userService.findById(userId);
-      
+
       return {
         message: "Location updated successfully",
         user: updatedUser,
       };
     } catch (error) {
-      console.error('Error in updateMyLocation:', error);
+      console.error("Error in updateMyLocation:", error);
       throw error; // Re-throw to be handled by the global exception filter
     }
   }
