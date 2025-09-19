@@ -28,10 +28,17 @@ import { ChannelModule } from "../../chat/channel/channel.module";
 import { ProfileNotificationEmitter } from "./profile_notification_emitter";
 import { MongooseModule } from "@nestjs/mongoose";
 import { UserSchema } from "../user_modules/user/entities/user.entity";
+import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
+import { SubscriptionPlan, SubscriptionPlanSchema } from "../user_modules/user/entities/subscription_plan.entity";
 
 @Module({
   controllers: [ProfileController],
-  providers: [ProfileService, ProfileNotificationEmitter],
+  providers: [
+    ProfileService,
+    ProfileNotificationEmitter,
+    SubscriptionPlanService,
+    
+  ],
   exports: [ProfileService],
   imports: [
     UserModule,
@@ -51,7 +58,10 @@ import { UserSchema } from "../user_modules/user/entities/user.entity";
     NotificationEmitterModule,
     ChatRequestModule,
     ChannelModule,
-    MongooseModule.forFeature([{ name: "users", schema: UserSchema }]),
+    MongooseModule.forFeature([
+      { name: "users", schema: UserSchema },
+      { name: SubscriptionPlan.name, schema: SubscriptionPlanSchema },
+    ]),
   ],
 })
 export class ProfileModule {}

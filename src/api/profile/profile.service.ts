@@ -4,7 +4,12 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 import { UserService } from "../user_modules/user/user.service";
 import { remove } from "remove-accents";
 
@@ -58,6 +63,7 @@ import { Model } from "mongoose";
 import { calculateAge } from "src/core/utils/utils";
 import { UpdateMyDobDto } from "./dto/update-my-dob.dto";
 import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
+import { ISubscriptionPlan } from "../user_modules/user/entities/subscription_plan.entity";
 
 @Injectable()
 export class ProfileService {
@@ -80,8 +86,79 @@ export class ProfileService {
     private readonly chatRequestService: ChatRequestService,
     private readonly channelService: ChannelService,
     private readonly profileNotificationEmitter: ProfileNotificationEmitter,
-    @InjectModel("users") private readonly userModel: Model<IUser>
+    @InjectModel("users") private readonly userModel: Model<IUser>,
+    @InjectModel("SubscriptionPlan")
+    private readonly planModel: Model<ISubscriptionPlan>
   ) {}
+
+  async purchasePlan(userId: string, planId: string): Promise<IUser> {
+    // 1. Find the plan and user
+    const plan = await this.planModel.findById(planId).exec();
+    const user = await this.userModel.findById(userId).exec();
+
+    if (!user) {
+      throw new NotFoundException("User not found.");
+    }
+    if (!plan || !plan.isActive) {
+      throw new NotFoundException(
+        "Subscription plan not found or is not active."
+      );
+    }
+    if (user.subscription.plan.toString() === planId) {
+      throw new ConflictException("Already subscribed");
+    }
+    console.log(
+      `Simulating payment of ${plan.price} ${plan.currency} for user ${userId}`
+    );
+    user.balance -= plan.price;
+    const purchasedAt = new Date();
+    const expiresAt = new Date(purchasedAt);
+    expiresAt.setDate(expiresAt.getDate() + plan.durationInDays);
+    user.subscription = {
+      plan: plan._id,
+      purchasedAt,
+      expiresAt,
+    };
+
+    return await user.save();
+  }
+
+  async getUserSubscription(userId: string) {
+    // Find the user and use .populate() to automatically fetch the full plan details
+    const user = await this.userModel
+      .findById(userId)
+      .populate("subscription.plan")
+      .exec();
+
+    if (!user) {
+      throw new NotFoundException("User not found.");
+    }
+
+    if (!user.subscription || !user.subscription.plan) {
+      // If the user has no subscription object or the plan is missing, return null.
+      return null;
+    }
+
+    const isActive = new Date(user.subscription.expiresAt) > new Date();
+
+    return {
+      ...user.subscription, // Convert Mongoose doc to plain object
+      isActive,
+    };
+  }
+
+  async getAllPlans(): Promise<ISubscriptionPlan[]> {
+    return this.planModel.find().exec();
+  }
+  async getOnePlan(id: string): Promise<ISubscriptionPlan> {
+    const plan = await this.planModel.findById(id).exec();
+    if (!plan) {
+      throw new NotFoundException(
+        `Subscription plan with ID "${id}" not found.`
+      );
+    }
+    return plan;
+  }
 
   async updateMyPayoutDetails(dto: UpdateMyPayoutDto) {
     const isVerified = true;

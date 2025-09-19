@@ -154,6 +154,16 @@ export const UserSchema = new mongoose.Schema(
       },
     },
     payoutDetails: { type: Object, default: {} },
+    subscription: {
+      plan: {
+        type: Schema.Types.ObjectId,
+        ref: "SubscriptionPlan",
+        default: null,
+      },
+      purchasedAt: { type: Date, default: null },
+      expiresAt: { type: Date, default: null },
+    },
+
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
   },

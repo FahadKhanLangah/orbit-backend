@@ -44,13 +44,42 @@ import { UpdateMyGenderDto } from "./dto/update-my-gender.dto";
 import { UpdateMyLocationDto } from "./dto/update-my-location.dto";
 import { UpdateMyDobDto } from "./dto/update-my-dob.dto";
 import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
+import { PurchaseSubscriptionDto } from "../subscription-plan/purchase-subscription.dto";
+import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
 
 @V1Controller("profile")
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @UseGuards(VerifiedAuthGuard)
-  @Patch("/payout-details") 
+  @Get("/plan/my-subscription")
+  async getMySubscription(@Req() req: any) {
+    const userId = req.user._id;
+    return resOK(await this.profileService.getUserSubscription(userId));
+  }
+
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/plan/purchase")
+  async purchaseSubscription(
+    @Req() req: any,
+    @Body() dto: PurchaseSubscriptionDto
+  ) {
+    const userId = req.user._id;
+    return resOK(await this.profileService.purchasePlan(userId, dto.planId));
+  }
+
+  @Get("/subscription-plans")
+  async getAllPlans() {
+    return resOK(await this.profileService.getAllPlans());
+  }
+
+  @Get("/subscription-plans/:id")
+  async getPlanById(@Param("id") id: string) {
+    return resOK(await this.profileService.getOnePlan(id));
+  }
+
+  @UseGuards(VerifiedAuthGuard)
+  @Patch("/payout-details")
   async updateMyPayoutDetails(@Req() req: any, @Body() dto: UpdateMyPayoutDto) {
     dto.myUser = req.user;
     return resOK(await this.profileService.updateMyPayoutDetails(dto));
