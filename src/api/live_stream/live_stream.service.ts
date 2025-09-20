@@ -9,9 +9,10 @@ import {
   BadRequestException,
   NotFoundException,
   ForbiddenException,
+  Inject,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import { Model } from "mongoose";
+import { Connection, Model } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import { AgoraService } from "../../chat/agora/agora.service";
 import { SocketIoService } from "../../chat/socket_io/socket_io.service";
@@ -46,6 +47,8 @@ import { PushKeyAndProvider } from "../../core/utils/interfaceces";
 import { FileUploaderService } from "src/common/file_uploader/file_uploader.service";
 import { CategoryService } from "../admin_panel/category/category.service";
 import { calculateAge } from "src/core/utils/utils";
+import { SendGiftDto } from "./dto/send_gift.dto";
+import { GiftService } from "../gifts/gift.service";
 
 @Injectable()
 export class LiveStreamService {
@@ -64,8 +67,81 @@ export class LiveStreamService {
     private readonly notificationEmitterService: NotificationEmitterService,
     private readonly userDeviceService: UserDeviceService,
     private readonly fileUploaderService: FileUploaderService,
-    private readonly categoryService: CategoryService
+    private readonly categoryService: CategoryService,
+    private readonly giftService: GiftService
   ) {}
+
+  async sendGift(
+    streamId: string,
+    senderId: string,
+    giftId: string
+  ): Promise<{ newBalance: number }> {
+    const [stream, sender, gift] = await Promise.all([
+      this.liveStreamModel.findById(streamId),
+      this.userService.findById(senderId),
+      this.giftService.findById(giftId),
+    ]);
+
+    if (!stream) throw new NotFoundException("Live stream not found.");
+    if (stream.status !== LiveStreamStatus.LIVE)
+      throw new BadRequestException("Stream is not live.");
+    if (!sender) throw new NotFoundException("Sender not found.");
+    if (!gift || !gift.isActive)
+      throw new NotFoundException(
+        "Gift not found or is currently unavailable."
+      );
+    if (sender._id === stream.streamerId)
+      throw new BadRequestException("You cannot send a gift to yourself.");
+
+    // Step 3: Check if the sender has enough balance
+    if (sender.balance < gift.price) {
+      throw new BadRequestException("Insufficient balance to send this gift.");
+    }
+
+    try {
+      // Deduct gift price from the sender's balance
+      const updatedSender = await this.userService.findByIdAndUpdate(
+        senderId,
+        { $inc: { balance: -gift.price } },
+        { new: true }
+      );
+
+      // Add gift price to the streamer's balance
+      await this.userService.findByIdAndUpdate(stream.streamerId, {
+        $inc: { balance: gift.price },
+      });
+
+      // Update the stream's total gift value
+      const updatedStream = await this.liveStreamModel.findByIdAndUpdate(
+        streamId,
+        { $inc: { totalGiftValue: gift.price } },
+        { new: true }
+      );
+
+      // Step 5: Notify clients via WebSocket
+      this.socketService.io.to(streamId).emit("gift_received", {
+        streamId,
+        sender: {
+          _id: sender._id,
+          fullName: sender.fullName,
+          userImage: sender.userImage,
+        },
+        gift: {
+          name: gift.name,
+          imageUrl: gift.imageUrl,
+          price: gift.price,
+        },
+        totalGiftValue: updatedStream.totalGiftValue,
+      });
+
+      // Step 6: Return a successful response
+      return { newBalance: updatedSender.balance };
+    } catch (error) {
+      // Re-throw the error to be handled by NestJS's global exception filter
+      throw new Error(`Transaction failed: ${error.message}`);
+    } finally {
+    }
+  }
 
   async saveLiveStreamRecording(
     streamId: string,

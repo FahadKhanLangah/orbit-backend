@@ -18,6 +18,7 @@ import { UserDeviceModule } from '../user_modules/user_device/user_device.module
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 import { CategoryService } from '../admin_panel/category/category.service';
 import { Category, CategorySchema } from '../admin_panel/category/category.schema';
+import { GiftModule } from '../gifts/gift.module';
 
 @Module({
     imports: [
@@ -34,7 +35,8 @@ import { Category, CategorySchema } from '../admin_panel/category/category.schem
         UserModule,
         NotificationEmitterModule,
         UserDeviceModule,
-        FileUploaderModule
+        FileUploaderModule,
+        GiftModule
     ],
     controllers: [LiveStreamController],
     providers: [LiveStreamService,CategoryService],

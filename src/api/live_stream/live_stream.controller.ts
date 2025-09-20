@@ -40,6 +40,7 @@ import {
   UpdateStreamFilterDto,
 } from "./dto/live_stream.dto";
 import { CategoryService } from "../admin_panel/category/category.service";
+import { SendGiftDto } from "./dto/send_gift.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("live-stream")
@@ -48,6 +49,26 @@ export class LiveStreamController {
     private readonly liveStreamService: LiveStreamService,
     private readonly categoryService: CategoryService
   ) {}
+
+  @Post(":id/gift")
+  async sendGift(
+    @Param() params: MongoIdDto,
+    @Req() req: any,
+    @Body() sendGiftDto: SendGiftDto
+  ) {
+    const { id: streamId } = params;
+    const { _id: senderId } = req.user;
+    const { giftId } = sendGiftDto;
+
+    const result = await this.liveStreamService.sendGift(
+      streamId,
+      senderId,
+      giftId
+    );
+
+    return resOK(result);
+  }
+
   @Get("/categories")
   async findAll() {
     const categories = await this.categoryService.findAll();

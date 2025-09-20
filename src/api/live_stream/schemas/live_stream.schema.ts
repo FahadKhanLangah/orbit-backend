@@ -131,6 +131,9 @@ export class LiveStream extends Document {
 
   @Prop({ type: Date })
   recordingUploadedAt: Date;
+
+  @Prop({ type: Number, default: 0 })
+  totalGiftValue: number;
 }
 
 @Schema({ timestamps: true })

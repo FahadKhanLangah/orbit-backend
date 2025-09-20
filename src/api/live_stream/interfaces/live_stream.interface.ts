@@ -62,6 +62,7 @@ export interface ILiveStream extends Document {
   streamType: LiveStreamType;
   price?: number;
   currency?: string;
+  totalGiftValue?: number;
 }
 
 export interface ILiveStreamParticipant extends Document {
