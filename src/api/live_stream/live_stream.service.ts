@@ -100,17 +100,37 @@ export class LiveStreamService {
     // 3. Update the database
     stream.recordingUrl = recordingKey; // The key/path returned by the uploader
     stream.status = LiveStreamStatus.RECORDED;
+    stream.recordingViews = stream.maxViewers;
+    stream.recordingUploadedAt = new Date();
 
     await stream.save();
-
     return stream;
+  }
+
+  async getSavedStreamById(streamId: string) {
+    const stream = await this.liveStreamModel
+      .findOne({
+        _id: streamId,
+        status: LiveStreamStatus.RECORDED,
+      })
+      .select(
+        "title description thumbnailUrl streamerData duration recordingUrl streamType price currency recordingViews recordingUploadedAt"
+      )
+      .exec();
+
+    if (!stream) {
+      throw new NotFoundException("Saved stream not found");
+    }
+
+    return {
+      ...stream.toObject(),
+      shareUrl: `${process.env.FRONTEND_URL}/recordings/${stream._id}`,
+    };
   }
 
   async getSavedStreams(options: { page: number; limit: number }) {
     const { page, limit } = options;
     const skip = (page - 1) * limit;
-
-    // 1. Find all documents where the status is 'RECORDED'
     const savedStreams = await this.liveStreamModel
       .find({
         status: LiveStreamStatus.RECORDED,
@@ -120,7 +140,7 @@ export class LiveStreamService {
       .limit(limit)
       .select(
         // Select only the fields the client needs
-        "title description thumbnailUrl streamerData duration recordingUrl streamType price currency"
+        "title description thumbnailUrl streamerData duration recordingUrl streamType price currency recordingViews recordingUploadedAt"
       )
       .exec();
 

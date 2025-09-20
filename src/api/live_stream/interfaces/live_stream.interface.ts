@@ -55,6 +55,8 @@ export interface ILiveStream extends Document {
   savedViewersInclude?: string[];
   savedViewersExclude?: string[];
   recordingUrl?: string;
+  recordingViews?: number;   // total views of the recording
+  recordingUploadedAt?: Date;
 
   // For Feature 2: Paid Live Stream
   streamType: LiveStreamType;

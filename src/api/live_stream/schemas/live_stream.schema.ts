@@ -125,6 +125,12 @@ export class LiveStream extends Document {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: "Category" })
   categoryId: string;
+
+  @Prop({ type: Number, default: 0 })
+  recordingViews: number;
+
+  @Prop({ type: Date })
+  recordingUploadedAt: Date;
 }
 
 @Schema({ timestamps: true })
