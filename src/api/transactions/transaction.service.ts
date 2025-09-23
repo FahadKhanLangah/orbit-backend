@@ -1,7 +1,7 @@
-import { Injectable } from '@nestjs/common';
-import { InjectModel } from '@nestjs/mongoose';
-import { Model, ClientSession, Types } from 'mongoose'; // Import ClientSession and Types
-import { ITransaction, TransactionType } from './schemas/transaction.schema';
+import { Injectable } from "@nestjs/common";
+import { InjectModel } from "@nestjs/mongoose";
+import { Model, ClientSession, Types } from "mongoose"; // Import ClientSession and Types
+import { ITransaction, TransactionType } from "./schemas/transaction.schema";
 
 // This is the new input interface.
 // Notice it only asks for the percentage, not the calculated details.
@@ -17,7 +17,8 @@ export interface CreateTransactionInput {
 @Injectable()
 export class TransactionService {
   constructor(
-    @InjectModel('Transaction') private readonly transactionModel: Model<ITransaction>,
+    @InjectModel("Transaction")
+    private readonly transactionModel: Model<ITransaction>
   ) {}
 
   /**
@@ -28,15 +29,12 @@ export class TransactionService {
    */
   async create(
     params: CreateTransactionInput,
-    session?: ClientSession, // Accept the session here
+    session?: ClientSession
   ): Promise<ITransaction> {
     const { amount, commissionPercentage, ...rest } = params;
-
-    // --- Centralized Calculation Logic ---
     const systemShare = amount * (commissionPercentage / 100);
     const netAmount = amount - systemShare;
 
-    // Build the full data object that matches the schema
     const transactionData = {
       ...rest,
       amount,
@@ -49,8 +47,25 @@ export class TransactionService {
     };
 
     const transaction = new this.transactionModel(transactionData);
-    
+
     // Pass the session to the save() method to make it part of the transaction
     return transaction.save({ session });
+  }
+
+  async getTotalSystemShare(): Promise<number> {
+    const result = await this.transactionModel.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalShare: { $sum: "$commissionDetails.systemShare" },
+        },
+      },
+    ]);
+
+    if (result.length > 0) {
+      return result[0].totalShare;
+    }
+
+    return 0;
   }
 }

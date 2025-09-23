@@ -31,6 +31,7 @@ import { CreateSubscriptionPlanDto } from "src/core/common/dto/subscription.plan
 import { SettingsService } from "../transaction_setting/settings.service";
 import { UpdateSettingsDto } from "../transaction_setting/dto/update-settings.dto";
 import { CreateSettingsDto } from "../transaction_setting/dto/create-settings.dto";
+import { TransactionService } from "../transactions/transaction.service";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -39,8 +40,17 @@ export class AdminPanelController {
     private readonly adminPanelService: AdminPanelService,
     private readonly categoryService: CategoryService,
     private readonly subscriptionPlanService: SubscriptionPlanService,
-    private readonly settingsService: SettingsService
+    private readonly settingsService: SettingsService,
+    private readonly transactionService: TransactionService
   ) {}
+
+  @Get("/total-system-share")
+  async getTotalSystemShare() {
+    const totalShare = await this.transactionService.getTotalSystemShare();
+    return {
+      totalSystemShare: totalShare,
+    };
+  }
 
   @Post("/commission")
   async createCommission(@Body() createCommissionSetting: CreateSettingsDto) {
