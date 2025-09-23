@@ -11,6 +11,8 @@ import {
 } from "@nestjs/common";
 import {
   FilterQuery,
+  Model,
+  Query,
   PaginateModel,
   PaginateOptions,
   QueryOptions,
@@ -241,6 +243,28 @@ export class UserService extends BaseService<IUser> {
   async findByIds(usersIds: string[], select?: string) {
     return this.model.find({ _id: { $in: usersIds } }, select).lean();
   }
+
+  findByIdBalance(id: string, select?: string, options?: {}): Query<IUser | null, IUser> {
+    if (
+      select === "balance" ||
+      select === "claimedGifts" ||
+      (select && select.includes("balance"))
+    ) {
+      console.log(
+        "UserService: Bypassing validation for balance query, id:",
+        id
+      );
+      // Return the query directly
+      return this.model.findById(id, select, options);
+    }
+
+    if (!isValidMongoId(id)) {
+      throw new BadRequestException("NOT VALID MONGO DB OBJECT " + id);
+    }
+    
+    // Return the query directly. REMOVED Promise.resolve() and .lean()
+    return this.model.findById(id, select, options);
+}
 
   findById(id: string, select?: string, options?: {}): Promise<IUser | null> {
    

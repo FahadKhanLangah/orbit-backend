@@ -10,6 +10,7 @@ import {
   Query,
   UseInterceptors,
   UploadedFile,
+  Put,
 } from "@nestjs/common";
 import { AdminPanelService } from "./admin_panel.service";
 import { V1Controller } from "../../core/common/v1-controller.decorator";
@@ -27,6 +28,9 @@ import { CategoryService } from "./category/category.service";
 import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
 import { UpdateSubscriptionPlanDto } from "src/core/common/dto/update-subscription-plan.dto";
 import { CreateSubscriptionPlanDto } from "src/core/common/dto/subscription.plan.dto";
+import { SettingsService } from "../transaction_setting/settings.service";
+import { UpdateSettingsDto } from "../transaction_setting/dto/update-settings.dto";
+import { CreateSettingsDto } from "../transaction_setting/dto/create-settings.dto";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -34,8 +38,24 @@ export class AdminPanelController {
   constructor(
     private readonly adminPanelService: AdminPanelService,
     private readonly categoryService: CategoryService,
-    private readonly subscriptionPlanService: SubscriptionPlanService
+    private readonly subscriptionPlanService: SubscriptionPlanService,
+    private readonly settingsService: SettingsService
   ) {}
+
+  @Post("/commission")
+  async createCommission(@Body() createCommissionSetting: CreateSettingsDto) {
+    return this.settingsService.create(createCommissionSetting);
+  }
+
+  @Get("/commission")
+  async getAppCommission() {
+    return this.settingsService.getSettings();
+  }
+
+  @Put("/commission")
+  async updateAppCommission(@Body() updateSettingsDto: UpdateSettingsDto) {
+    return this.settingsService.updateSettings(updateSettingsDto);
+  }
 
   @Post("/subscription-plans")
   async createPlan(@Body() dto: CreateSubscriptionPlanDto) {

@@ -10,15 +10,15 @@ export enum TransactionType {
 
 // This interface defines the structure of a transaction document
 export interface ITransaction extends Document {
-  userId: Types.ObjectId; // The user who initiated the transaction (paid)
-  amount: number; // The gross amount deducted from the user's balance
-  type: TransactionType; // The category of the transaction
-  description: string; // A human-readable summary
-  metadata: Record<string, any>; // Flexible field for context-specific data
+  userId: Types.ObjectId;
+  amount: number; 
+  type: TransactionType; 
+  description: string; 
+  metadata: Record<string, any>;
   commissionDetails: {
     percentage: number;
     systemShare: number;
-    netAmount: number; // Amount the recipient gets
+    netAmount: number;
   };
 }
 
@@ -28,7 +28,6 @@ export const TransactionSchema: Schema = new Schema(
     amount: { type: Number, required: true },
     type: { type: String, enum: Object.values(TransactionType), required: true, index: true },
     description: { type: String, required: true },
-    // Metadata stores data unique to each transaction type
     metadata: {
       type: Schema.Types.Mixed,
       default: {},

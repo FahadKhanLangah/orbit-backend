@@ -39,7 +39,17 @@ import { MongooseModule } from "@nestjs/mongoose";
 import { Category, CategorySchema } from "./category/category.schema";
 import { CategoryService } from "./category/category.service";
 import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
-import { SubscriptionPlan, SubscriptionPlanSchema } from '../user_modules/user/entities/subscription_plan.entity'
+import {
+  SubscriptionPlan,
+  SubscriptionPlanSchema,
+} from "../user_modules/user/entities/subscription_plan.entity";
+import { TransactionService } from "../transactions/transaction.service";
+import {
+  Settings,
+  SettingsSchema,
+} from "../transaction_setting/schema/settings.schema";
+import { SettingsModule } from "../transaction_setting/settings.module";
+import { TransactionSchema } from "../transactions/schemas/transaction.schema";
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -51,13 +61,15 @@ import { SubscriptionPlan, SubscriptionPlanSchema } from '../user_modules/user/e
     VersionsAdminService,
     ChannelAdminService,
     CategoryService,
-    SubscriptionPlanService
+    SubscriptionPlanService,
+    TransactionService,
   ],
   imports: [
     MongooseModule.forFeature([
       { name: Category.name, schema: CategorySchema },
       { name: SubscriptionPlan.name, schema: SubscriptionPlanSchema },
-
+      { name: Settings.name, schema: SettingsSchema },
+      { name: "Transaction", schema: TransactionSchema },
     ]),
     UserModule,
     AuthModule,
@@ -82,7 +94,7 @@ import { SubscriptionPlan, SubscriptionPlanSchema } from '../user_modules/user/e
     StoryModule,
     GiftModule,
     SocketIoModule,
-    
+    SettingsModule,
   ],
 })
 export class AdminPanelModule {}

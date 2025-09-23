@@ -29,6 +29,7 @@ import {
 import { GiftModule } from "../gifts/gift.module";
 import { TransactionService } from "../transactions/transaction.service";
 import { TransactionSchema } from "../transactions/schemas/transaction.schema";
+import { SettingsModule } from "../transaction_setting/settings.module";
 
 @Module({
   imports: [
@@ -48,6 +49,7 @@ import { TransactionSchema } from "../transactions/schemas/transaction.schema";
     UserDeviceModule,
     FileUploaderModule,
     GiftModule,
+    SettingsModule
   ],
   controllers: [LiveStreamController],
   providers: [LiveStreamService, CategoryService, TransactionService],

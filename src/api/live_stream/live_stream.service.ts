@@ -11,7 +11,7 @@ import {
   ForbiddenException,
   Inject,
 } from "@nestjs/common";
-import { InjectModel } from "@nestjs/mongoose";
+import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import { Connection, Model } from "mongoose";
 import { v4 as uuidv4 } from "uuid";
 import { AgoraService } from "../../chat/agora/agora.service";
@@ -51,6 +51,7 @@ import { SendGiftDto } from "./dto/send_gift.dto";
 import { GiftService } from "../gifts/gift.service";
 import { TransactionType } from "../transactions/schemas/transaction.schema";
 import { TransactionService } from "../transactions/transaction.service";
+import { SettingsService } from "../transaction_setting/settings.service";
 
 @Injectable()
 export class LiveStreamService {
@@ -71,7 +72,9 @@ export class LiveStreamService {
     private readonly fileUploaderService: FileUploaderService,
     private readonly categoryService: CategoryService,
     private readonly giftService: GiftService,
-    private readonly transactionService: TransactionService
+    private readonly transactionService: TransactionService,
+    private readonly settingsService: SettingsService,
+    @InjectConnection() private readonly connection: Connection
   ) {}
 
   async sendGift(
@@ -79,91 +82,175 @@ export class LiveStreamService {
     senderId: string,
     giftId: string
   ): Promise<{ newBalance: number }> {
-    const [stream, sender, gift] = await Promise.all([
-      this.liveStreamModel.findById(streamId),
-      this.userService.findById(senderId),
-      this.giftService.findById(giftId),
-    ]);
-
-    if (!stream) throw new NotFoundException("Live stream not found.");
-    if (stream.status !== LiveStreamStatus.LIVE)
-      throw new BadRequestException("Stream is not live.");
-    if (!sender) throw new NotFoundException("Sender not found.");
-    if (!gift || !gift.isActive)
-      throw new NotFoundException(
-        "Gift not found or is currently unavailable."
-      );
-    if (sender._id === stream.streamerId)
-      throw new BadRequestException("You cannot send a gift to yourself.");
-
-    // Step 3: Check if the sender has enough balance
-    if (sender.balance < gift.price) {
-      throw new BadRequestException("Insufficient balance to send this gift.");
-    }
-    const commissionPercentage = 5;
-    const totalAmount = gift.price;
-    const commissionRate = commissionPercentage / 100;
-    const systemShare = totalAmount * commissionRate;
-    const streamerAmount = totalAmount - systemShare;
+    const session = await this.connection.startSession();
+    session.startTransaction();
 
     try {
-      // Deduct gift price from the sender's balance
+      const settings = await this.settingsService.getSettings();
+      const [stream, sender, gift] = await Promise.all([
+        this.liveStreamModel.findById(streamId).session(session),
+        this.userService.findByIdBalance(senderId).session(session),
+        this.giftService.findByIdGift(giftId).session(session),
+      ]);
+
+      console.log(settings.giftCommissionPercentage);
+
+      // --- Validation logic remains the same ---
+      if (!stream) throw new NotFoundException("Live stream not found.");
+      if (stream.status !== LiveStreamStatus.LIVE)
+        throw new BadRequestException("Stream is not live.");
+      if (!sender) throw new NotFoundException("Sender not found.");
+      if (!gift || !gift.isActive)
+        throw new NotFoundException(
+          "Gift not found or is currently unavailable."
+        );
+      if (sender._id.toString() === stream.streamerId.toString())
+        throw new BadRequestException("You cannot send a gift to yourself.");
+      if (sender.balance < gift.price) {
+        throw new BadRequestException(
+          "Insufficient balance to send this gift."
+        );
+      }
+
+      const totalAmount = gift.price;
+      const commissionPercentage = settings.giftCommissionPercentage;
       const updatedSender = await this.userService.findByIdAndUpdate(
         senderId,
         { $inc: { balance: -totalAmount } },
-        { new: true }
+        { new: true, session }
       );
 
-      // Add gift price to the streamer's balance
-      await this.userService.findByIdAndUpdate(stream.streamerId, {
-        $inc: { balance: streamerAmount }
-      });
-
-      // Update the stream's total gift value
+      // 2. Add net amount to the streamer's balance
+      const streamerAmount = totalAmount * (1 - commissionPercentage / 100);
+      await this.userService.findByIdAndUpdate(
+        stream.streamerId,
+        { $inc: { balance: streamerAmount } },
+        { session }
+      );
       const updatedStream = await this.liveStreamModel.findByIdAndUpdate(
         streamId,
         { $inc: { totalGiftValue: gift.price } },
-        { new: true }
+        { new: true, session } // <-- Pass the session
       );
-
-      await this.transactionService.create({
-        userId: senderId,
-        amount: totalAmount,
-        type: TransactionType.GIFT_SENT,
-        description: `Sent '${gift.name}' gift to ${stream.streamerData.fullName}`,
-        metadata: {
-          receiverId: stream.streamerId,
-          giftId: giftId,
-          streamId: streamId,
+      await this.transactionService.create(
+        {
+          userId: senderId,
+          amount: totalAmount,
+          type: TransactionType.GIFT_SENT,
+          description: `Sent '${gift.name}' gift to streamer`,
+          commissionPercentage: commissionPercentage, // Just pass the percentage
+          metadata: {
+            receiverId: stream.streamerId,
+            giftId: giftId,
+            streamId: streamId,
+          },
         },
-        commissionDetails: {
-          percentage: commissionPercentage,
-          systemShare: systemShare,
-          netAmount: streamerAmount,
-        },
-      });
-
-      // Step 5: Notify clients via WebSocket
+        session
+      );
+      await session.commitTransaction();
       this.socketService.io.to(streamId).emit("gift_received", {
-        streamId,
-        sender: {
-          _id: sender._id,
-          fullName: sender.fullName,
-          userImage: sender.userImage,
-        },
-        gift: {
-          name: gift.name,
-          imageUrl: gift.imageUrl,
-          price: gift.price,
-        },
         totalGiftValue: updatedStream.totalGiftValue,
       });
       return { newBalance: updatedSender.balance };
     } catch (error) {
-      throw new Error(`Transaction failed: ${error.message}`);
+      await session.abortTransaction();
+      throw error;
     } finally {
+      // STEP 6: Always end the session to release resources
+      session.endSession();
     }
   }
+
+  // async sendGift(
+  //   streamId: string,
+  //   senderId: string,
+  //   giftId: string
+  // ): Promise<{ newBalance: number }> {
+  //   const [stream, sender, gift] = await Promise.all([
+  //     this.liveStreamModel.findById(streamId),
+  //     this.userService.findById(senderId),
+  //     this.giftService.findById(giftId),
+  //   ]);
+
+  //   if (!stream) throw new NotFoundException("Live stream not found.");
+  //   if (stream.status !== LiveStreamStatus.LIVE)
+  //     throw new BadRequestException("Stream is not live.");
+  //   if (!sender) throw new NotFoundException("Sender not found.");
+  //   if (!gift || !gift.isActive)
+  //     throw new NotFoundException(
+  //       "Gift not found or is currently unavailable."
+  //     );
+  //   if (sender._id === stream.streamerId)
+  //     throw new BadRequestException("You cannot send a gift to yourself.");
+
+  //   // Step 3: Check if the sender has enough balance
+  //   if (sender.balance < gift.price) {
+  //     throw new BadRequestException("Insufficient balance to send this gift.");
+  //   }
+  //   const commissionPercentage = 5;
+  //   const totalAmount = gift.price;
+  //   const commissionRate = commissionPercentage / 100;
+  //   const systemShare = totalAmount * commissionRate;
+  //   const streamerAmount = totalAmount - systemShare;
+
+  //   try {
+  //     // Deduct gift price from the sender's balance
+  //     const updatedSender = await this.userService.findByIdAndUpdate(
+  //       senderId,
+  //       { $inc: { balance: -totalAmount } },
+  //       { new: true }
+  //     );
+
+  //     // Add gift price to the streamer's balance
+  //     await this.userService.findByIdAndUpdate(stream.streamerId, {
+  //       $inc: { balance: streamerAmount }
+  //     });
+
+  //     // Update the stream's total gift value
+  //     const updatedStream = await this.liveStreamModel.findByIdAndUpdate(
+  //       streamId,
+  //       { $inc: { totalGiftValue: gift.price } },
+  //       { new: true }
+  //     );
+
+  //     await this.transactionService.create({
+  //       userId: senderId,
+  //       amount: totalAmount,
+  //       type: TransactionType.GIFT_SENT,
+  //       description: `Sent '${gift.name}' gift to ${stream.streamerData.fullName}`,
+  //       metadata: {
+  //         receiverId: stream.streamerId,
+  //         giftId: giftId,
+  //         streamId: streamId,
+  //       },
+  //       commissionDetails: {
+  //         percentage: commissionPercentage,
+  //         systemShare: systemShare,
+  //         netAmount: streamerAmount,
+  //       },
+  //     });
+
+  //     // Step 5: Notify clients via WebSocket
+  //     this.socketService.io.to(streamId).emit("gift_received", {
+  //       streamId,
+  //       sender: {
+  //         _id: sender._id,
+  //         fullName: sender.fullName,
+  //         userImage: sender.userImage,
+  //       },
+  //       gift: {
+  //         name: gift.name,
+  //         imageUrl: gift.imageUrl,
+  //         price: gift.price,
+  //       },
+  //       totalGiftValue: updatedStream.totalGiftValue,
+  //     });
+  //     return { newBalance: updatedSender.balance };
+  //   } catch (error) {
+  //     throw new Error(`Transaction failed: ${error.message}`);
+  //   } finally {
+  //   }
+  // }
 
   async saveLiveStreamRecording(
     streamId: string,
