@@ -3,6 +3,7 @@ import { ISettings } from "./schema/settings.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Injectable } from "@nestjs/common";
 import { CreateSettingsDto } from "./dto/create-settings.dto";
+import { UpdateSettingsDto } from "./dto/update-settings.dto";
 
 @Injectable()
 export class SettingsService {
@@ -17,7 +18,7 @@ export class SettingsService {
   async findOrCreate(): Promise<ISettings> {
     let settings = await this.settingsModel.findOne().exec();
     if (!settings) {
-      settings = await this.settingsModel.create({}); 
+      settings = await this.settingsModel.create({});
     }
     return settings;
   }
@@ -35,7 +36,7 @@ export class SettingsService {
     return settings;
   }
 
-  async updateSettings(dto: any): Promise<ISettings> {
+  async updateSettings(dto: UpdateSettingsDto): Promise<ISettings> {
     const settings = await this.getSettings();
     return this.settingsModel.findByIdAndUpdate(settings._id, dto, {
       new: true,

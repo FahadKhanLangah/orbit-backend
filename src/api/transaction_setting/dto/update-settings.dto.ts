@@ -1,4 +1,4 @@
-import { IsNumber, IsOptional, Max, Min } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, Max, Min } from "class-validator";
 
 export class UpdateSettingsDto {
   @IsOptional()
@@ -12,4 +12,8 @@ export class UpdateSettingsDto {
   @Min(0)
   @Max(100)
   videoPurchaseCommissionPercentage?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  enableOrbitWaterMark?: boolean;
 }
