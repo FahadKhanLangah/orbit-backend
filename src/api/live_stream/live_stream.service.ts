@@ -49,6 +49,8 @@ import { CategoryService } from "../admin_panel/category/category.service";
 import { calculateAge } from "src/core/utils/utils";
 import { SendGiftDto } from "./dto/send_gift.dto";
 import { GiftService } from "../gifts/gift.service";
+import { TransactionType } from "../transactions/schemas/transaction.schema";
+import { TransactionService } from "../transactions/transaction.service";
 
 @Injectable()
 export class LiveStreamService {
@@ -68,7 +70,8 @@ export class LiveStreamService {
     private readonly userDeviceService: UserDeviceService,
     private readonly fileUploaderService: FileUploaderService,
     private readonly categoryService: CategoryService,
-    private readonly giftService: GiftService
+    private readonly giftService: GiftService,
+    private readonly transactionService: TransactionService
   ) {}
 
   async sendGift(
@@ -97,18 +100,23 @@ export class LiveStreamService {
     if (sender.balance < gift.price) {
       throw new BadRequestException("Insufficient balance to send this gift.");
     }
+    const commissionPercentage = 5;
+    const totalAmount = gift.price;
+    const commissionRate = commissionPercentage / 100;
+    const systemShare = totalAmount * commissionRate;
+    const streamerAmount = totalAmount - systemShare;
 
     try {
       // Deduct gift price from the sender's balance
       const updatedSender = await this.userService.findByIdAndUpdate(
         senderId,
-        { $inc: { balance: -gift.price } },
+        { $inc: { balance: -totalAmount } },
         { new: true }
       );
 
       // Add gift price to the streamer's balance
       await this.userService.findByIdAndUpdate(stream.streamerId, {
-        $inc: { balance: gift.price },
+        $inc: { balance: streamerAmount }
       });
 
       // Update the stream's total gift value
@@ -117,6 +125,23 @@ export class LiveStreamService {
         { $inc: { totalGiftValue: gift.price } },
         { new: true }
       );
+
+      await this.transactionService.create({
+        userId: senderId,
+        amount: totalAmount,
+        type: TransactionType.GIFT_SENT,
+        description: `Sent '${gift.name}' gift to ${stream.streamerData.fullName}`,
+        metadata: {
+          receiverId: stream.streamerId,
+          giftId: giftId,
+          streamId: streamId,
+        },
+        commissionDetails: {
+          percentage: commissionPercentage,
+          systemShare: systemShare,
+          netAmount: streamerAmount,
+        },
+      });
 
       // Step 5: Notify clients via WebSocket
       this.socketService.io.to(streamId).emit("gift_received", {
@@ -133,11 +158,8 @@ export class LiveStreamService {
         },
         totalGiftValue: updatedStream.totalGiftValue,
       });
-
-      // Step 6: Return a successful response
       return { newBalance: updatedSender.balance };
     } catch (error) {
-      // Re-throw the error to be handled by NestJS's global exception filter
       throw new Error(`Transaction failed: ${error.message}`);
     } finally {
     }
