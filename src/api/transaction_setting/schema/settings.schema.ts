@@ -5,6 +5,7 @@ export interface ISettings extends Document {
   giftCommissionPercentage: number;
   videoPurchaseCommissionPercentage: number;
   enableOrbitWaterMark?: boolean;
+  minimumWithdrawAmount?: number;
 }
 
 @NestSchema({ timestamps: true })
@@ -17,6 +18,9 @@ export class Settings {
 
   @Prop({ type: Boolean, default: false })
   enableOrbitWaterMark: boolean;
+
+  @Prop({ type: Number, default: 1 })
+  minimumWithdrawAmount: number;
 }
 
 export const SettingsSchema = SchemaFactory.createForClass(Settings);

@@ -16,7 +16,6 @@ export class SubscriptionPlanService {
     const newPlan = new this.subscriptionPlanModel(dto);
     return await newPlan.save();
   }
-
   async findAll(): Promise<ISubscriptionPlan[]> {
     return this.subscriptionPlanModel.find().exec();
   }
@@ -29,10 +28,6 @@ export class SubscriptionPlanService {
     }
     return plan;
   }
-
-  /**
-   * Updates a subscription plan (used for editing and disabling/enabling)
-   */
   async update(
     id: string,
     dto: UpdateSubscriptionPlanDto

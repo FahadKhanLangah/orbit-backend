@@ -161,97 +161,6 @@ export class LiveStreamService {
     }
   }
 
-  // async sendGift(
-  //   streamId: string,
-  //   senderId: string,
-  //   giftId: string
-  // ): Promise<{ newBalance: number }> {
-  //   const [stream, sender, gift] = await Promise.all([
-  //     this.liveStreamModel.findById(streamId),
-  //     this.userService.findById(senderId),
-  //     this.giftService.findById(giftId),
-  //   ]);
-
-  //   if (!stream) throw new NotFoundException("Live stream not found.");
-  //   if (stream.status !== LiveStreamStatus.LIVE)
-  //     throw new BadRequestException("Stream is not live.");
-  //   if (!sender) throw new NotFoundException("Sender not found.");
-  //   if (!gift || !gift.isActive)
-  //     throw new NotFoundException(
-  //       "Gift not found or is currently unavailable."
-  //     );
-  //   if (sender._id === stream.streamerId)
-  //     throw new BadRequestException("You cannot send a gift to yourself.");
-
-  //   // Step 3: Check if the sender has enough balance
-  //   if (sender.balance < gift.price) {
-  //     throw new BadRequestException("Insufficient balance to send this gift.");
-  //   }
-  //   const commissionPercentage = 5;
-  //   const totalAmount = gift.price;
-  //   const commissionRate = commissionPercentage / 100;
-  //   const systemShare = totalAmount * commissionRate;
-  //   const streamerAmount = totalAmount - systemShare;
-
-  //   try {
-  //     // Deduct gift price from the sender's balance
-  //     const updatedSender = await this.userService.findByIdAndUpdate(
-  //       senderId,
-  //       { $inc: { balance: -totalAmount } },
-  //       { new: true }
-  //     );
-
-  //     // Add gift price to the streamer's balance
-  //     await this.userService.findByIdAndUpdate(stream.streamerId, {
-  //       $inc: { balance: streamerAmount }
-  //     });
-
-  //     // Update the stream's total gift value
-  //     const updatedStream = await this.liveStreamModel.findByIdAndUpdate(
-  //       streamId,
-  //       { $inc: { totalGiftValue: gift.price } },
-  //       { new: true }
-  //     );
-
-  //     await this.transactionService.create({
-  //       userId: senderId,
-  //       amount: totalAmount,
-  //       type: TransactionType.GIFT_SENT,
-  //       description: `Sent '${gift.name}' gift to ${stream.streamerData.fullName}`,
-  //       metadata: {
-  //         receiverId: stream.streamerId,
-  //         giftId: giftId,
-  //         streamId: streamId,
-  //       },
-  //       commissionDetails: {
-  //         percentage: commissionPercentage,
-  //         systemShare: systemShare,
-  //         netAmount: streamerAmount,
-  //       },
-  //     });
-
-  //     // Step 5: Notify clients via WebSocket
-  //     this.socketService.io.to(streamId).emit("gift_received", {
-  //       streamId,
-  //       sender: {
-  //         _id: sender._id,
-  //         fullName: sender.fullName,
-  //         userImage: sender.userImage,
-  //       },
-  //       gift: {
-  //         name: gift.name,
-  //         imageUrl: gift.imageUrl,
-  //         price: gift.price,
-  //       },
-  //       totalGiftValue: updatedStream.totalGiftValue,
-  //     });
-  //     return { newBalance: updatedSender.balance };
-  //   } catch (error) {
-  //     throw new Error(`Transaction failed: ${error.message}`);
-  //   } finally {
-  //   }
-  // }
-
   async saveLiveStreamRecording(
     streamId: string,
     user: IUser,
@@ -313,26 +222,39 @@ export class LiveStreamService {
     };
   }
 
-  async getSavedStreams(options: { page: number; limit: number }) {
-    const { page, limit } = options;
+  async getSavedStreams(options: {
+    page: number;
+    limit: number;
+    categoryName?: string;
+    sortBy?: string;
+  }) {
+    const { page, limit, categoryName, sortBy } = options;
     const skip = (page - 1) * limit;
+    const filter: any = {
+      status: LiveStreamStatus.RECORDED,
+    };
+    const sortOrder = sortBy === "oldest" ? 1 : -1;
+
+    if (categoryName) {
+
+      const category = await this.categoryService.findByName(categoryName);
+      if (!category) {
+        return { data: [], total: 0, page, limit };
+      }
+
+      filter.categoryId = category._id;
+    }
     const savedStreams = await this.liveStreamModel
-      .find({
-        status: LiveStreamStatus.RECORDED,
-      })
-      .sort({ endedAt: -1 }) // Show the newest recordings first
+      .find(filter)
+      .sort({ endedAt: sortOrder })
       .skip(skip)
       .limit(limit)
+      .populate("categoryId")
       .select(
-        // Select only the fields the client needs
         "title description thumbnailUrl streamerData duration recordingUrl streamType price currency recordingViews recordingUploadedAt"
       )
       .exec();
-
-    // 2. Get a total count for pagination purposes
-    const total = await this.liveStreamModel.countDocuments({
-      status: LiveStreamStatus.RECORDED,
-    });
+    const total = await this.liveStreamModel.countDocuments(filter);
 
     return {
       data: savedStreams,

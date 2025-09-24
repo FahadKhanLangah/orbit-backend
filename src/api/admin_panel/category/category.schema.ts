@@ -10,7 +10,7 @@ export class Category extends Document {
     description: string;
 
     @Prop({ default: true })
-    isActive: boolean; // Use this to enable/disable categories
+    isActive: boolean; 
 }
 
 export const CategorySchema = SchemaFactory.createForClass(Category);

@@ -41,6 +41,7 @@ import {
 } from "./dto/live_stream.dto";
 import { CategoryService } from "../admin_panel/category/category.service";
 import { SendGiftDto } from "./dto/send_gift.dto";
+import { log } from "console";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("live-stream")
@@ -81,14 +82,18 @@ export class LiveStreamController {
     return resOK(result);
   }
 
-  @Get("/recorded")
+  @Get("/recorded/saved/streams")
   async getSavedStreams(
     @Query("page", new DefaultValuePipe(1), ParseIntPipe) page: number,
-    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number
+    @Query("limit", new DefaultValuePipe(10), ParseIntPipe) limit: number,
+    @Query("category") categoryName?: string,
+    @Query("sort") sortBy?: string
   ) {
     const result = await this.liveStreamService.getSavedStreams({
       page,
       limit,
+      categoryName,
+      sortBy,
     });
     return resOK(result);
   }

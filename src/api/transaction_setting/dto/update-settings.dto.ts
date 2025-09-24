@@ -16,4 +16,9 @@ export class UpdateSettingsDto {
   @IsOptional()
   @IsBoolean()
   enableOrbitWaterMark?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  minimumWithdrawAmount?: number;
+
 }
