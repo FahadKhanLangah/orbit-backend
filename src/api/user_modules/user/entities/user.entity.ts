@@ -40,6 +40,7 @@ export interface IUser {
   banMessageTo: Date;
   banLiveTo: Date;
   verifiedAt?: Date;
+  isVerified?: boolean; // For blue badge
   registerStatus: RegisterStatus;
   registerMethod: RegisterMethod;
   userImage: string;
@@ -104,6 +105,7 @@ export const UserSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     lastMail: { type: Object, default: {} },
     verifiedAt: { type: Date, default: null },
+    isVerified: { type: Date, default: false },
     userImage: { type: String, default: "default_user_image.png" },
     registerStatus: {
       type: String,

@@ -16,14 +16,12 @@ import { CreateS3UploaderDto } from "./create-s3_uploader.dto";
 
 @Injectable()
 export class FileUploaderService {
-
   async uploadLiveStreamVideo(videoBuffer: Buffer, streamerId: string) {
-        const key = `live-stream-recordings/${streamerId}/${uuidv4()}.mp4`;
-        await this._putFile(videoBuffer, key, streamerId, true);
-        
-        return key;
-    }
+    const key = `live-stream-recordings/${streamerId}/${uuidv4()}.mp4`;
+    await this._putFile(videoBuffer, key, streamerId, true);
 
+    return key;
+  }
 
   async putImageCropped(imageBuffer: Buffer, myId: string) {
     let key = `${S3UploaderTypes.profileImage}-${uuidv4()}.jpg`;
@@ -36,30 +34,49 @@ export class FileUploaderService {
     let contentType = await fromBuffer(dto.mediaBuffer);
     let key = `${dto.myUser._id}/${S3UploaderTypes.media}-${uuidv4()}`;
     if (contentType) {
-      key = `${key}.${contentType.ext}`
+      key = `${key}.${contentType.ext}`;
     } else {
-      key = `${key}.${dto.fileName.split('.')[1]}`
+      key = `${key}.${dto.fileName.split(".")[1]}`;
     }
     await this._putFile(dto.mediaBuffer, key, dto.myUser._id);
     return key;
   }
 
-async _putFile(fileData: Buffer, key: string, userId: string, isPublic?: boolean) {
-      
-        const fullFilePath = path.join(root.path, "public", isPublic ? "v-public" : "media", key);
-        const directoryPath = path.dirname(fullFilePath);
-        if (!fs.existsSync(directoryPath)) {
-            fs.mkdirSync(directoryPath, { recursive: true });
-        }
-      
-        return new Promise<string>((resolve, reject) => {
-            fs.writeFile(fullFilePath, fileData, err => {
-                if (err) {
-                    console.log(err);
-                    return reject(err);
-                }
-                resolve(key);
-            });
-        });
+  async uploadVerificationDoc(file: Express.Multer.File, userId: string): Promise<string> {
+    if (!file) {
+      throw new Error("File is missing for verification document upload.");
     }
+    const fileExtension = path.extname(file.originalname) || '.tmp'; // Get file extension
+    const key = `verification-docs/${userId}/${S3UploaderTypes.media}-${uuidv4()}${fileExtension}`;
+    await this._putFile(file.buffer, key, userId, false);
+    return key;
+  }
+
+  async _putFile(
+    fileData: Buffer,
+    key: string,
+    userId: string,
+    isPublic?: boolean
+  ) {
+    const fullFilePath = path.join(
+      root.path,
+      "public",
+      isPublic ? "v-public" : "media",
+      key
+    );
+    const directoryPath = path.dirname(fullFilePath);
+    if (!fs.existsSync(directoryPath)) {
+      fs.mkdirSync(directoryPath, { recursive: true });
+    }
+
+    return new Promise<string>((resolve, reject) => {
+      fs.writeFile(fullFilePath, fileData, (err) => {
+        if (err) {
+          console.log(err);
+          return reject(err);
+        }
+        resolve(key);
+      });
+    });
+  }
 }

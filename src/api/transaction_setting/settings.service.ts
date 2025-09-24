@@ -35,7 +35,7 @@ export class SettingsService {
     }
     return settings;
   }
-
+  
   async updateSettings(dto: UpdateSettingsDto): Promise<ISettings> {
     const settings = await this.getSettings();
     return this.settingsModel.findByIdAndUpdate(settings._id, dto, {

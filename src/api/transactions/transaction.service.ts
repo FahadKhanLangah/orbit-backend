@@ -47,8 +47,6 @@ export class TransactionService {
     };
 
     const transaction = new this.transactionModel(transactionData);
-
-    // Pass the session to the save() method to make it part of the transaction
     return transaction.save({ session });
   }
 
