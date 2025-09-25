@@ -29,7 +29,6 @@ export class SettingsService {
 
   async getSettings(): Promise<ISettings> {
     let settings = await this.settingsModel.findOne().exec();
-    // If no settings doc exists yet, create one with defaults
     if (!settings) {
       settings = await this.settingsModel.create({});
     }

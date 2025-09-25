@@ -47,9 +47,10 @@ import { TransactionService } from "../transactions/transaction.service";
 import {
   Settings,
   SettingsSchema,
-} from "../transaction_setting/schema/settings.schema";
-import { SettingsModule } from "../transaction_setting/settings.module";
+} from "../setting/schema/settings.schema";
+import { SettingsModule } from "../setting/settings.module";
 import { TransactionSchema } from "../transactions/schemas/transaction.schema";
+import { VerificationModule } from "../verification/verification.module";
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -95,6 +96,7 @@ import { TransactionSchema } from "../transactions/schemas/transaction.schema";
     GiftModule,
     SocketIoModule,
     SettingsModule,
+    VerificationModule
   ],
 })
 export class AdminPanelModule {}

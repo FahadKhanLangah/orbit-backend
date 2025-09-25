@@ -21,4 +21,8 @@ export class UpdateSettingsDto {
   @IsNumber()
   minimumWithdrawAmount?: number;
 
+  @IsOptional()
+  @IsNumber()
+  verificationFee?: number;
+
 }

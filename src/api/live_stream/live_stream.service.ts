@@ -51,7 +51,7 @@ import { SendGiftDto } from "./dto/send_gift.dto";
 import { GiftService } from "../gifts/gift.service";
 import { TransactionType } from "../transactions/schemas/transaction.schema";
 import { TransactionService } from "../transactions/transaction.service";
-import { SettingsService } from "../transaction_setting/settings.service";
+import { SettingsService } from "../setting/settings.service";
 
 @Injectable()
 export class LiveStreamService {

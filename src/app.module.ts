@@ -62,7 +62,8 @@ import { GiftModule } from "./api/gifts/gift.module";
 import { LiveStreamModule } from "./api/live_stream/live_stream.module";
 import { CommunityModule } from "./community/community.module";
 import { OrbitChannelModule } from "./orbit-channel/orbit-channel.module";
-import { SettingsModule } from "./api/transaction_setting/settings.module";
+import { SettingsModule } from "./api/setting/settings.module";
+import { VerificationModule } from "./api/verification/verification.module";
 
 @Module({
   imports: [
@@ -135,6 +136,7 @@ import { SettingsModule } from "./api/transaction_setting/settings.module";
     OrbitChannelModule,
     SettingsModule,
     UserModule,
+    VerificationModule
   ],
   controllers: [AppController],
   providers: [

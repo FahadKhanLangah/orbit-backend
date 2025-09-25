@@ -10,8 +10,8 @@ import { TokenType } from "../../core/utils/enums";
 import { UserCountryModule } from "../user_modules/user_country/user_country.module";
 import { FileUploaderModule } from "../../common/file_uploader/file_uploader.module";
 import { NotificationEmitterModule } from "../../common/notification_emitter/notification_emitter.module";
-import {MailEmitterModule} from "../mail/mail.emitter.module";
-import {LoyaltyPointsModule} from "../user_modules/loyalty_points/loyalty_points.module";
+import { MailEmitterModule } from "../mail/mail.emitter.module";
+import { LoyaltyPointsModule } from "../user_modules/loyalty_points/loyalty_points.module";
 
 @Module({
   controllers: [AuthController],
@@ -28,11 +28,11 @@ import {LoyaltyPointsModule} from "../user_modules/loyalty_points/loyalty_points
             subject: TokenType.Access,
             issuer: args.getOrThrow("issuer"),
             algorithm: "HS256",
-            audience: args.getOrThrow("audience")
-          }
+            audience: args.getOrThrow("audience"),
+          },
         };
       },
-      inject: [ConfigService]
+      inject: [ConfigService],
     }),
     FileUploaderModule,
     UserModule,
@@ -42,7 +42,6 @@ import {LoyaltyPointsModule} from "../user_modules/loyalty_points/loyalty_points
     NotificationEmitterModule,
     MailEmitterModule,
     forwardRef(() => LoyaltyPointsModule),
-  ]
+  ],
 })
-export class AuthModule {
-}
+export class AuthModule {}

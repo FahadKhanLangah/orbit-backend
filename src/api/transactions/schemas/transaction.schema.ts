@@ -6,6 +6,7 @@ export enum TransactionType {
   VIDEO_PURCHASE = 'VIDEO_PURCHASE',
   SUBSCRIPTION_FEE = 'SUBSCRIPTION_FEE',
   BALANCE_TOPUP = 'BALANCE_TOPUP',
+  BLUE_BATCH_FEE = 'BLUE_BATCH_FEE',
 }
 
 // This interface defines the structure of a transaction document

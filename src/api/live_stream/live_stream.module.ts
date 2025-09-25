@@ -29,7 +29,7 @@ import {
 import { GiftModule } from "../gifts/gift.module";
 import { TransactionService } from "../transactions/transaction.service";
 import { TransactionSchema } from "../transactions/schemas/transaction.schema";
-import { SettingsModule } from "../transaction_setting/settings.module";
+import { SettingsModule } from "../setting/settings.module";
 
 @Module({
   imports: [

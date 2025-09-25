@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Types } from 'mongoose';
+import { IUser } from 'src/api/user_modules/user/entities/user.entity';
 
 export enum VerificationStatus {
   PENDING = 'PENDING',
@@ -10,13 +11,13 @@ export enum VerificationStatus {
 @Schema({ timestamps: true })
 export class VerificationRequest extends Document {
   @Prop({ type: Types.ObjectId, ref: 'User', required: true, unique: true })
-  userId: string;
+  userId: Types.ObjectId | IUser;
 
   @Prop({ required: true })
-  idDocumentUrl: string; // URL to the stored ID/Passport file
+  idDocumentUrl: string;
 
   @Prop({ required: true })
-  selfieUrl: string; // URL to the stored selfie
+  selfieUrl: string;
 
   @Prop({
     type: String,
@@ -26,9 +27,9 @@ export class VerificationRequest extends Document {
   status: VerificationStatus;
 
   @Prop()
-  rejectionReason: string; // For admin feedback
+  rejectionReason: string;
 
-  @Prop({ type: Types.ObjectId, ref: 'User' }) // Assuming admins are also users
+  @Prop({ type: Types.ObjectId, ref: 'User' })
   reviewedBy: string;
 }
 

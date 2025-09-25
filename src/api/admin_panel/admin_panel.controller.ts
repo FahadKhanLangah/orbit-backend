@@ -28,10 +28,12 @@ import { CategoryService } from "./category/category.service";
 import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
 import { UpdateSubscriptionPlanDto } from "src/core/common/dto/update-subscription-plan.dto";
 import { CreateSubscriptionPlanDto } from "src/core/common/dto/subscription.plan.dto";
-import { SettingsService } from "../transaction_setting/settings.service";
-import { UpdateSettingsDto } from "../transaction_setting/dto/update-settings.dto";
-import { CreateSettingsDto } from "../transaction_setting/dto/create-settings.dto";
+import { SettingsService } from "../setting/settings.service";
+import { UpdateSettingsDto } from "../setting/dto/update-settings.dto";
+import { CreateSettingsDto } from "../setting/dto/create-settings.dto";
 import { TransactionService } from "../transactions/transaction.service";
+import { VerificationService } from "../verification/verification.service";
+import { VerificationStatus } from "../verification/schema/verification-request.schema";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -41,8 +43,26 @@ export class AdminPanelController {
     private readonly categoryService: CategoryService,
     private readonly subscriptionPlanService: SubscriptionPlanService,
     private readonly settingsService: SettingsService,
-    private readonly transactionService: TransactionService
+    private readonly transactionService: TransactionService,
+    private readonly verificationService: VerificationService
   ) {}
+
+  @Post("/verification/requests/:id/reject")
+  rejectRequest(@Param("id") id: string, @Body("reason") reason: string) {
+    return this.verificationService.rejectRequest(id, reason);
+  }
+
+  @Post("/verification/requests/:id/approve")
+  async approveApplication(@Param("id") id: string) {
+    return this.verificationService.approveVerificationProcess(id);
+  }
+
+  @Get("/verification/requests/get-all")
+  async getVerificationApplications(
+    @Query("status") status: VerificationStatus
+  ) {
+    return this.verificationService.getVerificationsApplications(status);
+  }
 
   @Get("/total-system-share")
   async getTotalSystemShare() {

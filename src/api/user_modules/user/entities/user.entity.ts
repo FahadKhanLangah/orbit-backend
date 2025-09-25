@@ -105,7 +105,7 @@ export const UserSchema = new mongoose.Schema(
     password: { type: String, required: true, select: false },
     lastMail: { type: Object, default: {} },
     verifiedAt: { type: Date, default: null },
-    isVerified: { type: Date, default: false },
+    isVerified: { type: Boolean, default: false },
     userImage: { type: String, default: "default_user_image.png" },
     registerStatus: {
       type: String,
