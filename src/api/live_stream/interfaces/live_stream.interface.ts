@@ -132,4 +132,5 @@ export enum ParticipantRole {
   STREAMER = "streamer",
   VIEWER = "viewer",
   MODERATOR = "moderator",
+  CO_HOST = 'co_host',
 }

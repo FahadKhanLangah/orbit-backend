@@ -42,6 +42,7 @@ import {
 import { CategoryService } from "../admin_panel/category/category.service";
 import { SendGiftDto } from "./dto/send_gift.dto";
 import { log } from "console";
+import { InviteCoHostDto } from "./dto/invite-cohost.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("live-stream")
@@ -50,6 +51,31 @@ export class LiveStreamController {
     private readonly liveStreamService: LiveStreamService,
     private readonly categoryService: CategoryService
   ) {}
+
+  @Post("/:streamId/invite-cohost")
+  async inviteCoHost(
+    @Param("streamId") streamId: string,
+    @Req() req: any,
+    @Body() dto: InviteCoHostDto
+  ) {
+    const { _id: hostUserId } = req.user;
+    await this.liveStreamService.inviteCoHost(
+      streamId,
+      hostUserId,
+      dto.guestUserId
+    );
+    return { message: "Invitation sent successfully." };
+  }
+
+  @Post("/:streamId/accept-cohost")
+  async acceptCoHostInvitation(
+    @Param("streamId") streamId: string,
+    @Req() req: any
+  ) {
+    const { _id: acceptorId } = req.user;
+    await this.liveStreamService.acceptCoHostInvitation(streamId, acceptorId);
+    return { message: "Invitation accepted. You are now a co-host." };
+  }
 
   @Post(":id/gift")
   async sendGift(
@@ -126,10 +152,10 @@ export class LiveStreamController {
   ) {
     dto.myUser = req.user;
 
-    if (file) {
-      // You can implement S3 upload here similar to other parts of your app
-      // dto.thumbnailUrl = await this.s3Service.uploadFile(file);
-    }
+    // if (file) {
+    // You can implement S3 upload here similar to other parts of your app
+    // dto.thumbnailUrl = await this.s3Service.uploadFile(file);
+    // }
 
     const stream = await this.liveStreamService.createLiveStream(dto);
     return resOK(stream);

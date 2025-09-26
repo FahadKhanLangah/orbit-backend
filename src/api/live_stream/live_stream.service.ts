@@ -236,7 +236,6 @@ export class LiveStreamService {
     const sortOrder = sortBy === "oldest" ? 1 : -1;
 
     if (categoryName) {
-
       const category = await this.categoryService.findByName(categoryName);
       if (!category) {
         return { data: [], total: 0, page, limit };
@@ -566,6 +565,105 @@ export class LiveStreamService {
       stream: stream,
       agoraToken: agoraAccess.rtcToken,
     };
+  }
+
+  async inviteCoHost(
+    streamId: string,
+    hostUserId: string,
+    guestUserId: string
+  ): Promise<void> {
+    // 1. Validate the request
+    const stream = await this.liveStreamModel.findById(streamId);
+    if (!stream) {
+      throw new NotFoundException("Live stream not found");
+    }
+
+    // Ensure the person sending the invite is the actual streamer
+    if (stream.streamerId !== hostUserId) {
+      throw new ForbiddenException("Only the streamer can invite co-hosts");
+    }
+
+    // Check if the guest is currently an active viewer in the stream
+    const guestParticipant = await this.participantModel.findOne({
+      streamId: streamId,
+      userId: guestUserId,
+      isActive: true,
+      role: ParticipantRole.VIEWER, // Can only invite viewers
+    });
+
+    if (!guestParticipant) {
+      throw new BadRequestException(
+        "The selected user is not an active viewer in this stream."
+      );
+    }
+
+    // 2. Send a private invitation via WebSockets
+    // You need a way to map a userId to their socket.id.
+    // This is often done by storing it in a map or Redis when the user connects.
+    const guestSocketId = await this.socketService.findSocketIdByUserId(
+      guestUserId
+    );
+
+    // if (!guestSocketId) {
+    //   throw new NotFoundException("Invited user is not currently connected.");
+    // }
+    /*
+ this.socketService.io.to(guestSocketId).emit("co_host_invitation", {
+      streamId: streamId,
+      streamTitle: stream.title,
+      hostData: stream.streamerData,
+    });
+    */
+
+    // Emit an event ONLY to the specific user being invited
+    this.socketService.io.emit("co_host_invitation", {
+      streamId: streamId,
+      streamTitle: stream.title,
+      hostData: stream.streamerData,
+    });
+  }
+
+  async acceptCoHostInvitation(
+    streamId: string,
+    guestUserId: string
+  ): Promise<void> {
+    const participant = await this.participantModel.findOne({
+      streamId: streamId,
+      userId: guestUserId,
+      isActive: true,
+    });
+
+    if (!participant) {
+      throw new ForbiddenException("You are not a participant in this stream.");
+    }
+
+    if (participant.role !== ParticipantRole.VIEWER) {
+      throw new BadRequestException(
+        "You are not eligible to become a co-host."
+      );
+    }
+
+    // 2. Promote the user by updating their role
+    participant.role = ParticipantRole.CO_HOST;
+    await participant.save();
+
+    const stream = await this.liveStreamModel.findById(streamId);
+    await this.liveStreamModel.findByIdAndUpdate(streamId, {
+      $inc: { viewerCount: -1 },
+    });
+
+    this.socketService.io.to(streamId).emit("user_promoted_to_cohost", {
+      streamId: streamId,
+      userData: participant.userData,
+      viewerCount: stream.viewerCount - 1,
+    });
+
+    // IMPORTANT: Do you need a new token?
+    // Based on your `joinLiveStream` code, you are already giving every user a
+    // PUBLISHER token via `getAgoraAccessNew`. This is great because it means
+    // the guest ALREADY has the right token to start broadcasting.
+    // They don't need a new one. The role change is for your application's logic
+    // and for the client-side UI to know when to start publishing the video/audio.
   }
 
   async leaveLiveStream(streamId: string, userId: string): Promise<void> {

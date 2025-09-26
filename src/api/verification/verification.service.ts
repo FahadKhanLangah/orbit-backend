@@ -42,49 +42,44 @@ export class VerificationService {
   }
 
   async approveVerificationProcess(requestId: string) {
-  const application = await this.verificationRequestModel
-    .findById(requestId)
-    .populate("userId")
-    .exec();
+    const application = await this.verificationRequestModel
+      .findById(requestId)
+      .populate("userId")
+      .exec();
 
-  if (!application || application.status !== VerificationStatus.PENDING) {
-    throw new BadRequestException("No application is found by this");
-  }
+    if (!application || application.status !== VerificationStatus.PENDING) {
+      throw new BadRequestException("No application is found by this");
+    }
 
-  const user = application.userId as any;
-  const settings = await this.settingService.getSettings();
-  const verificationFee = settings.verificationFee;
+    const user = application.userId as any;
+    const settings = await this.settingService.getSettings();
+    const verificationFee = settings.verificationFee;
+    if (user.balance < verificationFee) {
+      application.status = VerificationStatus.REJECTED;
+      application.rejectionReason = "Not enough funds available";
+      await application.save();
+      throw new BadRequestException(
+        "User has insufficient balance. Application rejected."
+      );
+    }
+    const transactionDto = {
+      userId: user._id,
+      amount: verificationFee,
+      type: TransactionType.BLUE_BATCH_FEE,
+      description: "User Bought the blue batch",
+      commissionPercentage: 100,
+    };
+    await this.transactionService.newTransaction(transactionDto);
+    await this.userService.findByIdAndUpdate(user._id, {
+      $inc: { balance: -verificationFee },
+      isVerified: true,
+    });
 
-  // Check for sufficient funds
-  if (user.balance < verificationFee) {
-    application.status = VerificationStatus.REJECTED;
-    application.rejectionReason = "Not enough funds available";
+    application.status = VerificationStatus.APPROVED;
     await application.save();
-    // ❗️ FIX: Stop execution after rejection
-    throw new BadRequestException("User has insufficient balance. Application rejected.");
+
+    return { message: "Account approved successfully." };
   }
-
-  // ✅ FIX: Use the correct verificationFee and 'type' key
-  const transactionDto = {
-    userId: user._id,
-    amount: verificationFee,
-    type: TransactionType.BLUE_BATCH_FEE,
-    description: "User Bought the blue batch",
-    commissionPercentage: 100
-  };
-  await this.transactionService.newTransaction(transactionDto);
-
-  // ✅ FIX: Deduct balance using $inc and set isVerified
-  await this.userService.findByIdAndUpdate(user._id, {
-    $inc: { balance: -verificationFee },
-    isVerified: true
-  });
-
-  application.status = VerificationStatus.APPROVED;
-  await application.save();
-
-  return { message: "Account approved successfully." };
-}
 
   // async approveVerificationProcess(requestId: string) {
   //   const application = await this.verificationRequestModel
