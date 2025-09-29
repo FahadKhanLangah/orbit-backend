@@ -64,6 +64,7 @@ import { CommunityModule } from "./community/community.module";
 import { OrbitChannelModule } from "./orbit-channel/orbit-channel.module";
 import { SettingsModule } from "./api/setting/settings.module";
 import { VerificationModule } from "./api/verification/verification.module";
+import { AdModule } from "./api/ad_system/ad.module";
 
 @Module({
   imports: [
@@ -136,7 +137,8 @@ import { VerificationModule } from "./api/verification/verification.module";
     OrbitChannelModule,
     SettingsModule,
     UserModule,
-    VerificationModule
+    VerificationModule,
+    AdModule
   ],
   controllers: [AppController],
   providers: [

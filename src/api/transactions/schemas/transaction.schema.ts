@@ -1,15 +1,15 @@
 import { Schema, Document, Types } from 'mongoose';
 
-// Define the types of transactions your system will handle
 export enum TransactionType {
   GIFT_SENT = 'GIFT_SENT',
   VIDEO_PURCHASE = 'VIDEO_PURCHASE',
   SUBSCRIPTION_FEE = 'SUBSCRIPTION_FEE',
   BALANCE_TOPUP = 'BALANCE_TOPUP',
   BLUE_BATCH_FEE = 'BLUE_BATCH_FEE',
+  AD_PURCHASE = 'AD_PURCHASE',
 }
 
-// This interface defines the structure of a transaction document
+
 export interface ITransaction extends Document {
   userId: Types.ObjectId;
   amount: number; 

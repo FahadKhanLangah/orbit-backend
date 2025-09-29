@@ -18,6 +18,7 @@ import {
   QueryOptions,
   Types,
   UpdateQuery,
+  ClientSession,
 } from "mongoose";
 import mongoose from "mongoose";
 import { InjectModel } from "@nestjs/mongoose";
@@ -38,6 +39,20 @@ export class UserService extends BaseService<IUser> {
     private readonly userDevice: UserDeviceService
   ) {
     super();
+  }
+
+  async deductBalance(
+    userId: string,
+    amount: number,
+    options?: { session: ClientSession }
+  ) {
+    return this.model
+      .findByIdAndUpdate(
+        userId,
+        { $inc: { balance: -amount } },
+        { new: true, session: options?.session } // Pass the session here
+      )
+      .exec();
   }
 
   async searchWithFilters(
@@ -84,10 +99,10 @@ export class UserService extends BaseService<IUser> {
     let aggregationPipeline = [];
     if (filters.nearbyOnly && filters.latitude && filters.longitude) {
       const maxDistanceKm = filters.maxDistance || 50; // Default 50km radius
-      
+
       aggregationPipeline = [
         {
-          $match: query
+          $match: query,
         },
         {
           $addFields: {
@@ -96,8 +111,8 @@ export class UserService extends BaseService<IUser> {
                 if: {
                   $and: [
                     { $ne: ["$latitude", null] },
-                    { $ne: ["$longitude", null] }
-                  ]
+                    { $ne: ["$longitude", null] },
+                  ],
                 },
                 then: {
                   $multiply: [
@@ -108,43 +123,81 @@ export class UserService extends BaseService<IUser> {
                           // sin(lat1) * sin(lat2)
                           {
                             $multiply: [
-                              { $sin: { $multiply: ["$latitude", 0.017453292519943295] } },
-                              { $sin: { $multiply: [filters.latitude, 0.017453292519943295] } }
-                            ]
+                              {
+                                $sin: {
+                                  $multiply: [
+                                    "$latitude",
+                                    0.017453292519943295,
+                                  ],
+                                },
+                              },
+                              {
+                                $sin: {
+                                  $multiply: [
+                                    filters.latitude,
+                                    0.017453292519943295,
+                                  ],
+                                },
+                              },
+                            ],
                           },
                           // cos(lat1) * cos(lat2) * cos(lon2 - lon1)
                           {
                             $multiply: [
-                              { $cos: { $multiply: ["$latitude", 0.017453292519943295] } },
-                              { $cos: { $multiply: [filters.latitude, 0.017453292519943295] } },
+                              {
+                                $cos: {
+                                  $multiply: [
+                                    "$latitude",
+                                    0.017453292519943295,
+                                  ],
+                                },
+                              },
+                              {
+                                $cos: {
+                                  $multiply: [
+                                    filters.latitude,
+                                    0.017453292519943295,
+                                  ],
+                                },
+                              },
                               {
                                 $cos: {
                                   $subtract: [
-                                    { $multiply: [filters.longitude, 0.017453292519943295] },
-                                    { $multiply: ["$longitude", 0.017453292519943295] }
-                                  ]
-                                }
-                              }
-                            ]
-                          }
-                        ]
-                      }
-                    }
-                  ]
+                                    {
+                                      $multiply: [
+                                        filters.longitude,
+                                        0.017453292519943295,
+                                      ],
+                                    },
+                                    {
+                                      $multiply: [
+                                        "$longitude",
+                                        0.017453292519943295,
+                                      ],
+                                    },
+                                  ],
+                                },
+                              },
+                            ],
+                          },
+                        ],
+                      },
+                    },
+                  ],
                 },
-                else: 99999 // Large number for users without location
-              }
-            }
-          }
+                else: 99999, // Large number for users without location
+              },
+            },
+          },
         },
         {
           $match: {
-            distance: { $lte: maxDistanceKm }
-          }
+            distance: { $lte: maxDistanceKm },
+          },
         },
         {
-          $sort: { distance: 1 } // Sort by distance (nearest first)
-        }
+          $sort: { distance: 1 }, // Sort by distance (nearest first)
+        },
       ];
     }
 
@@ -155,7 +208,7 @@ export class UserService extends BaseService<IUser> {
 
     // --- FETCH USERS ---
     let users, total;
-    
+
     if (aggregationPipeline.length > 0) {
       // Use aggregation for location-based queries
       const aggregationWithPagination = [
@@ -167,19 +220,16 @@ export class UserService extends BaseService<IUser> {
             password: 0,
             lastMail: 0,
             resetPasswordOTP: 0,
-            resetPasswordOTPExpiry: 0
-          }
-        }
+            resetPasswordOTPExpiry: 0,
+          },
+        },
       ];
-      
+
       const [usersResult, totalResult] = await Promise.all([
         this.model.aggregate(aggregationWithPagination),
-        this.model.aggregate([
-          ...aggregationPipeline,
-          { $count: "total" }
-        ])
+        this.model.aggregate([...aggregationPipeline, { $count: "total" }]),
       ]);
-      
+
       users = usersResult;
       total = totalResult[0]?.total || 0;
     } else {
@@ -244,7 +294,11 @@ export class UserService extends BaseService<IUser> {
     return this.model.find({ _id: { $in: usersIds } }, select).lean();
   }
 
-  findByIdBalance(id: string, select?: string, options?: {}): Query<IUser | null, IUser> {
+  findByIdBalance(
+    id: string,
+    select?: string,
+    options?: {}
+  ): Query<IUser | null, IUser> {
     if (
       select === "balance" ||
       select === "claimedGifts" ||
@@ -261,13 +315,12 @@ export class UserService extends BaseService<IUser> {
     if (!isValidMongoId(id)) {
       throw new BadRequestException("NOT VALID MONGO DB OBJECT " + id);
     }
-    
+
     // Return the query directly. REMOVED Promise.resolve() and .lean()
     return this.model.findById(id, select, options);
-}
+  }
 
   findById(id: string, select?: string, options?: {}): Promise<IUser | null> {
-   
     if (
       select === "balance" ||
       select === "claimedGifts" ||

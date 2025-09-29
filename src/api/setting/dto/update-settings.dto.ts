@@ -25,4 +25,10 @@ export class UpdateSettingsDto {
   @IsNumber()
   verificationFee?: number;
 
+  @IsOptional()
+  @IsNumber()
+  adPricePerMinute?: number;
+
+  @IsOptional()
+  adRequiredDimensions?: string;
 }

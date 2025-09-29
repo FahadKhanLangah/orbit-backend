@@ -29,10 +29,14 @@ import { RedisIoAdapter } from "./chat/socket_io/redis-io.adapter";
  * @return {Promise<void>} A promise that resolves once the application is successfully initialized and started.
  */
 async function bootstrap() {
-  console.log(process.env.NODE_ENV)
+  console.log(process.env.NODE_ENV);
   if (process.env.isFirebaseFcmEnabled == "true") {
     console.log("You use firebase as  push notification provider");
-    await admin.initializeApp({ credential: admin.credential.cert(path.join(root.path, "firebase-adminsdk.json")) });
+    await admin.initializeApp({
+      credential: admin.credential.cert(
+        path.join(root.path, "firebase-adminsdk.json")
+      ),
+    });
   }
   if (process.env.isOneSignalEnabled == "true") {
     console.log("You use  OneSignal as  push notification provider ");
@@ -41,31 +45,46 @@ async function bootstrap() {
     cors: {
       origin: "*",
       methods: ["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"],
-      allowedHeaders: ["Content-Type", "Authorization", "Accept", "Origin", "X-Requested-With", "admin-key"],
-      credentials: true
+      allowedHeaders: [
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "Origin",
+        "X-Requested-With",
+        "admin-key",
+      ],
+      credentials: true,
     },
-    logger: ["error", "warn"]
+    logger: ["error", "warn"],
   });
   let isDev = process.env.NODE_ENV == "development";
-  app.use(morgan("tiny", {
-    skip: function(req, res) {
-      if (isDev) {
-        return false;
-      }
-      return res.statusCode < 400;
-    }
-  }));
-  app.use(helmet({crossOriginResourcePolicy: false,}));
+  app.use(
+    morgan("tiny", {
+      skip: function (req, res) {
+        if (isDev) {
+          return false;
+        }
+        return res.statusCode < 400;
+      },
+    })
+  );
+  app.use(helmet({ crossOriginResourcePolicy: false }));
 
   // Add CORS headers for static assets
   app.use((req, res, next) => {
-    res.header('Access-Control-Allow-Origin', '*');
-    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-    res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key');
-    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header("Access-Control-Allow-Origin", "*");
+    res.header(
+      "Access-Control-Allow-Methods",
+      "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+    );
+    res.header(
+      "Access-Control-Allow-Headers",
+      "Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key"
+    );
+    res.header("Access-Control-Allow-Credentials", "true");
 
     // Handle preflight requests
-    if (req.method === 'OPTIONS') {
+    if (req.method === "OPTIONS") {
       res.sendStatus(200);
     } else {
       next();
@@ -74,18 +93,24 @@ async function bootstrap() {
 
   // Skip body parsing for file upload routes
   app.use((req, res, next) => {
-    if (req.url.includes('/upload') && req.headers['content-type']?.includes('multipart/form-data')) {
-      console.log('Skipping body parser for file upload:', req.url);
+    if (
+      req.url.includes("/upload") &&
+      req.headers["content-type"]?.includes("multipart/form-data")
+    ) {
+      console.log("Skipping body parser for file upload:", req.url);
       return next();
     }
-    bodyParser.urlencoded({ extended: false, limit: '100mb' })(req, res, next);
+    bodyParser.urlencoded({ extended: false, limit: "100mb" })(req, res, next);
   });
 
   app.use((req, res, next) => {
-    if (req.url.includes('/upload') && req.headers['content-type']?.includes('multipart/form-data')) {
+    if (
+      req.url.includes("/upload") &&
+      req.headers["content-type"]?.includes("multipart/form-data")
+    ) {
       return next();
     }
-    bodyParser.json({ limit: '100mb' })(req, res, next);
+    bodyParser.json({ limit: "100mb" })(req, res, next);
   });
   app.useGlobalPipes(
     new ValidationPipe({
@@ -93,7 +118,7 @@ async function bootstrap() {
       // it case with i18n RangeError: Maximum call stack size exceeded
       validateCustomDecorators: false,
       stopAtFirstError: true,
-      transform: true
+      transform: true,
     })
   );
   app.use(requestIp.mw());
@@ -105,24 +130,42 @@ async function bootstrap() {
   // Configure static assets with CORS headers
   app.useStaticAssets(join(root.path, "public"), {
     setHeaders: (res, path, stat) => {
-      res.set('Access-Control-Allow-Origin', '*');
-      res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key');
-    }
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      );
+      res.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key"
+      );
+    },
   });
   app.useStaticAssets(join(root.path, "public", "v-public"), {
     setHeaders: (res, path, stat) => {
-      res.set('Access-Control-Allow-Origin', '*');
-      res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key');
-    }
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      );
+      res.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key"
+      );
+    },
   });
   app.useStaticAssets(join(root.path, "public", "media"), {
     setHeaders: (res, path, stat) => {
-      res.set('Access-Control-Allow-Origin', '*');
-      res.set('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-      res.set('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key');
-    }
+      res.set("Access-Control-Allow-Origin", "*");
+      res.set(
+        "Access-Control-Allow-Methods",
+        "GET, POST, PUT, DELETE, PATCH, OPTIONS"
+      );
+      res.set(
+        "Access-Control-Allow-Headers",
+        "Content-Type, Authorization, Accept, Origin, X-Requested-With, admin-key"
+      );
+    },
   });
 
   await app.listen(port);

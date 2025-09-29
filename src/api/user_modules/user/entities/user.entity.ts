@@ -40,7 +40,7 @@ export interface IUser {
   banMessageTo: Date;
   banLiveTo: Date;
   verifiedAt?: Date;
-  isVerified?: boolean; // For blue badge
+  isVerified?: boolean;
   registerStatus: RegisterStatus;
   registerMethod: RegisterMethod;
   userImage: string;

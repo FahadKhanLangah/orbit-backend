@@ -42,13 +42,31 @@ export class FileUploaderService {
     return key;
   }
 
-  async uploadVerificationDoc(file: Express.Multer.File, userId: string): Promise<string> {
+  async uploadVerificationDoc(
+    file: Express.Multer.File,
+    userId: string
+  ): Promise<string> {
     if (!file) {
       throw new Error("File is missing for verification document upload.");
     }
-    const fileExtension = path.extname(file.originalname) || '.tmp'; // Get file extension
-    const key = `verification-docs/${userId}/${S3UploaderTypes.media}-${uuidv4()}${fileExtension}`;
+    const fileExtension = path.extname(file.originalname) || ".tmp"; // Get file extension
+    const key = `verification-docs/${userId}/${
+      S3UploaderTypes.media
+    }-${uuidv4()}${fileExtension}`;
     await this._putFile(file.buffer, key, userId, false);
+    return key;
+  }
+
+  async uploadAdImage(
+    file: Express.Multer.File,
+    userId: string
+  ): Promise<string> {
+    if (!file) {
+      throw new Error("Ad image file is missing.");
+    }
+    const fileExtension = path.extname(file.originalname) || ".jpg"; // Store ads in a dedicated public folder so they can be served directly
+    const key = `ads/${userId}-${uuidv4()}${fileExtension}`;
+    await this._putFile(file.buffer, key, userId, true); // true for isPublic
     return key;
   }
 
