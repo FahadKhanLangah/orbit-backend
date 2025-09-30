@@ -42,16 +42,21 @@ export class OrbitChannelController {
     );
   }
 
-  @Post(':channelId/broadcast')
-  @UseInterceptors(FileInterceptor('media')) 
+  @Post(":channelId/broadcast")
+  @UseInterceptors(FileInterceptor("media"))
   async sendBroadcast(
-    @Param('channelId') channelId: string,
+    @Param("channelId") channelId: string,
     @Req() req: any,
     @Body() dto: SendBroadcastDto,
-    @UploadedFile() file?: Express.Multer.File, // 4. Inject the optional file
+    @UploadedFile() file?: Express.Multer.File // 4. Inject the optional file
   ) {
     const user = req.user;
-    return this.orbitChannelService.sendBroadcastMessage(channelId, user, dto, file);
+    return this.orbitChannelService.sendBroadcastMessage(
+      channelId,
+      user,
+      dto,
+      file
+    );
   }
   @Get("my-channels")
   async getMyChannels(
@@ -79,6 +84,12 @@ export class OrbitChannelController {
   async join(@Param("channelId") channelId: string, @Req() req: any) {
     const user = req.user;
     return this.orbitChannelService.joinChannel(channelId, user);
+  }
+
+  @Delete(":channelId/left-channel")
+  async leftChannel(@Param("channelId") channelId: string, @Req() req: any) {
+    const userId = req.user._id;
+    return this.orbitChannelService.leaveChannel(channelId,userId);
   }
 
   @Get(":channelId")
@@ -121,8 +132,8 @@ export class OrbitChannelController {
     const user = req.user;
     return this.orbitChannelService.updateChannelImage(channelId, user, file);
   }
-  @Delete(':channelId')
-  async deleteChannel(@Param('channelId') channelId: string, @Req() req: any) {
+  @Delete(":channelId")
+  async deleteChannel(@Param("channelId") channelId: string, @Req() req: any) {
     const user = req.user._id;
     return this.orbitChannelService.deleteChannel(channelId, user);
   }

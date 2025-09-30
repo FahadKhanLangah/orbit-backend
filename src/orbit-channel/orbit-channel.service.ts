@@ -70,20 +70,24 @@ export class OrbitChannelService {
     channelId: string,
     sender: IUser,
     dto: SendBroadcastDto,
-    file?: Express.Multer.File, // Accept the optional file
+    file?: Express.Multer.File // Accept the optional file
   ): Promise<IChannelMessage> {
     // 1. Input Validation: Ensure the message is not empty.
     if (!dto.content && !file) {
-      throw new BadRequestException('A message must have content or a media file.');
+      throw new BadRequestException(
+        "A message must have content or a media file."
+      );
     }
 
     // 2. Authorization (This logic remains the same)
     const channel = await this.orbitChannelModel.findById(channelId);
     if (!channel) {
-      throw new NotFoundException('Channel not found');
+      throw new NotFoundException("Channel not found");
     }
     if (channel.ownerId.toString() !== sender._id.toString()) {
-      throw new ForbiddenException('Only the channel owner can send broadcast messages.');
+      throw new ForbiddenException(
+        "Only the channel owner can send broadcast messages."
+      );
     }
 
     let mediaUrl: string | null = null;
@@ -99,12 +103,12 @@ export class OrbitChannelService {
       });
 
       // Determine the media type
-      if (file.mimetype.startsWith('image')) {
-        mediaType = 'image';
-      } else if (file.mimetype.startsWith('video')) {
-        mediaType = 'video';
+      if (file.mimetype.startsWith("image")) {
+        mediaType = "image";
+      } else if (file.mimetype.startsWith("video")) {
+        mediaType = "video";
       } else {
-        mediaType = 'file';
+        mediaType = "file";
       }
     }
 
@@ -113,7 +117,7 @@ export class OrbitChannelService {
       channelId,
       senderId: sender._id,
       content: dto.content, // This can be null if only media was sent
-      mediaUrl,  // Will be the key/path from the uploader, or null
+      mediaUrl, // Will be the key/path from the uploader, or null
       mediaType, // Will be 'image', 'video', etc., or null
     });
     await newMessage.save();
@@ -138,7 +142,7 @@ export class OrbitChannelService {
   async getChannels(options: { page: number; limit: number }) {
     return await this.orbitChannelModel.paginate({}, options);
   }
-  
+
   async joinChannel(channelId: string, user: IUser): Promise<IChannelMember> {
     const channelExists = await this.orbitChannelModel.findById(channelId);
     if (!channelExists) {
@@ -156,6 +160,30 @@ export class OrbitChannelService {
       userId: user._id,
     });
     return await newMember.save();
+  }
+
+  async leaveChannel(channelId: string, user: IUser): Promise<string> {
+    const channel = await this.orbitChannelModel.findById(channelId);
+    if (!channel) {
+      throw new NotFoundException("Channel not found");
+    }
+
+    // 👇 **IMPROVEMENT**: Prevent the owner from leaving the channel
+    if (channel.ownerId.toString() === user._id.toString()) {
+      throw new ConflictException(
+        "The channel owner cannot leave the channel. You must delete it or transfer ownership first."
+      );
+    }
+
+    // 👇 **THE FIX**: Find and delete the membership record in one step
+    const deletedMembership = await this.channelMemberModel.findOneAndDelete({
+      channelId,
+      userId: user._id,
+    });
+    if (!deletedMembership) {
+      throw new NotFoundException("You are not a member of this channel.");
+    }
+    return "You have to left the channel successfully";
   }
 
   async getPublicChannelDetails(channelId: string) {
@@ -267,7 +295,10 @@ export class OrbitChannelService {
     return updatedChannel;
   }
 
-  async deleteChannel(channelId: string, requestingUserId: string): Promise<{ message: string }> {
+  async deleteChannel(
+    channelId: string,
+    requestingUserId: string
+  ): Promise<{ message: string }> {
     // 1. Find the channel we want to delete.
     const channel = await this.orbitChannelModel.findById(channelId);
     if (!channel) {
