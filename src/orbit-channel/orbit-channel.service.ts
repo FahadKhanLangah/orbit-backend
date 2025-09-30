@@ -65,6 +65,7 @@ export class OrbitChannelService {
       paginationWithOptions
     );
   }
+
   async sendBroadcastMessage(
     channelId: string,
     sender: IUser,
@@ -122,6 +123,7 @@ export class OrbitChannelService {
 
     return newMessage;
   }
+
   async createChannel(
     createDto: CreateOrbitChannelDto,
     owner: IUser
@@ -132,9 +134,11 @@ export class OrbitChannelService {
     });
     return await newChannel.save();
   }
+
   async getChannels(options: { page: number; limit: number }) {
     return await this.orbitChannelModel.paginate({}, options);
   }
+  
   async joinChannel(channelId: string, user: IUser): Promise<IChannelMember> {
     const channelExists = await this.orbitChannelModel.findById(channelId);
     if (!channelExists) {
@@ -261,5 +265,27 @@ export class OrbitChannelService {
     );
 
     return updatedChannel;
+  }
+
+  async deleteChannel(channelId: string, requestingUserId: string): Promise<{ message: string }> {
+    // 1. Find the channel we want to delete.
+    const channel = await this.orbitChannelModel.findById(channelId);
+    if (!channel) {
+      throw new NotFoundException("Channel not found");
+    }
+
+    // 2. Authorization Check: Is the person making the request the owner?
+    if (channel.ownerId.toString() !== requestingUserId.toString()) {
+      throw new ForbiddenException("You are not the owner of this channel.");
+    }
+
+    // 3. If the check passes, delete the channel.
+    await this.orbitChannelModel.findByIdAndDelete(channelId);
+
+    // Optionally, you might want to clean up related data, like members and messages.
+    await this.channelMemberModel.deleteMany({ channelId });
+    await this.channelMessageModel.deleteMany({ channelId });
+
+    return { message: "Channel and related data deleted successfully." };
   }
 }

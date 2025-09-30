@@ -11,6 +11,7 @@ import {
   Patch,
   UseInterceptors,
   UploadedFile,
+  Delete,
 } from "@nestjs/common";
 import { OrbitChannelService } from "./orbit-channel.service";
 import { VerifiedAuthGuard } from "../core/guards/verified.auth.guard"; // Adjust path
@@ -119,5 +120,10 @@ export class OrbitChannelController {
   ) {
     const user = req.user;
     return this.orbitChannelService.updateChannelImage(channelId, user, file);
+  }
+  @Delete(':channelId')
+  async deleteChannel(@Param('channelId') channelId: string, @Req() req: any) {
+    const user = req.user._id;
+    return this.orbitChannelService.deleteChannel(channelId, user);
   }
 }
