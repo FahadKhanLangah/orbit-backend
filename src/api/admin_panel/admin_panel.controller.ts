@@ -34,6 +34,7 @@ import { CreateSettingsDto } from "../setting/dto/create-settings.dto";
 import { TransactionService } from "../transactions/transaction.service";
 import { VerificationService } from "../verification/verification.service";
 import { VerificationStatus } from "../verification/schema/verification-request.schema";
+import { BroadcastMessageDto } from "./dto/broadcast-message.dto";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -46,6 +47,15 @@ export class AdminPanelController {
     private readonly transactionService: TransactionService,
     private readonly verificationService: VerificationService
   ) {}
+
+  @Post("/send-broadcast/notification")
+  @UseInterceptors(imageFileInterceptor)
+  async sendBroadcastNotification(
+    @Body() body: BroadcastMessageDto,
+    @UploadedFile() file?: Express.Multer.File
+  ) {
+    return this.adminPanelService.sendBroadcastNotification(body, file);
+  }
 
   @Post("/verification/requests/:id/reject")
   rejectRequest(@Param("id") id: string, @Body("reason") reason: string) {

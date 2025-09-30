@@ -4,7 +4,7 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { Injectable, NotFoundException } from "@nestjs/common";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
 import { UpdateConfigDto } from "./dto/update_config_dto";
 import { AppConfigService } from "../app_config/app_config.service";
 import { UserService } from "../user_modules/user/user.service";
@@ -38,6 +38,7 @@ import { CreateCategoryDto, UpdateCategoryDto } from "./category/category.dto";
 import { Category } from "./category/category.schema";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
+import { BroadcastMessageDto } from "./dto/broadcast-message.dto";
 
 @Injectable()
 export class AdminPanelService {
@@ -65,6 +66,44 @@ export class AdminPanelService {
     private readonly socketIoService: SocketIoService,
     private readonly giftService: GiftService
   ) {}
+
+
+async sendBroadcastNotification(
+  body: BroadcastMessageDto,
+  file?: Express.Multer.File
+) {
+  if (!body.content && !file) {
+    throw new BadRequestException("Announcements must have content or an image.");
+  }
+
+  let imgLink: string | undefined = undefined;
+
+  if (file) {
+    const uploaderDto = new CreateS3UploaderDto();
+    uploaderDto.mediaBuffer = file.buffer;
+    uploaderDto.fileName = file.originalname;
+    uploaderDto.myUser = { _id: "admin" } as any;
+    imgLink = await this.fileUploaderService.uploadChatMedia(uploaderDto);
+  }
+  await this.adminNotificationService.create({
+    content: body.content,
+    title: body.title,
+    imageUrl: imgLink, 
+  });
+
+  this.socketIoService.io.emit(
+    SocketEventsType.v1OnNewMessage,
+    JSON.stringify({
+      title: body.title,
+      message: body.content,
+      imageUrl: imgLink, 
+      sentAt: new Date(),
+      sentBy: "admin",
+    })
+  );
+  
+  return "Done";
+}
 
   async updateConfig(dto: UpdateConfigDto) {
     let config = await this.appConfigService.getConfig();

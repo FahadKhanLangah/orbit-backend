@@ -55,18 +55,13 @@ export class AdService {
     if (!file) {
       throw new BadRequestException("Ad image is required.");
     }
-
-    // 1. Get settings and calculate total cost
     const settings = await this.settingsService.getSettings();
     const totalCost = dto.durationInMinutes * settings.adPricePerMinute;
-
-    // 2. Get the full user profile and check balance
     const currentUser = await this.userService.findById(user._id);
     if (!currentUser || currentUser.balance < totalCost) {
       throw new ForbiddenException("Insufficient balance to purchase this ad.");
     }
 
-    // 3. Start a database transaction for atomicity
     const session = await this.connection.startSession();
     session.startTransaction();
 
@@ -132,60 +127,3 @@ export class AdService {
     }
   }
 }
-
-/*
-  async createAd(
-    user: IUser,
-    createAdDto: CreateAdDto,
-  ) {
-    const session = await this.connection.startSession();
-    session.startTransaction();
-    try {
-      const settings = await this.settingsService.getSettings();
-      const [widthStr, heightStr] = settings.adRequiredDimensions.split('x');
-      const requiredWidth = parseInt(widthStr);
-      const requiredHeight = parseInt(heightStr);
-      const durationMap = { '1_day': 1440, '30_days': 43200, '1_year': 525600 };
-      const durationInMinutes = durationMap[createAdDto.durationOption];
-      const totalCost = durationInMinutes * settings.adPricePerMinute;
-      const currentUser = await this.userService.findById(user._id);
-      if (currentUser.balance < totalCost) {
-        throw new BadRequestException('Insufficient balance to purchase ad space.');
-      }
-      const imageUrl = await this.fileUploaderService._putFile(adImage, user._id,true);
-
-      // 5. Deduct balance and create transaction record
-      await this.userService.findByIdAndUpdate(user._id, { $inc: { balance: -totalCost } }, { session });
-      await this.transactionService.create({
-        userId: user._id,
-        amount: totalCost,
-        type: TransactionType.AD_PURCHASE, // Add this to your TransactionType enum
-        description: `Ad purchase for ${createAdDto.durationOption}`,
-        commissionPercentage: 100,
-      }, session);
-      
-      // 6. Create the Ad document
-      const startTime = new Date();
-      const endTime = new Date(startTime.getTime() + durationInMinutes * 60000);
-
-      const newAd = new this.adModel({
-        userId: user._id,
-        imageUrl,
-        linkUrl: createAdDto.linkUrl,
-        status: AdStatus.ACTIVE,
-        startTime,
-        endTime,
-      });
-      await newAd.save({ session });
-      
-      // 7. Commit the transaction
-      await session.commitTransaction();
-      return newAd;
-    } catch (error) {
-      await session.abortTransaction();
-      throw error;
-    } finally {
-      session.endSession();
-    }
-  }
-    */

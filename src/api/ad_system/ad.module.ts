@@ -6,7 +6,6 @@ import { AdController } from './ad.controller';
 import { AdService } from './ad.service';
 import { Ad, AdSchema } from './schema/ad.schema';
 
-// Import all modules that AdService depends on
 
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 import { UserModule } from '../user_modules/user/user.module';

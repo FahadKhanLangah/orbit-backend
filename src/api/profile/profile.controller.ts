@@ -52,6 +52,12 @@ export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
 
   @UseGuards(VerifiedAuthGuard)
+  @Get("/get/anouncements")
+  async getAnouncements(@Req() req: any) {
+    return resOK(await this.profileService.getAnouncements());
+  }
+
+  @UseGuards(VerifiedAuthGuard)
   @Get("/plan/my-subscription")
   async getMySubscription(@Req() req: any) {
     const userId = req.user._id;

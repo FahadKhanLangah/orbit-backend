@@ -1,7 +1,6 @@
 import { FileInterceptor } from "@nestjs/platform-express";
 import { BadRequestException } from "@nestjs/common";
 
-// Define the allowed image types for ads
 const adImageMimeTypes = ['image/jpeg', 'image/png', 'image/gif'];
 
 export const adImageInterceptor = FileInterceptor('adImage', { // The field name is 'adImage'

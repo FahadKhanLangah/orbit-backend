@@ -91,6 +91,11 @@ export class ProfileService {
     private readonly planModel: Model<ISubscriptionPlan>
   ) {}
 
+  async getAnouncements() {
+    const announcements = await this.adminNotificationService.findAll({});
+    return announcements;
+  }
+
   async purchasePlan(userId: string, planId: string): Promise<IUser> {
     // 1. Find the plan and user
     const plan = await this.planModel.findById(planId).exec();
