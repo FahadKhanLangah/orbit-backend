@@ -97,7 +97,9 @@ export class ProfileService {
   }
 
   async purchasePlan(userId: string, planId: string): Promise<IUser> {
-    // 1. Find the plan and user
+    if (!userId || !planId) {
+      throw new BadRequestException("User ID and Plan ID are required.");
+    }
     const plan = await this.planModel.findById(planId).exec();
     const user = await this.userModel.findById(userId).exec();
 
@@ -109,7 +111,11 @@ export class ProfileService {
         "Subscription plan not found or is not active."
       );
     }
-    if (user.subscription.plan.toString() === planId) {
+    if (
+      user.subscription &&
+      user.subscription.plan &&
+      user.subscription.plan.toString() === planId
+    ) {
       throw new ConflictException("Already subscribed");
     }
     console.log(

@@ -1,25 +1,20 @@
-
-import {Controller, Get, Param, Query, Res} from "@nestjs/common";
-import {join} from "path";
- import {ConfigService} from "@nestjs/config";
+import { Controller, Get, Param, Query, Res } from "@nestjs/common";
+import { join } from "path";
+import { ConfigService } from "@nestjs/config";
 
 @Controller()
 export class AppController {
+  constructor(private readonly configService: ConfigService) {}
 
-    constructor(
-        private readonly configService: ConfigService
-    ) {
-    }
+  @Get("privacy-policy")
+  servePrivacyPolicy(@Res() res) {
+    return res.sendFile(join(process.cwd(), "public/privacy-policy.html"));
+  }
 
-    @Get("privacy-policy")
-    servePrivacyPolicy(@Res() res) {
-        return res.sendFile(join(process.cwd(), "public/privacy-policy.html"));
-    }
-
-    @Get("profile/:id")
-    serveProfile(@Res() res, @Param("id") id: string) {
-        // Serve a simple HTML page that redirects to the app or shows download links
-        const html = `
+  @Get("profile/:id")
+  serveProfile(@Res() res, @Param("id") id: string) {
+    // Serve a simple HTML page that redirects to the app or shows download links
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -53,13 +48,17 @@ export class AppController {
     </script>
 </body>
 </html>`;
-        res.send(html);
-    }
+    res.send(html);
+  }
 
-    @Get("reset-password")
-    serveResetPassword(@Res() res, @Query("token") token: string, @Query("email") email: string) {
-        // Serve a simple HTML page that redirects to the app or shows download links
-        const html = `
+  @Get("reset-password")
+  serveResetPassword(
+    @Res() res,
+    @Query("token") token: string,
+    @Query("email") email: string
+  ) {
+    // Serve a simple HTML page that redirects to the app or shows download links
+    const html = `
 <!DOCTYPE html>
 <html>
 <head>
@@ -83,9 +82,15 @@ export class AppController {
             <div class="success-icon">✅</div>
             <h1>Password Reset Link Verified</h1>
             <p>Your password reset link is valid and ready to use!</p>
-            ${token ? `<div class="token-info">Click the button below to open the Orbit app and reset your password.</div>` : ''}
+            ${
+              token
+                ? `<div class="token-info">Click the button below to open the Orbit app and reset your password.</div>`
+                : ""
+            }
         </div>
-        <a href="orbit://reset-password?token=${token || ''}&email=${email || ''}" class="download-btn open-app-btn">Open Orbit App</a>
+        <a href="orbit://reset-password?token=${token || ""}&email=${
+      email || ""
+    }" class="download-btn open-app-btn">Open Orbit App</a>
         <br><br>
         <p>Don't have the app? Download it now:</p>
         <a href="https://play.google.com/store/apps/details?id=com.orbit.ke" class="download-btn">Download for Android</a>
@@ -94,8 +99,8 @@ export class AppController {
     <script>
         // Try to open the app automatically after a short delay
         setTimeout(() => {
-            const token = '${token || ''}';
-            const email = '${email || ''}';
+            const token = '${token || ""}';
+            const email = '${email || ""}';
             if (token && email) {
                 window.location.href = 'orbit://reset-password?token=' + token + '&email=' + email;
             }
@@ -103,12 +108,11 @@ export class AppController {
     </script>
 </body>
 </html>`;
-        res.send(html);
-    }
+    res.send(html);
+  }
 
-    @Get()
-    getHello(@Res() res): string {
-        return res.sendFile(join(process.cwd(), "public/home.html"));
-    }
-
+  @Get()
+  getHello(@Res() res): string {
+    return res.sendFile(join(process.cwd(), "public/home.html"));
+  }
 }

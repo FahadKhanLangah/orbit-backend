@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from "@nestjs/mongoose";
 import { Document } from "mongoose";
 
-// This defines the Mongoose document type based on the class below.
 export type ISubscriptionPlan = SubscriptionPlan & Document;
 
 @Schema({ timestamps: { createdAt: "createdAt" } })

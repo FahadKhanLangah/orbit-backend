@@ -14,6 +14,7 @@ export enum payoutType {
   MPESA = "mpesa",
   VISA = "visa",
   STRIPE = "stripe",
+  OTHERS = "others",
 }
 
 export enum MailType {

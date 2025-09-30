@@ -50,6 +50,15 @@ import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.
 @V1Controller("profile")
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/plan/purchase/subscription")
+  async purchaseSubscription(
+    @Req() req: any,
+    @Body() dto: PurchaseSubscriptionDto
+  ) {
+    const userId = req.user._id;
+    return resOK(await this.profileService.purchasePlan(userId, dto.planId));
+  }
 
   @UseGuards(VerifiedAuthGuard)
   @Get("/get/anouncements")
@@ -62,16 +71,6 @@ export class ProfileController {
   async getMySubscription(@Req() req: any) {
     const userId = req.user._id;
     return resOK(await this.profileService.getUserSubscription(userId));
-  }
-
-  @UseGuards(VerifiedAuthGuard)
-  @Post("/plan/purchase")
-  async purchaseSubscription(
-    @Req() req: any,
-    @Body() dto: PurchaseSubscriptionDto
-  ) {
-    const userId = req.user._id;
-    return resOK(await this.profileService.purchasePlan(userId, dto.planId));
   }
 
   @Get("/subscription-plans")
