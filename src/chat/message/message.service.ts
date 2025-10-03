@@ -5,13 +5,14 @@
  */
 
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   InternalServerErrorException,
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import mongoose, { FilterQuery, PaginateModel, QueryOptions } from "mongoose";
+import mongoose, { FilterQuery, PaginateModel, QueryOptions, Types } from "mongoose";
 import { IMessage } from "./entities/message.entity";
 import { GroupMessageStatusService } from "../group_message_status/group_message_status.service";
 import { FileUploaderService } from "../../common/file_uploader/file_uploader.service";
@@ -19,8 +20,9 @@ import { SendMessageDto } from "../channel/dto/send.message.dto";
 import { MessagesSearchDto } from "./dto/messages_search_dto";
 import { IUser } from "../../api/user_modules/user/entities/user.entity";
 import { newMongoObjId } from "../../core/utils/utils";
-import { MessageType } from "src/core/utils/enums";
+import { MessageType, SocketEventsType } from "src/core/utils/enums";
 import { VoteOnPollDto } from "./dto/VoteOnPollDto";
+import { SocketIoService } from "../socket_io/socket_io.service";
 
 @Injectable()
 export class MessageService {
@@ -28,7 +30,8 @@ export class MessageService {
     @InjectModel("message")
     private readonly messageModel: PaginateModel<IMessage>,
     private readonly groupMessageStatusService: GroupMessageStatusService,
-    private readonly s3: FileUploaderService
+    private readonly s3: FileUploaderService,
+    private readonly socket: SocketIoService,
   ) {}
 
   async createInfoMessage(dto: any, session?) {
@@ -41,37 +44,42 @@ export class MessageService {
     return this.prepareTheMessageModel(x[0]);
   }
 
-  async voteOnPoll(dto: VoteOnPollDto) {
-    const userId = dto.myUser._id;
-    const { messageId, optionText } = dto;
-
-    // 1. Find the message to ensure it's a valid poll
+    async voteOnPoll(userId: string, messageId: string, optionText: string) {
+    // 1. Find the message first to perform checks
     const message = await this.messageModel.findById(messageId);
-    if (!message || message.mT !== MessageType.Poll) {
-      throw new NotFoundException("Poll not found.");
+    if (!message) {
+      throw new NotFoundException('Poll message not found.');
     }
-
-    // 2. Atomically update the poll
-    // - First, pull the user's ID from ALL options (to handle vote changes)
-    // - Then, push the user's ID to the selected option
+    if (message.mT !== MessageType.Poll || !message.pollData) {
+      throw new BadRequestException('This message is not a poll.');
+    }
+    const optionExists = message.pollData.options.some(
+      (opt) => opt.text === optionText,
+    );
+    if (!optionExists) {
+      throw new BadRequestException('This option does not exist in the poll.');
+    }
+  
+    // 2. Perform an atomic update to handle voting
     const updatedMessage = await this.messageModel.findOneAndUpdate(
       { _id: messageId },
       [
-        // Using an aggregation pipeline for conditional updates
+        // The [ ... ] makes this an aggregation pipeline update, which is powerful
         {
+          // Stage 1: Remove the user's vote from ALL options first
           $set: {
-            "pollData.options": {
+            'pollData.options': {
               $map: {
-                // Iterate over all options
-                input: "$pollData.options",
-                as: "option",
+                input: '$pollData.options',
+                as: 'option',
                 in: {
-                  // Remove user's vote from every option
-                  text: "$$option.text",
+                  text: '$$option.text',
+                  _id: '$$option._id',
                   votes: {
                     $filter: {
-                      input: "$$option.votes",
-                      cond: { $ne: ["$$this", userId] },
+                      input: '$$option.votes',
+                      as: 'vote',
+                      cond: { $ne: ['$$vote', new Types.ObjectId(userId)] },
                     },
                   },
                 },
@@ -80,19 +88,20 @@ export class MessageService {
           },
         },
         {
+          // Stage 2: Add the user's vote to the selected option
           $set: {
-            "pollData.options": {
+            'pollData.options': {
               $map: {
-                // Iterate again to add the new vote
-                input: "$pollData.options",
-                as: "option",
+                input: '$pollData.options',
+                as: 'option',
                 in: {
-                  text: "$$option.text",
+                  text: '$$option.text',
+                  _id: '$$option._id',
                   votes: {
                     $cond: [
-                      { $eq: ["$$option.text", optionText] }, // If this is the chosen option
-                      { $concatArrays: ["$$option.votes", [userId]] }, // Add the vote
-                      "$$option.votes", // Otherwise, keep it as is
+                      { $eq: ['$$option.text', optionText] },
+                      { $concatArrays: ['$$option.votes', [new Types.ObjectId(userId)]] },
+                      '$$option.votes',
                     ],
                   },
                 },
@@ -101,15 +110,84 @@ export class MessageService {
           },
         },
       ],
-      { new: true } // Return the updated document
+      { new: true }, // Return the updated document
     );
-
-    if (!updatedMessage) {
-      throw new InternalServerErrorException("Failed to update poll.");
-    }
-
-    return this.prepareTheMessageModel(updatedMessage);
+    
+    // 3. Broadcast the updated poll to the room in real-time
+    this.socket.io.to(updatedMessage.rId.toString()).emit(SocketEventsType.v1OnNewMessage, JSON.stringify(updatedMessage));
+      
+    return updatedMessage;
   }
+
+  // async voteOnPoll(dto: VoteOnPollDto) {
+  //   const userId = dto.myUser._id;
+  //   const { messageId, optionText } = dto;
+
+  //   // 1. Find the message to ensure it's a valid poll
+  //   const message = await this.messageModel.findById(messageId);
+  //   if (!message || message.mT !== MessageType.Poll) {
+  //     throw new NotFoundException("Poll not found.");
+  //   }
+
+  //   // 2. Atomically update the poll
+  //   // - First, pull the user's ID from ALL options (to handle vote changes)
+  //   // - Then, push the user's ID to the selected option
+  //   const updatedMessage = await this.messageModel.findOneAndUpdate(
+  //     { _id: messageId },
+  //     [
+  //       // Using an aggregation pipeline for conditional updates
+  //       {
+  //         $set: {
+  //           "pollData.options": {
+  //             $map: {
+  //               // Iterate over all options
+  //               input: "$pollData.options",
+  //               as: "option",
+  //               in: {
+  //                 // Remove user's vote from every option
+  //                 text: "$$option.text",
+  //                 votes: {
+  //                   $filter: {
+  //                     input: "$$option.votes",
+  //                     cond: { $ne: ["$$this", userId] },
+  //                   },
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //       {
+  //         $set: {
+  //           "pollData.options": {
+  //             $map: {
+  //               // Iterate again to add the new vote
+  //               input: "$pollData.options",
+  //               as: "option",
+  //               in: {
+  //                 text: "$$option.text",
+  //                 votes: {
+  //                   $cond: [
+  //                     { $eq: ["$$option.text", optionText] }, // If this is the chosen option
+  //                     { $concatArrays: ["$$option.votes", [userId]] }, // Add the vote
+  //                     "$$option.votes", // Otherwise, keep it as is
+  //                   ],
+  //                 },
+  //               },
+  //             },
+  //           },
+  //         },
+  //       },
+  //     ],
+  //     { new: true } // Return the updated document
+  //   );
+
+  //   if (!updatedMessage) {
+  //     throw new InternalServerErrorException("Failed to update poll.");
+  //   }
+
+  //   return this.prepareTheMessageModel(updatedMessage);
+  // }
 
   async getByIdOrFail(messageId: any, select?: string) {
     let msg = await this.messageModel.findById(messageId, select).lean();

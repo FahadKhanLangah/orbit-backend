@@ -8,6 +8,7 @@ import {
   BadRequestException,
   ForbiddenException,
   Injectable,
+  NotFoundException,
 } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { RoomMemberService } from "../../room_member/room_member.service";
@@ -47,6 +48,7 @@ import { RoomIdAndMsgIdDto } from "../../../core/common/dto/room.id.and.msg.id.d
 import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
 import crypto from "crypto";
 import * as Buffer from "buffer";
+import { Types } from "mongoose";
 const objectIdRegExp = /[a-f\d]{24}/gi;
 
 @Injectable()
@@ -68,6 +70,10 @@ export class MessageChannelService {
     private readonly groupMessageStatusService: GroupMessageStatusService,
     private readonly userBan: UserBanService
   ) {}
+
+  async voteNow(userId: string, messageId: string, optionText: string) {
+    return this.messageService.voteOnPoll(userId, messageId, optionText);
+  }
 
   async createMessage(dto: SendMessageDto, isSilent: boolean = false) {
     let rM: IRoomMember = await this.middlewareService.isThereRoomMember(

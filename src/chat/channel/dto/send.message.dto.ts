@@ -212,3 +212,5 @@ function attachmentValidation(object) {
     mT == MessageType.Voice
   );
 }
+
+
