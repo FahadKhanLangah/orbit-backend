@@ -150,6 +150,7 @@ export enum MessageType {
   Location = "location",
   Custom = "custom",
   Call = "call",
+  Poll = "poll",
   //this should not notify user about it
   Info = "info",
 }

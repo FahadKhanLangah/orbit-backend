@@ -91,6 +91,19 @@ export class ProfileService {
     private readonly planModel: Model<ISubscriptionPlan>
   ) {}
 
+  async addToArchive(userId: string, roomId: string) {
+    this.roomMemberService.findByRoomIdAndUserIdAndUpdate(userId, roomId, {
+      isA: true,
+    });
+    return "Done";
+  }
+  async removeFromArchive(userId: string, roomId: string) {
+    this.roomMemberService.findByRoomIdAndUserIdAndUpdate(userId, roomId, {
+      isA: false,
+    });
+    return "Done";
+  }
+
   async getAnouncements() {
     const announcements = await this.adminNotificationService.findAll({});
     return announcements;

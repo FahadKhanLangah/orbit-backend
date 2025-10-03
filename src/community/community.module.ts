@@ -34,6 +34,7 @@ import { ChannelController } from "src/chat/channel/controllers/channel.controll
 import { BroadcastChannelController } from "src/chat/channel/controllers/broadcast.channel.controller";
 import { MessageChannelController } from "src/chat/channel/controllers/message.channel.controller";
 import { GroupChannelController } from "src/chat/channel/controllers/group.channel.controller";
+import { RoomMemberSchema } from "src/chat/room_member/entities/room_member.entity";
 
 @Module({
   imports: [
@@ -56,10 +57,12 @@ import { GroupChannelController } from "src/chat/channel/controllers/group.chann
     OrderRoomSettingsModule,
     UserDeviceModule,
     LoyaltyPointsModule,
+    ChannelModule,
     MongooseModule.forFeature([
       { name: "Community", schema: CommunitySchema },
       { name: "GroupSettings", schema: GroupSettingSchema },
       { name: "User", schema: UserSchema },
+      { name: "room_member", schema: RoomMemberSchema },
     ]),
   ],
   controllers: [

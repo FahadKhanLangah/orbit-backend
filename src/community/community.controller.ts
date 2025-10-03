@@ -62,14 +62,12 @@ export class CommunityController {
     return this.communityService.createCommunity(adminId, dto);
   }
 
-  // CHANGED: Pass requester's ID to the service for privacy checks.
   @Get(":id")
   get(@Param("id") id: string, @Req() req: any) {
     const requesterId = req.user._id;
     return this.communityService.getCommunity(id, requesterId);
   }
 
-  // ADDED: New endpoint for updating community details.
   @Patch(":id")
   update(
     @Param("id") id: string,
@@ -79,8 +77,6 @@ export class CommunityController {
     const adminId = req.user._id;
     return this.communityService.updateCommunity(id, adminId, dto);
   }
-
-  // CHANGED: Pass admin's ID for authorization check.
   @Post(":id/members")
   addMember(
     @Param("id") id: string,
@@ -106,8 +102,6 @@ export class CommunityController {
     const adminId = req.user._id;
     return this.communityService.updateMemberStatus(id, adminId, userId, dto);
   }
-
-  // CHANGED: Pass admin's ID for authorization check.
   @Delete(":id/members/:userId")
   removeMember(
     @Param("id") id: string,
@@ -117,8 +111,6 @@ export class CommunityController {
     const adminId = req.user._id;
     return this.communityService.removeMember(id, adminId, userId);
   }
-
-  // CHANGED: Pass admin's ID for authorization check.
   @Post(":id/groups")
   addGroup(
     @Param("id") id: string,

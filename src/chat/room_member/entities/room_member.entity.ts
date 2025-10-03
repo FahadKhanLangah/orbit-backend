@@ -39,6 +39,7 @@ export interface IRoomMember extends Document {
     //peerID
     pId?: string,
     orderId?: string,
+    disappearingTimer?: number,
     createdAt: Date,
     updatedAt: Date,
     isOneSeen:boolean
@@ -70,17 +71,17 @@ export const RoomMemberSchema: Schema = new Schema({
     isM: {type: Boolean, default: false},
     //translatedTo
     tTo: {type: String, default: null},
-    /// **for single chat only**
+    // **for single chat only**
     //peerID
     pId: {type: Schema.Types.ObjectId, default: null},
     orderId: {type: String, default: null},
-    // //blockerId
+    // blockerId
     // bId: {type: Schema.Types.ObjectId, default: null},
-    updatedAt: {type: Date, select: false}
+    updatedAt: {type: Date, select: false},
+    //disappear messages at
+    disappearingTimer: { type: Number, default: 0 }
 }, {
     timestamps: true,
-     
-
 });
 RoomMemberSchema.index({rId: 1, uId: 1}, {unique: true})
 RoomMemberSchema.plugin(aggregatePaginate);

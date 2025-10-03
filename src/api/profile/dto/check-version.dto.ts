@@ -10,7 +10,6 @@ import {
 } from "class-validator";
 import CommonDto from "../../../core/common/dto/common.dto";
 
-// import CommonDto from "../../../core/common/common.dto";
 
 export default class CheckVersionDto extends CommonDto {
     @IsSemVer()

@@ -39,6 +39,7 @@ export class MailEmitterService {
     this.eventEmitter.emit("send.mail", x);
     return code;
   }
+  
   async sendResetPasswordLink(user: IUser, resetLink: string, isDev: boolean) {
     console.log(`Sending reset password link to: ${user.email}, isDev: ${isDev}`);
     console.log(`Reset link: ${resetLink}`);

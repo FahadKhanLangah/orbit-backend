@@ -1,8 +1,4 @@
-/**
- * Copyright 2023, the hatemragab project author.
- * All rights reserved. Use of this source code is governed by a
- * MIT license that can be found in the LICENSE file.
- */
+
 
 import {
   BadRequestException,
@@ -13,6 +9,7 @@ import {
   Param,
   Patch,
   Post,
+  Put,
   Query,
   Req,
   UseGuards,
@@ -26,16 +23,31 @@ import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
 import { MongoPeerIdDto } from "../../../core/common/dto/mongo.peer.id.dto";
 import { CreateOrderRoomDto } from "../../../core/common/dto/mongo.peer.id.order.id.dto";
 import { jsonDecoder } from "../../../core/utils/app.validator";
+import { UpdateDisappearingTimerDto } from "../dto/update-disappearing-timer.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("channel")
 export class ChannelController {
   constructor(private readonly channelService: ChannelService) {}
 
-  @Get("/common-groups/:otherUserId")   
+  @Put("/:roomId/message/disappearing-timer")
+  async updateDisappearingTimer(
+    @Req() req: any,
+    @Param() roomDtoId: MongoRoomIdDto,
+    @Body() dto: UpdateDisappearingTimerDto
+  ) {
+    const result = await this.channelService.updateDisappearingTimer(
+      req.user._id,
+      roomDtoId.roomId,
+      dto.disappearingTimer
+    );
+    return resOK(result);
+  }
+
+  @Get("/common-groups/:otherUserId")
   async getCommonGroups(
-    @Req() req: any,     
-    @Param("otherUserId") otherUserId: string   
+    @Req() req: any,
+    @Param("otherUserId") otherUserId: string
   ) {
     return this.channelService.findCommonGroups(req.user._id, otherUserId);
   }

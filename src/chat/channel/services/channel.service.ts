@@ -1,4 +1,8 @@
-import { BadRequestException, Injectable } from "@nestjs/common";
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from "@nestjs/common";
 
 import { ConfigService } from "@nestjs/config";
 import { OneFullRoomModel } from "../chat.helper";
@@ -25,6 +29,7 @@ import { IUser } from "../../../api/user_modules/user/entities/user.entity";
 import {
   MessageInfoType,
   MessageType,
+  Platform,
   RoomType,
   SocketEventsType,
 } from "../../../core/utils/enums";
@@ -33,10 +38,17 @@ import { CreateOrderRoomDto } from "../../../core/common/dto/mongo.peer.id.order
 import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
 import { IRoomMember } from "../../room_member/entities/room_member.entity";
 import { getLinkPreview } from "link-preview-js";
+import { SendMessageDto } from "../dto/send.message.dto";
+import { InjectModel } from "@nestjs/mongoose";
+import { v4 as uuidv4 } from "uuid";
 
 @Injectable()
 export class ChannelService {
   constructor(
+    @InjectModel("room_member")
+    private readonly roomMemberModel: mongoose.Model<IRoomMember>,
+     @InjectModel("User")
+    private readonly userModel: mongoose.Model<IUser>,
     private readonly roomMemberService: RoomMemberService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,
@@ -47,12 +59,79 @@ export class ChannelService {
     private readonly userBan: UserBanService
   ) {}
 
+  async updateDisappearingTimer(userId: string, roomId: string, timer: number) {
+
+    const updateResult = await this.roomMemberModel.updateMany(
+      { rId: roomId },
+      { $set: { disappearingTimer: timer } }
+    );
+
+    if (updateResult.matchedCount === 0) {
+      throw new NotFoundException("Room not found.");
+    }
+    let infoText = `Messages will now disappear after ${this.getTimerText(
+      timer
+    )}.`;
+    if (timer === 0) {
+      infoText = "Disappearing messages have been turned off.";
+    }
+
+    const user = await this.userModel.findById(userId).select('fullName userImage').lean();
+    if (!user) {
+        throw new NotFoundException("User making the change not found.");
+    }
+
+    const infoMessageDto = new SendMessageDto();
+    infoMessageDto.myUser = user;
+    infoMessageDto._roomId = roomId;
+    infoMessageDto.messageType = MessageType.Info;
+    infoMessageDto.content = infoText;
+    infoMessageDto.localId = uuidv4();
+    infoMessageDto._platform = Platform.Windows;
+
+    await this.messageService.create(infoMessageDto);
+
+    return {
+      success: true,
+      message: "Disappearing message timer updated for the room.",
+    };
+  }
+
+  // Helper function to get human-readable text
+  private getTimerText(timer: number): string {
+    switch (timer) {
+      case 86400:
+        return "24 hours";
+      case 604800:
+        return "7 days";
+      case 7776000:
+        return "90 days";
+      default:
+        return "the set duration";
+    }
+  }
+
+  // async updateDisappearingTimer(userId: string, roomId: string, timer: number) {
+  //   if (userId == null || roomId == null || timer == null) {
+  //     throw new BadRequestException("userId, roomId and timer are required");
+  //   }
+  //   const updatedMember = this.roomMemberService.findByRoomIdAndUserIdAndUpdate(
+  //     roomId,
+  //     userId,
+  //     { disappearingTimer: timer }
+  //   );
+  //   if (!updatedMember) {
+  //     throw new NotFoundException("Room member not found.");
+  //   }
+  //   return updatedMember;
+  // }
+
   async findCommonGroups(userId1: string, userId2: string) {
     // 1. Find all room memberships for both users
     const [user1Memberships, user2Memberships] = await Promise.all([
       this.roomMemberService.findAll({
         uId: userId1,
-        rT: "g", 
+        rT: "g",
         isD: false,
       }),
       this.roomMemberService.findAll({
@@ -397,7 +476,6 @@ export class ChannelService {
     );
   }
 
-  //invoked only if room not exist in the peer he will request it
   async getRoomById(dto: MongoRoomIdDto) {
     //check if the user has already accessed to this room
     let rMember: IRoomMember =
@@ -888,4 +966,3 @@ export class ChannelService {
     ];
   }
 }
-

@@ -50,6 +50,19 @@ import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.
 @V1Controller("profile")
 export class ProfileController {
   constructor(private readonly profileService: ProfileService) {}
+
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/archive/:roomId/archive")
+  archiveUser(@Req() req: any, @Param("roomId") roomId: string) {
+    return resOK(this.profileService.addToArchive(req.user._id, roomId));
+  }
+
+  @Post('/archive/:roomId/unarchive')
+  @UseGuards(VerifiedAuthGuard)
+  unarchiveUser(@Req() req: any, @Param("roomId") roomId: string) {
+    return resOK(this.profileService.removeFromArchive(req.user._id, roomId));
+  }
+
   @UseGuards(VerifiedAuthGuard)
   @Post("/plan/purchase/subscription")
   async purchaseSubscription(

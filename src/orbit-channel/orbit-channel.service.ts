@@ -37,8 +37,6 @@ export class OrbitChannelService {
     requestingUser: IUser,
     options: PaginateOptions
   ) {
-    // 1. Authorization Check: Is the user a member of this channel?
-    // This prevents non-members from reading messages.
     const membership = await this.channelMemberModel.findOne({
       channelId,
       userId: requestingUser._id,
@@ -49,15 +47,11 @@ export class OrbitChannelService {
         "You must be a member of this channel to view messages."
       );
     }
-
-    // 2. If the check passes, fetch the messages for the channel.
     const query = { channelId };
-
-    // We add a sort option to get the newest messages first, which is standard for chat apps.
     const paginationWithOptions = {
       ...options,
-      sort: { createdAt: -1 }, // Sort by creation date, descending
-      lean: true, // Performance optimization
+      sort: { createdAt: -1 },
+      lean: true,
     };
 
     return await this.channelMessageModel.paginate(
@@ -264,6 +258,7 @@ export class OrbitChannelService {
     // 5. Paginate the ChannelMember collection, not the User collection.
     return await this.channelMemberModel.paginate(query, paginationWithOptions);
   }
+  
   async updateChannelImage(
     channelId: string,
     requestingUser: IUser,
@@ -299,21 +294,14 @@ export class OrbitChannelService {
     channelId: string,
     requestingUserId: string
   ): Promise<{ message: string }> {
-    // 1. Find the channel we want to delete.
     const channel = await this.orbitChannelModel.findById(channelId);
     if (!channel) {
       throw new NotFoundException("Channel not found");
     }
-
-    // 2. Authorization Check: Is the person making the request the owner?
     if (channel.ownerId.toString() !== requestingUserId.toString()) {
       throw new ForbiddenException("You are not the owner of this channel.");
     }
-
-    // 3. If the check passes, delete the channel.
     await this.orbitChannelModel.findByIdAndDelete(channelId);
-
-    // Optionally, you might want to clean up related data, like members and messages.
     await this.channelMemberModel.deleteMany({ channelId });
     await this.channelMessageModel.deleteMany({ channelId });
 

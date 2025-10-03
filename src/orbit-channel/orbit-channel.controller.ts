@@ -89,7 +89,7 @@ export class OrbitChannelController {
   @Delete(":channelId/left-channel")
   async leftChannel(@Param("channelId") channelId: string, @Req() req: any) {
     const userId = req.user._id;
-    return this.orbitChannelService.leaveChannel(channelId,userId);
+    return this.orbitChannelService.leaveChannel(channelId, userId);
   }
 
   @Get(":channelId")
