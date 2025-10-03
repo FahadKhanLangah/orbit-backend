@@ -72,7 +72,20 @@ export class MessageChannelService {
   ) {}
 
   async voteNow(userId: string, messageId: string, optionText: string) {
-    return this.messageService.voteOnPoll(userId, messageId, optionText);
+    const updatedMessage = this.messageService.voteOnPoll(
+      userId,
+      messageId,
+      optionText
+    );
+    if (updatedMessage) {
+      // A more appropriate event name for an update is 'messageUpdated'
+      const eventName = "messageUpdated";
+
+      this.socket.io
+        .to((await updatedMessage).rId.toString())
+        .emit(eventName, JSON.stringify(updatedMessage));
+    }
+    return updatedMessage;
   }
 
   async createMessage(dto: SendMessageDto, isSilent: boolean = false) {

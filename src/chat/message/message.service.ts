@@ -31,7 +31,7 @@ export class MessageService {
     private readonly messageModel: PaginateModel<IMessage>,
     private readonly groupMessageStatusService: GroupMessageStatusService,
     private readonly s3: FileUploaderService,
-    private readonly socket: SocketIoService,
+    // private readonly socket: SocketIoService,
   ) {}
 
   async createInfoMessage(dto: any, session?) {
@@ -60,7 +60,6 @@ export class MessageService {
       throw new BadRequestException('This option does not exist in the poll.');
     }
   
-    // 2. Perform an atomic update to handle voting
     const updatedMessage = await this.messageModel.findOneAndUpdate(
       { _id: messageId },
       [
@@ -112,9 +111,7 @@ export class MessageService {
       ],
       { new: true }, // Return the updated document
     );
-    
-    // 3. Broadcast the updated poll to the room in real-time
-    this.socket.io.to(updatedMessage.rId.toString()).emit(SocketEventsType.v1OnNewMessage, JSON.stringify(updatedMessage));
+    // this.socket.io.to(updatedMessage.rId.toString()).emit(SocketEventsType.v1OnNewMessage, JSON.stringify(updatedMessage));
       
     return updatedMessage;
   }
