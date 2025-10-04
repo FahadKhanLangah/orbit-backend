@@ -80,6 +80,8 @@ export class SendMessageDto extends CommonDto {
   @Type(() => PollInputDto)
   pollData?: PollInputDto;
 
+  scheduledAt?: string;
+
   @Allow()
   @ValidateIf((object) => object["isOneSeen"] !== undefined)
   @IsBooleanString()
@@ -212,5 +214,3 @@ function attachmentValidation(object) {
     mT == MessageType.Voice
   );
 }
-
-

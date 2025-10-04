@@ -71,6 +71,11 @@ export class MessageChannelService {
     private readonly userBan: UserBanService
   ) {}
 
+  async scheduleMessage(dto: SendMessageDto, scheduledDate: Date) {
+    const now = new Date();
+    return this.messageService.scheduleMessage(dto, scheduledDate);
+  }
+
   async voteNow(userId: string, messageId: string, optionText: string) {
     const updatedMessage = this.messageService.voteOnPoll(
       userId,

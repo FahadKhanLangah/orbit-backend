@@ -12,7 +12,12 @@ import {
   NotFoundException,
 } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
-import mongoose, { FilterQuery, PaginateModel, QueryOptions, Types } from "mongoose";
+import mongoose, {
+  FilterQuery,
+  PaginateModel,
+  QueryOptions,
+  Types,
+} from "mongoose";
 import { IMessage } from "./entities/message.entity";
 import { GroupMessageStatusService } from "../group_message_status/group_message_status.service";
 import { FileUploaderService } from "../../common/file_uploader/file_uploader.service";
@@ -20,7 +25,7 @@ import { SendMessageDto } from "../channel/dto/send.message.dto";
 import { MessagesSearchDto } from "./dto/messages_search_dto";
 import { IUser } from "../../api/user_modules/user/entities/user.entity";
 import { newMongoObjId } from "../../core/utils/utils";
-import { MessageType, SocketEventsType } from "src/core/utils/enums";
+import { MessageStatusType, MessageType, SocketEventsType } from "src/core/utils/enums";
 import { VoteOnPollDto } from "./dto/VoteOnPollDto";
 import { SocketIoService } from "../socket_io/socket_io.service";
 
@@ -30,9 +35,9 @@ export class MessageService {
     @InjectModel("message")
     private readonly messageModel: PaginateModel<IMessage>,
     private readonly groupMessageStatusService: GroupMessageStatusService,
-    private readonly s3: FileUploaderService,
-    // private readonly socket: SocketIoService,
-  ) {}
+    private readonly s3: FileUploaderService
+  ) // private readonly socket: SocketIoService,
+  {}
 
   async createInfoMessage(dto: any, session?) {
     let x = await this.messageModel.create([dto.toJson()], { session });
@@ -44,22 +49,34 @@ export class MessageService {
     return this.prepareTheMessageModel(x[0]);
   }
 
-    async voteOnPoll(userId: string, messageId: string, optionText: string) {
+  async scheduleMessage(dto: SendMessageDto, scheduledDate: Date) {
+    if (scheduledDate <= new Date()) {
+      throw new BadRequestException("Scheduled date must be in the future.");
+    }
+    await this.messageModel.create({
+      ...dto.toJson(),
+      status: MessageStatusType.SCHEDULED,
+      scheduledAt: scheduledDate,
+    });
+    return { message: "Message scheduled successfully." };
+  }
+
+  async voteOnPoll(userId: string, messageId: string, optionText: string) {
     // 1. Find the message first to perform checks
     const message = await this.messageModel.findById(messageId);
     if (!message) {
-      throw new NotFoundException('Poll message not found.');
+      throw new NotFoundException("Poll message not found.");
     }
     if (message.mT !== MessageType.Poll || !message.pollData) {
-      throw new BadRequestException('This message is not a poll.');
+      throw new BadRequestException("This message is not a poll.");
     }
     const optionExists = message.pollData.options.some(
-      (opt) => opt.text === optionText,
+      (opt) => opt.text === optionText
     );
     if (!optionExists) {
-      throw new BadRequestException('This option does not exist in the poll.');
+      throw new BadRequestException("This option does not exist in the poll.");
     }
-  
+
     const updatedMessage = await this.messageModel.findOneAndUpdate(
       { _id: messageId },
       [
@@ -67,18 +84,18 @@ export class MessageService {
         {
           // Stage 1: Remove the user's vote from ALL options first
           $set: {
-            'pollData.options': {
+            "pollData.options": {
               $map: {
-                input: '$pollData.options',
-                as: 'option',
+                input: "$pollData.options",
+                as: "option",
                 in: {
-                  text: '$$option.text',
-                  _id: '$$option._id',
+                  text: "$$option.text",
+                  _id: "$$option._id",
                   votes: {
                     $filter: {
-                      input: '$$option.votes',
-                      as: 'vote',
-                      cond: { $ne: ['$$vote', new Types.ObjectId(userId)] },
+                      input: "$$option.votes",
+                      as: "vote",
+                      cond: { $ne: ["$$vote", new Types.ObjectId(userId)] },
                     },
                   },
                 },
@@ -89,18 +106,23 @@ export class MessageService {
         {
           // Stage 2: Add the user's vote to the selected option
           $set: {
-            'pollData.options': {
+            "pollData.options": {
               $map: {
-                input: '$pollData.options',
-                as: 'option',
+                input: "$pollData.options",
+                as: "option",
                 in: {
-                  text: '$$option.text',
-                  _id: '$$option._id',
+                  text: "$$option.text",
+                  _id: "$$option._id",
                   votes: {
                     $cond: [
-                      { $eq: ['$$option.text', optionText] },
-                      { $concatArrays: ['$$option.votes', [new Types.ObjectId(userId)]] },
-                      '$$option.votes',
+                      { $eq: ["$$option.text", optionText] },
+                      {
+                        $concatArrays: [
+                          "$$option.votes",
+                          [new Types.ObjectId(userId)],
+                        ],
+                      },
+                      "$$option.votes",
                     ],
                   },
                 },
@@ -109,10 +131,10 @@ export class MessageService {
           },
         },
       ],
-      { new: true }, // Return the updated document
+      { new: true } // Return the updated document
     );
     // this.socket.io.to(updatedMessage.rId.toString()).emit(SocketEventsType.v1OnNewMessage, JSON.stringify(updatedMessage));
-      
+
     return updatedMessage;
   }
 

@@ -28,6 +28,6 @@ import { CallHistoryModule } from "../call_modules/call_history/call_history.mod
     CallMemberModule,
     UserDeviceModule,
   ],
-  exports: [SocketIoService],
+  exports: [SocketIoService,SocketIoGateway],
 })
 export class SocketIoModule {}

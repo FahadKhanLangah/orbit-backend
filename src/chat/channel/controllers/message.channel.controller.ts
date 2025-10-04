@@ -83,6 +83,11 @@ export class MessageChannelController {
     }
     dto._roomId = roomDtoId.roomId;
     dto._platform = dto.myUser.currentDevice.platform;
+    if(dto.scheduledAt){
+      const scheduledDate = new Date(dto.scheduledAt);    
+  
+      return resOK(await this.channelMessageService.scheduleMessage(dto, scheduledDate));
+    }
     return resOK(await this.channelMessageService.createMessage(dto));
   }
 

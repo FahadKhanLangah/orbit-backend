@@ -241,6 +241,7 @@ export enum MessageFilter {
 export enum MessageStatusType {
   Seen = "seen",
   Deliver = "deliver",
+  SCHEDULED = 'scheduled',
 }
 
 export enum CallStatus {

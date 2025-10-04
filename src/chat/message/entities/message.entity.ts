@@ -1,8 +1,11 @@
-
 import { Document, Schema } from "mongoose";
 import pM from "mongoose-paginate-v2";
 import { BaseUser } from "../../../core/utils/interfaceces";
-import { MessageType, Platform } from "../../../core/utils/enums";
+import {
+  MessageStatusType,
+  MessageType,
+  Platform,
+} from "../../../core/utils/enums";
 
 export interface IPollOption extends Document {
   text: string;
@@ -65,6 +68,9 @@ export interface IMessage extends Document {
   pollData?: IPollData;
   // disappear Messages
   disappearAt?: Date;
+  // Message Status
+  status: MessageStatusType;
+  scheduledAt?: Date;
 }
 
 export const MessageSchema: Schema = new Schema(
@@ -159,6 +165,13 @@ export const MessageSchema: Schema = new Schema(
     },
     // disappear Messages
     disappearAt: { type: Date, default: null },
+    // Message Status
+    status: {
+      type: String,
+      enum: Object.values(MessageStatusType),
+      default: MessageStatusType.Deliver,
+    },
+    scheduledAt: { type: Date, default: null, index: 1 },
   },
   {
     timestamps: true,

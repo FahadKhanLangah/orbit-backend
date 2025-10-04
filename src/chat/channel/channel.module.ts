@@ -37,6 +37,8 @@ import { LoyaltyPointsModule } from "../../api/user_modules/loyalty_points/loyal
 import { MongooseModule } from "@nestjs/mongoose";
 import { RoomMemberSchema } from "../room_member/entities/room_member.entity";
 import { UserSchema } from "src/api/user_modules/user/entities/user.entity";
+import { SchedulingService } from "./services/scheduling.service";
+import { MessageSchema } from "../message/entities/message.entity";
 
 @Module({
   controllers: [
@@ -51,11 +53,13 @@ import { UserSchema } from "src/api/user_modules/user/entities/user.entity";
     BroadcastChannelService,
     MessageChannelService,
     NotificationEmitterChannelService,
+    SchedulingService
   ],
   imports: [
     MongooseModule.forFeature([
       { name: "room_member", schema: RoomMemberSchema },
       { name: "User", schema: UserSchema },
+      { name: "Message", schema: MessageSchema }, 
     ]),
     UserModule,
     MessageModule,
@@ -76,6 +80,7 @@ import { UserSchema } from "src/api/user_modules/user/entities/user.entity";
     OrderRoomSettingsModule,
     UserDeviceModule,
     LoyaltyPointsModule,
+
   ],
   exports: [ChannelService, MessageChannelService],
 })
