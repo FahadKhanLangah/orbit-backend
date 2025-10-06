@@ -49,11 +49,14 @@ import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
 import crypto from "crypto";
 import * as Buffer from "buffer";
 import { Types } from "mongoose";
+import { InjectQueue } from "@nestjs/bullmq";
+import { Queue } from "bullmq";
 const objectIdRegExp = /[a-f\d]{24}/gi;
 
 @Injectable()
 export class MessageChannelService {
   constructor(
+    // @InjectQueue('video-processing-queue') private readonly videoQueue: Queue,
     private readonly roomMemberService: RoomMemberService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,

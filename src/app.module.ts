@@ -65,9 +65,19 @@ import { OrbitChannelModule } from "./orbit-channel/orbit-channel.module";
 import { SettingsModule } from "./api/setting/settings.module";
 import { VerificationModule } from "./api/verification/verification.module";
 import { AdModule } from "./api/ad_system/ad.module";
+import { BullModule } from '@nestjs/bullmq';
 
 @Module({
   imports: [
+    BullModule.forRoot({
+      connection: {
+        host: 'localhost',
+        port: 6379,
+      },
+    }),
+    BullModule.registerQueue({
+      name: 'video-processing-queue',
+    }),
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
@@ -76,7 +86,7 @@ import { AdModule } from "./api/ad_system/ad.module";
       envFilePath: path.join(root.path, ".env." + process.env.NODE_ENV),
     }),
     ThrottlerModule.forRoot({
-      ttl: 60 * 5, // 5 minutes
+      ttl: 60 * 5, 
       limit: 800,
       ignoreUserAgents: [/googlebot/gi, /bingbot/gi, /baidubot/gi],
     }),
