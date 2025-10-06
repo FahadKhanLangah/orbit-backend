@@ -127,7 +127,6 @@ export class ChannelService {
   // }
 
   async findCommonGroups(userId1: string, userId2: string) {
-    // 1. Find all room memberships for both users
     const [user1Memberships, user2Memberships] = await Promise.all([
       this.roomMemberService.findAll({
         uId: userId1,
@@ -136,25 +135,21 @@ export class ChannelService {
       }),
       this.roomMemberService.findAll({
         uId: userId2,
-        rT: "g", // Only group rooms
+        rT: "g",
         isD: false,
       }),
     ]);
 
-    // 2. Get room IDs for both users
     const user1RoomIds = user1Memberships.map((m) => m.rId.toString());
     const user2RoomIds = user2Memberships.map((m) => m.rId.toString());
 
-    // 3. Find common room IDs
     const commonRoomIds = user1RoomIds.filter((roomId) =>
       user2RoomIds.includes(roomId)
     );
 
-    // 4. Fetch full room models for common rooms
     const commonRooms = [];
     for (const roomId of commonRoomIds) {
       try {
-        // You can use either user's ID here since both are members
         const room = await this._getOneFullRoomModel({
           roomId,
           userId: userId1,

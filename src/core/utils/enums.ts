@@ -153,6 +153,8 @@ export enum MessageType {
   // for decison making
   Poll = "poll",
   Info = "info",
+  // short video message
+  ShortVideo = "short_video",
 }
 
 export enum RoomType {
@@ -241,7 +243,7 @@ export enum MessageFilter {
 export enum MessageStatusType {
   Seen = "seen",
   Deliver = "deliver",
-  SCHEDULED = 'scheduled',
+  SCHEDULED = "scheduled",
 }
 
 export enum CallStatus {

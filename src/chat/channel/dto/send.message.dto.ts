@@ -159,6 +159,12 @@ export class SendMessageDto extends CommonDto {
     }
   }
 
+  isShortVideo() {
+    if (this.messageType == MessageType.ShortVideo) {
+      return true;
+    }
+  }
+
   isFile() {
     if (this.messageType == MessageType.File) {
       return true;
@@ -197,7 +203,7 @@ export class SendMessageDto extends CommonDto {
     if (this.forwardLocalId) {
       return false;
     }
-    return this.isImage() || this.isFile() || this.isVoice() || this.isVideo();
+    return this.isImage() || this.isFile() || this.isVoice() || this.isVideo() || this.isShortVideo();
   }
 
   isRequireAttachment() {
