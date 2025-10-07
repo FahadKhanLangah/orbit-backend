@@ -65,19 +65,11 @@ import { OrbitChannelModule } from "./orbit-channel/orbit-channel.module";
 import { SettingsModule } from "./api/setting/settings.module";
 import { VerificationModule } from "./api/verification/verification.module";
 import { AdModule } from "./api/ad_system/ad.module";
-import { BullModule } from '@nestjs/bullmq';
+
 
 @Module({
   imports: [
-    BullModule.forRoot({
-      connection: {
-        host: 'localhost',
-        port: 6379,
-      },
-    }),
-    BullModule.registerQueue({
-      name: 'video-processing-queue',
-    }),
+   
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({

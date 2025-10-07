@@ -49,20 +49,6 @@ export class MessageChannelController {
       },
     })
   )
-  @Post("/:messageId/vote")
-  async voteOnPoll(
-    @Req() req: any,
-    @Param() params: MongoMessageIdDto,
-    @Body() dto: VoteOnPollDto
-  ) {
-    const updatedMessage = await this.channelMessageService.voteNow(
-      req.user._id,
-      params.messageId,
-      dto.optionText
-    );
-    return resOK(updatedMessage);
-  }
-
   @Post("/")
   async createMessage(
     @Req() req: any,
@@ -83,12 +69,28 @@ export class MessageChannelController {
     }
     dto._roomId = roomDtoId.roomId;
     dto._platform = dto.myUser.currentDevice.platform;
-    if(dto.scheduledAt){
-      const scheduledDate = new Date(dto.scheduledAt);    
-  
-      return resOK(await this.channelMessageService.scheduleMessage(dto, scheduledDate));
+    if (dto.scheduledAt) {
+      const scheduledDate = new Date(dto.scheduledAt);
+
+      return resOK(
+        await this.channelMessageService.scheduleMessage(dto, scheduledDate)
+      );
     }
     return resOK(await this.channelMessageService.createMessage(dto));
+  }
+
+  @Post("/:messageId/vote")
+  async voteOnPoll(
+    @Req() req: any,
+    @Param() params: MongoMessageIdDto,
+    @Body() dto: VoteOnPollDto
+  ) {
+    const updatedMessage = await this.channelMessageService.voteNow(
+      req.user._id,
+      params.messageId,
+      dto.optionText
+    );
+    return resOK(updatedMessage);
   }
 
   @Delete("/:messageId/delete/:type")

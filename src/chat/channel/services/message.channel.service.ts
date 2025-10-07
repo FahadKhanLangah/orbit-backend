@@ -56,7 +56,6 @@ const objectIdRegExp = /[a-f\d]{24}/gi;
 @Injectable()
 export class MessageChannelService {
   constructor(
-    // @InjectQueue('video-processing-queue') private readonly videoQueue: Queue,
     private readonly roomMemberService: RoomMemberService,
     private readonly messageService: MessageService,
     private readonly userService: UserService,
@@ -73,28 +72,6 @@ export class MessageChannelService {
     private readonly groupMessageStatusService: GroupMessageStatusService,
     private readonly userBan: UserBanService
   ) {}
-
-  async scheduleMessage(dto: SendMessageDto, scheduledDate: Date) {
-    const now = new Date();
-    return this.messageService.scheduleMessage(dto, scheduledDate);
-  }
-
-  async voteNow(userId: string, messageId: string, optionText: string) {
-    const updatedMessage = this.messageService.voteOnPoll(
-      userId,
-      messageId,
-      optionText
-    );
-    if (updatedMessage) {
-      // A more appropriate event name for an update is 'messageUpdated'
-      const eventName = "messageUpdated";
-
-      this.socket.io
-        .to((await updatedMessage).rId.toString())
-        .emit(eventName, JSON.stringify(updatedMessage));
-    }
-    return updatedMessage;
-  }
 
   async createMessage(dto: SendMessageDto, isSilent: boolean = false) {
     let rM: IRoomMember = await this.middlewareService.isThereRoomMember(
@@ -211,6 +188,28 @@ export class MessageChannelService {
     throw new BadRequestException(
       "Message type " + dto.messageType + " not supported "
     );
+  }
+
+  async scheduleMessage(dto: SendMessageDto, scheduledDate: Date) {
+    const now = new Date();
+    return this.messageService.scheduleMessage(dto, scheduledDate);
+  }
+
+  async voteNow(userId: string, messageId: string, optionText: string) {
+    const updatedMessage = this.messageService.voteOnPoll(
+      userId,
+      messageId,
+      optionText
+    );
+    if (updatedMessage) {
+      // A more appropriate event name for an update is 'messageUpdated'
+      const eventName = "messageUpdated";
+
+      this.socket.io
+        .to((await updatedMessage).rId.toString())
+        .emit(eventName, JSON.stringify(updatedMessage));
+    }
+    return updatedMessage;
   }
 
   async deleteRoomMessage(dto: DeleteMessageDto) {
@@ -396,6 +395,37 @@ export class MessageChannelService {
         mimeType: dto._mediaFile.mimetype,
         name: dto._mediaFile.originalname,
         fileHash: this.sha256FromBuffer(dto._mediaFile.buffer),
+      };
+    }
+
+    if (dto.isShortVideo()) {
+      let mediaKey = await this.s3.uploadChatMedia(uploaderDto);
+      let dCodedAtt = jsonDecoder(dto.attachment);
+
+      // optional thumbnail
+      let thumbImageData = null;
+      if (dto._secondMediaFile) {
+        let imgData = await this._getImageData(dto._secondMediaFile.buffer);
+        uploaderDto.mediaBuffer = dto._secondMediaFile.buffer;
+        thumbImageData = {
+          url: await this.s3.uploadChatMedia(uploaderDto),
+          width: imgData.width,
+          height: imgData.height,
+          mimeType: dto._secondMediaFile.mimetype,
+          fileSize: dto._secondMediaFile.size,
+          fileHash: this.sha256FromBuffer(dto._secondMediaFile.buffer),
+        };
+      }
+
+      return {
+        url: mediaKey,
+        duration: dCodedAtt["duration"] ?? null,
+        thumbImage: thumbImageData,
+        fileSize: dto._mediaFile.size,
+        mimeType: dto._mediaFile.mimetype,
+        name: dto._mediaFile.originalname,
+        fileHash: this.sha256FromBuffer(dto._mediaFile.buffer),
+        shortVideo: true, // helpful flag for frontend
       };
     }
 
