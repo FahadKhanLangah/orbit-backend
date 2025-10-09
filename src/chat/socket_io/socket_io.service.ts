@@ -203,6 +203,9 @@ export class SocketIoService {
   }
 
   async updateRoomMessagesToSeen(roomId: any, myUser: IUser) {
+    if (!myUser.userPrivacy?.readReceipts) {
+        return { isUpdated: false, pId: null };
+    }
     let rMember: IRoomMember = await this.middlewareService.isThereRoomMember(
       roomId,
       myUser._id

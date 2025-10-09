@@ -89,7 +89,7 @@ export class ProfileService {
     @InjectModel("users") private readonly userModel: Model<IUser>,
     @InjectModel("SubscriptionPlan")
     private readonly planModel: Model<ISubscriptionPlan>
-  ) {}
+  ) { }
 
   async addToArchive(userId: string, roomId: string) {
     this.roomMemberService.findByRoomIdAndUserIdAndUpdate(userId, roomId, {
@@ -504,12 +504,12 @@ export class ProfileService {
       if (device.platform == Platform.Android) {
         this.notificationEmitterService
           .unSubscribeFcmTopic(device.pushKey ?? "--", PushTopics.AdminAndroid)
-          .then((value) => {});
+          .then((value) => { });
       }
       if (device.platform == Platform.Ios) {
         this.notificationEmitterService
           .unSubscribeFcmTopic(device.pushKey ?? "--", PushTopics.AdminIos)
-          .then((value) => {});
+          .then((value) => { });
       }
     } catch (e) {
       console.log(e);
@@ -613,11 +613,25 @@ export class ProfileService {
   }
 
   async updateMyPrivacy(dto: UpdateMyPrivacyDto) {
-    await this.userService.findByIdAndUpdate(dto.myUser._id, {
-      userPrivacy: dto,
+    const updatePayload = {};
+    for (const key in dto) {
+      if (key !== 'myUser' && dto[key] !== undefined) {
+        updatePayload[`userPrivacy.${key}`] = dto[key];
+      }
+    }
+ await this.userService.findByIdAndUpdate(dto.myUser._id, {
+      $set: updatePayload,
     });
+
     return this.userService.findByIdOrThrow(dto.myUser._id);
   }
+
+  // async updateMyPrivacy(dto: UpdateMyPrivacyDto) {
+  //   await this.userService.findByIdAndUpdate(dto.myUser._id, {
+  //     userPrivacy: dto,
+  //   });
+  //   return this.userService.findByIdOrThrow(dto.myUser._id);
+  // }
 
   async sendChatRequest(dto: MongoIdDto) {
     if (dto.id == dto.myUser._id)

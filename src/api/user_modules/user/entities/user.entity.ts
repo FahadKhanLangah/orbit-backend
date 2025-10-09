@@ -80,6 +80,7 @@ export interface UserPrivacy {
   publicSearch: boolean;
   showStory: UserPrivacyTypes;
   lastSeen: boolean;
+  readReceipts: boolean; 
 }
 
 export const UserSchema = new mongoose.Schema(
@@ -137,6 +138,8 @@ export const UserSchema = new mongoose.Schema(
         showStory: UserPrivacyTypes.ForReq,
         lastSeen: true,
         dpshow: profileVisibleType.AllUsers,
+        // readReceipts: true by default
+        readReceipts: true,
       },
     },
     lastSeenAt: { type: Date, default: Date.now },

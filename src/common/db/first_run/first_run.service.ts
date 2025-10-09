@@ -115,6 +115,8 @@ export class FirstRunService {
                     publicSearch: false,
                     showStory: UserPrivacyTypes.ForReq,
                     lastSeen: false,
+                    //readReceipts: false
+                    readReceipts: true
                 }
             })
             return "Super Admin admin@admin.com with password admin has been created !"

@@ -35,7 +35,7 @@ import { MongoIdDto } from "src/core/common/dto/mongo.id.dto";
 import { MongoMessageIdDto } from "src/core/common/dto/mongo.messageId.dto";
 
 @UseGuards(VerifiedAuthGuard)
-@V1Controller("channel/:roomId/message") //stars
+@V1Controller("channel/:roomId/message") 
 export class MessageChannelController {
   constructor(private readonly channelMessageService: MessageChannelService) {}
 
@@ -49,6 +49,7 @@ export class MessageChannelController {
       },
     })
   )
+
   @Post("/")
   async createMessage(
     @Req() req: any,

@@ -4,9 +4,9 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {IsBoolean, IsEnum, IsNotEmpty} from "class-validator";
+import { IsBoolean, IsEnum, IsNotEmpty, IsOptional } from "class-validator";
 import CommonDto from "../../../core/common/dto/common.dto";
-import {ChatRequestStatus, UserPrivacyTypes} from "../../../core/utils/enums";
+import { ChatRequestStatus, UserPrivacyTypes } from "../../../core/utils/enums";
 
 
 export class UpdateMyNameDto extends CommonDto {
@@ -14,17 +14,25 @@ export class UpdateMyNameDto extends CommonDto {
     fullName: string
 }
 export class UpdateMyPrivacyDto extends CommonDto {
+    @IsOptional()
     @IsEnum(UserPrivacyTypes)
     startChat: UserPrivacyTypes
 
+    @IsOptional()
     @IsBoolean()
     publicSearch: boolean
 
+    @IsOptional()
     @IsBoolean()
     lastSeen: boolean
 
+    @IsOptional()
     @IsEnum(UserPrivacyTypes)
     showStory: UserPrivacyTypes
+    
+    @IsOptional()
+    @IsBoolean()
+    readReceipts: boolean
 }
 export class UpdateChatReqStatusDto extends CommonDto {
     @IsEnum(ChatRequestStatus)
