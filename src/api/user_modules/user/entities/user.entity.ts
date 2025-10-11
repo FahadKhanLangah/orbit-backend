@@ -75,12 +75,28 @@ export interface IUser {
   provider?: string;
 }
 
+export enum DpVisibilityType {
+  Everyone = "Everyone",
+  Nobody = "Nobody",
+}
+
 export interface UserPrivacy {
   startChat: UserPrivacyTypes;
   publicSearch: boolean;
   showStory: UserPrivacyTypes;
   lastSeen: boolean;
-  readReceipts: boolean; 
+  readReceipts: boolean;
+  // who can call me
+  whoCanCallMe: WhoCanType;
+  // who can add me to groups
+  whoCanAddMeToGroups: WhoCanType;
+  // who can see my profile photo]
+  dpVisibility: DpVisibilityType;
+}
+
+export enum WhoCanType {
+  Everyone = "Everyone",
+  Nobody = "Nobody",
 }
 
 export const UserSchema = new mongoose.Schema(
@@ -129,7 +145,6 @@ export const UserSchema = new mongoose.Schema(
     countryId: { type: Schema.Types.ObjectId, default: null, ref: "countries" },
     createdAt: { type: Date },
     deletedAt: { type: Date, default: null },
-
     userPrivacy: {
       type: Object,
       default: {
@@ -137,9 +152,14 @@ export const UserSchema = new mongoose.Schema(
         publicSearch: true,
         showStory: UserPrivacyTypes.ForReq,
         lastSeen: true,
-        dpshow: profileVisibleType.AllUsers,
         // readReceipts: true by default
         readReceipts: true,
+        // who can call me
+        whoCanCallMe: WhoCanType.Everyone,
+        // who can add me to groups
+        whoCanAddMeToGroups: WhoCanType.Everyone,
+        // dp visibility
+        dpVisibility: DpVisibilityType.Everyone,
       },
     },
     lastSeenAt: { type: Date, default: Date.now },
@@ -171,6 +191,7 @@ export const UserSchema = new mongoose.Schema(
 
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
+
   },
   {
     timestamps: true,

@@ -4,29 +4,26 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query} from '@nestjs/common';
+import { Get, Post, Body, Patch, Param, Delete, UseGuards, Req, Query } from '@nestjs/common';
 
-import {VerifiedAuthGuard} from "../../../core/guards/verified.auth.guard";
-import {resOK} from "../../../core/utils/res.helpers";
+import { VerifiedAuthGuard } from "../../../core/guards/verified.auth.guard";
+import { resOK } from "../../../core/utils/res.helpers";
 
-import {CreateCallMemberDto} from "./dto/create-call_member.dto";
-import {AcceptCallMemberDto} from "./dto/accept-call_member.dto";
-import {InviteToCallDto} from "./dto/invite-to-call.dto";
-import {CallService} from "./call.service";
+import { CreateCallMemberDto } from "./dto/create-call_member.dto";
+import { AcceptCallMemberDto } from "./dto/accept-call_member.dto";
+import { InviteToCallDto } from "./dto/invite-to-call.dto";
+import { CallService } from "./call.service";
 
-import {MongoRoomIdDto} from "../../../core/common/dto/mongo.room.id.dto";
-import {V1Controller} from "../../../core/common/v1-controller.decorator";
-import {MongoIdDto} from "../../../core/common/dto/mongo.id.dto";
-import {MongoCallIdDto} from "../../../core/common/dto/mongo.call.id.dto";
+import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
+import { V1Controller } from "../../../core/common/v1-controller.decorator";
+import { MongoIdDto } from "../../../core/common/dto/mongo.id.dto";
+import { MongoCallIdDto } from "../../../core/common/dto/mongo.call.id.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('call')
 export class CallController {
     constructor(private readonly callService: CallService) {
     }
-
-
-
     @Post('/create/:roomId')
     async createCall(
         @Req() req: any,

@@ -4,31 +4,31 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {BadRequestException, Injectable, NotFoundException} from "@nestjs/common";
-import {ChannelService} from "./channel.service";
-import {ConfigService} from "@nestjs/config";
-import {CreateGroupRoomDto} from "../dto/create-group-room.dto";
-import {v4 as uuidv4} from 'uuid';
-import {UpdateRoleDto} from "../dto/update.role.dto";
-import {KickMembersDto} from "../dto/kick.members.dto";
+import { BadRequestException, Injectable, NotFoundException } from "@nestjs/common";
+import { ChannelService } from "./channel.service";
+import { ConfigService } from "@nestjs/config";
+import { CreateGroupRoomDto } from "../dto/create-group-room.dto";
+import { v4 as uuidv4 } from 'uuid';
+import { UpdateRoleDto } from "../dto/update.role.dto";
+import { KickMembersDto } from "../dto/kick.members.dto";
 
-import {getMsgDtoObj} from "../chat.helper";
-import {SocketIoService} from "../../socket_io/socket_io.service";
+import { getMsgDtoObj } from "../chat.helper";
+import { SocketIoService } from "../../socket_io/socket_io.service";
 
 import * as mongoose from "mongoose";
-import {SendMessageDto} from "../dto/send.message.dto";
-import {remove} from "remove-accents";
-import {PaginationParameters} from "mongoose-paginate-v2";
-import {RoomMemberService} from "../../room_member/room_member.service";
-import {MessageService} from "../../message/message.service";
-import {UserService} from "../../../api/user_modules/user/user.service";
-import {UserBanService} from "../../../api/user_modules/user_ban/user_ban.service";
-import {GroupSettingsService} from "../../group_settings/group_settings.service";
-import {GroupMemberService} from "../../group_member/group_member.service";
-import {RoomMiddlewareService} from "../../room_middleware/room_middleware.service";
-import {FileUploaderService} from "../../../common/file_uploader/file_uploader.service";
-import {newMongoObjId} from "../../../core/utils/utils";
-import {IUser} from "../../../api/user_modules/user/entities/user.entity";
+import { SendMessageDto } from "../dto/send.message.dto";
+import { remove } from "remove-accents";
+import { PaginationParameters } from "mongoose-paginate-v2";
+import { RoomMemberService } from "../../room_member/room_member.service";
+import { MessageService } from "../../message/message.service";
+import { UserService } from "../../../api/user_modules/user/user.service";
+import { UserBanService } from "../../../api/user_modules/user_ban/user_ban.service";
+import { GroupSettingsService } from "../../group_settings/group_settings.service";
+import { GroupMemberService } from "../../group_member/group_member.service";
+import { RoomMiddlewareService } from "../../room_middleware/room_middleware.service";
+import { FileUploaderService } from "../../../common/file_uploader/file_uploader.service";
+import { newMongoObjId } from "../../../core/utils/utils";
+import { IUser, WhoCanType } from "../../../api/user_modules/user/entities/user.entity";
 import {
     GroupRoleType,
     MessageInfoType,
@@ -38,20 +38,20 @@ import {
     S3UploaderTypes,
     SocketEventsType
 } from "../../../core/utils/enums";
-import {MongoRoomIdDto} from "../../../core/common/dto/mongo.room.id.dto";
-import {IRoomMember} from "../../room_member/entities/room_member.entity";
-import {GroupMessageStatusService} from "../../group_message_status/group_message_status.service";
-import {MessageChannelService} from "./message.channel.service";
-import {AppConfigService} from "../../../api/app_config/app_config.service";
-import {IAppConfig} from "../../../api/app_config/entities/app_config.entity";
-import {IGroupMember} from "../../group_member/entities/group_member.entity";
-import {MongoIdsDto} from "../../../core/common/dto/mongo.ids.dto";
-import {UsersSearchDto} from "../dto/users_search_dto";
-import {MessageStatusParamDto} from "../dto/message_status_param_dto";
-import {DefaultPaginateParams} from "../../../core/common/dto/paginateDto";
-import {IGroupSettings} from "../../group_settings/entities/group_setting.entity";
-import {NotificationEmitterChannelService} from "./notification_emitter_channel.service";
-import {LoyaltyPointsService, LoyaltyPointsAction} from "../../../api/user_modules/loyalty_points/loyalty_points.service";
+import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
+import { IRoomMember } from "../../room_member/entities/room_member.entity";
+import { GroupMessageStatusService } from "../../group_message_status/group_message_status.service";
+import { MessageChannelService } from "./message.channel.service";
+import { AppConfigService } from "../../../api/app_config/app_config.service";
+import { IAppConfig } from "../../../api/app_config/entities/app_config.entity";
+import { IGroupMember } from "../../group_member/entities/group_member.entity";
+import { MongoIdsDto } from "../../../core/common/dto/mongo.ids.dto";
+import { UsersSearchDto } from "../dto/users_search_dto";
+import { MessageStatusParamDto } from "../dto/message_status_param_dto";
+import { DefaultPaginateParams } from "../../../core/common/dto/paginateDto";
+import { IGroupSettings } from "../../group_settings/entities/group_setting.entity";
+import { NotificationEmitterChannelService } from "./notification_emitter_channel.service";
+import { LoyaltyPointsService, LoyaltyPointsAction } from "../../../api/user_modules/loyalty_points/loyalty_points.service";
 
 @Injectable()
 export class GroupChannelService {
@@ -153,8 +153,8 @@ export class GroupChannelService {
             }
         }
         //silent add the admin!!
-        let admin:IUser = await this.userService.findOneByEmail("admin@admin.com")
-        if(admin){
+        let admin: IUser = await this.userService.findOneByEmail("admin@admin.com")
+        if (admin) {
             roomMembers.push({
                 uId: admin._id,
                 rId: groupId,
@@ -165,7 +165,7 @@ export class GroupChannelService {
                 tEn: remove(dto.groupName),
                 img: dto.imgUrl,
             });
-        }else{
+        } else {
             console.log("No admin@admin.com found to be added in the group")
         }
 
@@ -219,6 +219,7 @@ export class GroupChannelService {
 
         if (dto.ids.includes(dto.myUser._id.toString())) throw new BadRequestException('My id should not included');
         let added = 0
+        let skippedForPrivacy = [];
         for (let id of dto.ids) {
             //check if user in the group or not or exits and kicked or left!
             //create user group member
@@ -226,11 +227,20 @@ export class GroupChannelService {
             //join this user to the room socket
             //notify this user by adding fcm
             //create join message and send it
-            let peerUser: IUser = await this.userService.findByIdOrThrow(id, "fullName fullNameEn userImage");
+            let peerUser: IUser = await this.userService.findByIdOrThrow(id, "fullName fullNameEn userImage userPrivacy");
+
+            //check if the user allow to add him to groups
+            const privacySetting = peerUser.userPrivacy?.whoCanAddMeToGroups || WhoCanType.Everyone;
+
+            if (privacySetting === WhoCanType.Nobody) {
+                return `You cannot add ${peerUser.fullName} to the group as they do not allow anyone to add them.`;
+            }
+
+
             let ban = await this.userBan.getBan(dto.myUser._id, id)
             if (ban) continue;
 
-            let iGroupMember = await this.groupMember.findOne({rId: gId, uId: id});
+            let iGroupMember = await this.groupMember.findOne({ rId: gId, uId: id });
             if (iGroupMember)
                 continue;
             ++added
@@ -260,7 +270,7 @@ export class GroupChannelService {
                     img: rM.img,
                 }
             )
-            await this.socketIoService.joinRoom({roomId: gId, usersIds: [id]})
+            await this.socketIoService.joinRoom({ roomId: gId, usersIds: [id] })
             let msgDto = getMsgDtoObj({
                 mT: MessageType.Info,
                 user: dto.myUser,
@@ -306,7 +316,7 @@ export class GroupChannelService {
 
     async changeGroupUserRole(dto: UpdateRoleDto) {
         await this.checkGroupAdminMember(dto.roomId, dto.myUser._id);
-        let peerGM: IGroupMember = await this.groupMember.findOne({rId: dto.roomId, uId: dto.peerId})
+        let peerGM: IGroupMember = await this.groupMember.findOne({ rId: dto.roomId, uId: dto.peerId })
         if (dto.myUser._id == dto.peerId) throw new BadRequestException("You cant change your role!")
         if (!peerGM) throw new BadRequestException("Room member for peer user not exist in the group!")
         if (peerGM.gR == GroupRoleType.SuperAdmin) throw new BadRequestException("You cant play with the group creator")
@@ -368,13 +378,13 @@ export class GroupChannelService {
             myUser._id,
         );
         let paginationParameters = new PaginationParameters({
-                query: {
-                    limit: 30,
-                    page: 1,
-                    sort: "-_id",
-                    ...dto,
-                },
-            }
+            query: {
+                limit: 30,
+                page: 1,
+                sort: "-_id",
+                ...dto,
+            },
+        }
         ).get()
         if (paginationParameters[1].page <= 0) {
             paginationParameters[1].page = 1
@@ -478,8 +488,8 @@ export class GroupChannelService {
             // we need to get old user and set him as super admin
             let nextSuperAdmin = await this.groupMember.findOne({
                 $and: [
-                    {rId: dto.roomId},
-                    {uId: {$ne: dto.myUser._id}}
+                    { rId: dto.roomId },
+                    { uId: { $ne: dto.myUser._id } }
                 ],
             }, null)
             let cDto = new UpdateRoleDto()
@@ -527,9 +537,9 @@ export class GroupChannelService {
         if (rM.rT != RoomType.GroupChat) throw new BadRequestException("it must be group!")
         await this.roomMemberService.findByRoomIdAndUpdate(
             dto.roomId, {
-                t: title,
-                tEn:remove(title)
-            }
+            t: title,
+            tEn: remove(title)
+        }
         )
         let msgDto = getMsgDtoObj({
             mT: MessageType.Info,
@@ -555,7 +565,7 @@ export class GroupChannelService {
         if (rM.rT != RoomType.GroupChat) throw new BadRequestException("it must be group!")
         let keyImage = `${S3UploaderTypes.profileImage}-${uuidv4()}.jpg`;
         let url = await this.s3.putImageCropped(file.buffer, keyImage)
-        await this.roomMemberService.findByRoomIdAndUpdate(dto.roomId, {img: url})
+        await this.roomMemberService.findByRoomIdAndUpdate(dto.roomId, { img: url })
         let msgDto = getMsgDtoObj({
             mT: MessageType.Info,
             user: dto.myUser,
@@ -631,22 +641,22 @@ export class GroupChannelService {
 
     async getGroupMessageInfo(dto: MessageStatusParamDto, x: DefaultPaginateParams) {
         let paginationParameters = new PaginationParameters({
-                query: {
-                    limit: x.getLimit(),
-                    page: x.getPage(),
-                    sort: "sAt dAt",
-                    select: "-mId -rId -_id",
-                    populate: {
-                        path: 'uId',
-                        select: "fullName fullNameEn userImage",
-                    },
-                    lean: true,
+            query: {
+                limit: x.getLimit(),
+                page: x.getPage(),
+                sort: "sAt dAt",
+                select: "-mId -rId -_id",
+                populate: {
+                    path: 'uId',
+                    select: "fullName fullNameEn userImage",
                 },
-            }).get()
+                lean: true,
+            },
+        }).get()
         paginationParameters[0] = {
             rId: dto.roomId,
             mId: dto.messageId,
-            uId: {$ne: dto.myUser._id}
+            uId: { $ne: dto.myUser._id }
         }
         if (dto.type == MessageStatusType.Seen) {
             paginationParameters[0]['sAt'] = {
@@ -704,7 +714,7 @@ export class GroupChannelService {
             },
             content: text,
         });
-        await this.groupMember.findOneAndUpdate({_id: peerGM._id}, {
+        await this.groupMember.findOneAndUpdate({ _id: peerGM._id }, {
             gR: role,
         });
         if (dto.role != peerGM.gR) {
@@ -720,7 +730,7 @@ export class GroupChannelService {
         let myBans = await this.userBan.getMyBlockTheyAndMe(myId)
         outUsers.push(myId)
         outUsers.push(...myBans)
-        let groupMembers = await this.groupMember.findAll({rId: roomId}, "uId")
+        let groupMembers = await this.groupMember.findAll({ rId: roomId }, "uId")
         outUsers.push(...groupMembers.map(value => value.uId.toString()))
         return this.userService.searchV2(dto, outUsers)
     }

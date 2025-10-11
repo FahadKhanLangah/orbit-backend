@@ -8,6 +8,7 @@ import {AppConfigService} from "../../../api/app_config/app_config.service";
 import {
     CallStatus,
     Platform,
+    profileVisibleType,
     RegisterMethod,
     RegisterStatus,
     UserPrivacyTypes,
@@ -17,6 +18,7 @@ import {VersionsService} from "../../../api/versions/versions.service";
 
 import {UserGlobalCallStatus} from "../../../chat/call_modules/utils/user-global-call-status.model";
 import {CallHistoryService} from "../../../chat/call_modules/call_history/call_history.service";
+import { DpVisibilityType, WhoCanType } from 'src/api/user_modules/user/entities/user.entity';
 
 @Injectable()
 export class FirstRunService {
@@ -116,7 +118,13 @@ export class FirstRunService {
                     showStory: UserPrivacyTypes.ForReq,
                     lastSeen: false,
                     //readReceipts: false
-                    readReceipts: true
+                    readReceipts: true,
+                    // who can call me
+                    whoCanCallMe: WhoCanType.Everyone,
+                    // who can add me to groups
+                    whoCanAddMeToGroups: WhoCanType.Everyone,   
+                    // who can see my profile photo
+                    dpVisibility: DpVisibilityType.Everyone,
                 }
             })
             return "Super Admin admin@admin.com with password admin has been created !"

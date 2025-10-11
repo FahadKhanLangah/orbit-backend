@@ -16,7 +16,7 @@ import { remove } from "remove-accents";
 import bcrypt from "bcrypt";
 import { UserDeviceService } from "../user_modules/user_device/user_device.service";
 import { UserBanService } from "../user_modules/user_ban/user_ban.service";
-import { IUser } from "../user_modules/user/entities/user.entity";
+import { DpVisibilityType, IUser } from "../user_modules/user/entities/user.entity";
 import { VersionsService } from "../versions/versions.service";
 import { FileUploaderService } from "../../common/file_uploader/file_uploader.service";
 import { MongoIdDto } from "../../core/common/dto/mongo.id.dto";
@@ -298,11 +298,16 @@ export class ProfileService {
     return res;
   }
 
+
+
   async getPublicProfile(dto: MongoIdDto) {
     let user = await this.userService.findByIdOrThrow(
       dto.id,
-      "userImage fullName bio roles createdAt"
+      "userImage fullName bio roles createdAt userPrivacy"
     );
+    if (user.userPrivacy.dpVisibility === DpVisibilityType.Nobody) {
+      user.userImage = "No_image";
+    }
     return {
       userImage: user.userImage,
       fullName: user.fullName,
@@ -319,6 +324,9 @@ export class ProfileService {
       dto.id,
       "userImage fullName email userPrivacy bio phoneNumber lastSeenAt createdAt hasBadge"
     );
+    if (user.userPrivacy.dpVisibility === DpVisibilityType.Nobody) {
+      user.userImage = "No_image";
+    }
     let chatReq = await this.chatRequestService.findOne({
       $or: [{ receiverId: dto.myUser._id }, { senderId: dto.myUser._id }],
       roomType: RoomType.Single,
@@ -619,7 +627,7 @@ export class ProfileService {
         updatePayload[`userPrivacy.${key}`] = dto[key];
       }
     }
- await this.userService.findByIdAndUpdate(dto.myUser._id, {
+    await this.userService.findByIdAndUpdate(dto.myUser._id, {
       $set: updatePayload,
     });
 
