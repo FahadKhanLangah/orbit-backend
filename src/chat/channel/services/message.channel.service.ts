@@ -27,6 +27,7 @@ import { IRoomMember } from "../../room_member/entities/room_member.entity";
 import { SendMessageDto } from "../dto/send.message.dto";
 import {
   DeleteMessageType,
+  GroupRoleType,
   MessageType,
   RoomType,
   SocketEventsType,
@@ -51,6 +52,7 @@ import * as Buffer from "buffer";
 import { Types } from "mongoose";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
+import { GroupMessagingPolicy } from "src/chat/group_settings/entities/group_setting.entity";
 const objectIdRegExp = /[a-f\d]{24}/gi;
 
 @Injectable()
@@ -71,7 +73,7 @@ export class MessageChannelService {
     private readonly broadcastSetting: BroadcastSettingsService,
     private readonly groupMessageStatusService: GroupMessageStatusService,
     private readonly userBan: UserBanService
-  ) {}
+  ) { }
 
   async createMessage(dto: SendMessageDto, isSilent: boolean = false) {
     let rM: IRoomMember = await this.middlewareService.isThereRoomMember(
@@ -154,6 +156,29 @@ export class MessageChannelService {
         );
       return newMessage;
     } else if (isGroup) {
+      const [groupSettings, senderMembership] = await Promise.all([
+        this.groupSetting.findById(dto._roomId),
+        this.groupMember.findOne({ rId: dto._roomId, uId: dto.myUser._id })
+      ]);
+
+      // If for some reason we can't find these, deny the request.
+      if (!groupSettings || !senderMembership) {
+        throw new ForbiddenException("Cannot verify your membership for this group.");
+      }
+
+      // 2. CHECK RULE #1: Is the member individually muted?
+      if (groupSettings.mutedMembers?.includes(dto.myUser._id)) {
+        throw new ForbiddenException("You are not allowed to send messages in this group.");
+      }
+
+      // 3. CHECK RULE #2: Is the group set to "Admins Only"?
+      if (groupSettings.messagingPolicy === GroupMessagingPolicy.AdminsOnly) {
+        const isAdmin = senderMembership.gR === GroupRoleType.Admin || senderMembership.gR === GroupRoleType.SuperAdmin;
+        if (!isAdmin) {
+          throw new ForbiddenException("Only admins can send messages in this group.");
+        }
+      }
+      // previous logic
       let createdMessage = await this.messageService.create(dto);
       await this._createStatusForGroupChat(dto._roomId, createdMessage._id);
       // let newMsg = await this.s3.getSignedMessage(createdMessage);
@@ -542,7 +567,7 @@ export class MessageChannelService {
       imgWidth = imgData.width ?? 1;
       imgHeight = imgData.height ?? 1;
       imgOrientation = imgData.orientation ?? 1;
-    } catch (err) {}
+    } catch (err) { }
     return {
       width: imgWidth,
       height: imgHeight,

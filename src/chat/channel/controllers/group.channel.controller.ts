@@ -17,23 +17,24 @@ import {
     UseInterceptors
 } from "@nestjs/common";
 
-import {GroupChannelService} from "../services/group.channel.service";
-import {UpdateRoleDto} from "../dto/update.role.dto";
-import {CreateGroupRoomDto} from "../dto/create-group-room.dto";
-import {KickMembersDto} from "../dto/kick.members.dto";
+import { GroupChannelService } from "../services/group.channel.service";
+import { UpdateRoleDto } from "../dto/update.role.dto";
+import { CreateGroupRoomDto } from "../dto/create-group-room.dto";
+import { KickMembersDto } from "../dto/kick.members.dto";
 
-import {InjectConnection} from "@nestjs/mongoose";
+import { InjectConnection } from "@nestjs/mongoose";
 import mongoose from "mongoose";
-import {MessageStatusParamDto} from "../dto/message_status_param_dto";
-import {VerifiedAuthGuard} from "../../../core/guards/verified.auth.guard";
-import {V1Controller} from "../../../core/common/v1-controller.decorator";
-import {imageFileInterceptor} from "../../../core/utils/upload_interceptors";
-import {jsonDecoder} from "../../../core/utils/app.validator";
-import {resOK} from "../../../core/utils/res.helpers";
-import {MongoRoomIdDto} from "../../../core/common/dto/mongo.room.id.dto";
-import {MongoIdsDto} from "../../../core/common/dto/mongo.ids.dto";
-import {DefaultPaginateParams} from "../../../core/common/dto/paginateDto";
-import {UsersSearchDto} from "../dto/users_search_dto";
+import { MessageStatusParamDto } from "../dto/message_status_param_dto";
+import { VerifiedAuthGuard } from "../../../core/guards/verified.auth.guard";
+import { V1Controller } from "../../../core/common/v1-controller.decorator";
+import { imageFileInterceptor } from "../../../core/utils/upload_interceptors";
+import { jsonDecoder } from "../../../core/utils/app.validator";
+import { resOK } from "../../../core/utils/res.helpers";
+import { MongoRoomIdDto } from "../../../core/common/dto/mongo.room.id.dto";
+import { MongoIdsDto } from "../../../core/common/dto/mongo.ids.dto";
+import { DefaultPaginateParams } from "../../../core/common/dto/paginateDto";
+import { UsersSearchDto } from "../dto/users_search_dto";
+import { UpdateGroupSettingsDto } from "../dto/update-group-setting.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("channel")
@@ -43,12 +44,22 @@ export class GroupChannelController {
         @InjectConnection() private readonly connection: mongoose.Connection
     ) {
     }
-    
+
+    // update group setting
+    @Patch("/:roomId/group/settings")
+    async updateGroupSettings(
+        @Req() req: any,
+        @Param() roomId: MongoRoomIdDto,
+        @Body() dto: UpdateGroupSettingsDto
+    ) {
+        dto.myUser = req.user;
+        return resOK(await this.groupService.updateGroupSettings(roomId.roomId, dto));
+    }
 
     @UseInterceptors(imageFileInterceptor)
     @Post("/group")
     async createGroupChat(
-        @Req() req:any,
+        @Req() req: any,
         @Body() dto: CreateGroupRoomDto,
         @UploadedFile() file?: any
     ) {
@@ -72,7 +83,7 @@ export class GroupChannelController {
     @Post("/:roomId/group/members")
     // @UseInterceptors(TransactionInterceptor)
     async addMembersToGroup(
-        @Req() req:any,
+        @Req() req: any,
         @Param() gId: MongoRoomIdDto,
         @Body() dto: MongoIdsDto
     ) {
@@ -82,7 +93,7 @@ export class GroupChannelController {
 
 
     @Patch("/:roomId/group/members/:peerId/:role")
-    async updateUserRole(@Req() req:any, @Param() dto: UpdateRoleDto) {
+    async updateUserRole(@Req() req: any, @Param() dto: UpdateRoleDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.changeGroupUserRole(dto));
     }
@@ -90,7 +101,7 @@ export class GroupChannelController {
 
     @Get("/:roomId/group/message/:messageId/status/:type")
     async getGroupMessageInfo(
-        @Req() req:any,
+        @Req() req: any,
         @Param() dto: MessageStatusParamDto,
         @Query() paginateParams: DefaultPaginateParams
     ) {
@@ -101,14 +112,14 @@ export class GroupChannelController {
 
 
     @Get("/:roomId/group/my-info")
-    async getMyGroupInfo(@Req() req:any, @Param() dto: MongoRoomIdDto) {
+    async getMyGroupInfo(@Req() req: any, @Param() dto: MongoRoomIdDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.getMyGroupInfo(dto));
     }
 
 
     @Patch("/:roomId/group/extra-data")
-    async updateGroupExtraData(@Req() req:any, @Param() dto: MongoRoomIdDto, @Body() data:any) {
+    async updateGroupExtraData(@Req() req: any, @Param() dto: MongoRoomIdDto, @Body() data: any) {
         dto.myUser = req.user;
         try {
             data = jsonDecoder(data);
@@ -119,7 +130,7 @@ export class GroupChannelController {
 
 
     @Get("/:roomId/group/my-status")
-    async getMyGroupStatus(@Req() req:any, @Param() dto: MongoRoomIdDto) {
+    async getMyGroupStatus(@Req() req: any, @Param() dto: MongoRoomIdDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.getMyGroupStatus(dto));
     }
@@ -127,7 +138,7 @@ export class GroupChannelController {
     ///get and search also
     @Get("/:roomId/group/members")
     async getGroupMembers(
-        @Req() req:any,
+        @Req() req: any,
         @Param() mongoDto: MongoRoomIdDto,
         @Query() dto: UsersSearchDto
     ) {
@@ -146,25 +157,25 @@ export class GroupChannelController {
     // }
 
     @Delete("/:roomId/group/members/:peerId")
-    async kickGroupMember(@Req() req:any, @Param() dto: KickMembersDto) {
+    async kickGroupMember(@Req() req: any, @Param() dto: KickMembersDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.kickGroupMember(dto));
     }
 
     @Post("/:roomId/group/leave")
-    async leaveGroupChat(@Req() req:any, @Param() dto: MongoRoomIdDto) {
+    async leaveGroupChat(@Req() req: any, @Param() dto: MongoRoomIdDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.leaveGroupChat(dto));
     }
 
     @Delete("/:roomId/group")
-    async deleteGroup(@Req() req:any, @Param() dto: MongoRoomIdDto) {
+    async deleteGroup(@Req() req: any, @Param() dto: MongoRoomIdDto) {
         dto.myUser = req.user;
         return resOK(await this.groupService.deleteGroup(dto));
     }
 
     @Patch("/:roomId/group/title")
-    async updateTitle(@Req() req:any, @Param() dto: MongoRoomIdDto, @Body("title") title?: string) {
+    async updateTitle(@Req() req: any, @Param() dto: MongoRoomIdDto, @Body("title") title?: string) {
         dto.myUser = req.user;
         if (!title) {
             throw new BadRequestException("title is required");
@@ -173,7 +184,7 @@ export class GroupChannelController {
     }
 
     @Patch("/:roomId/group/description")
-    async updateDescription(@Req() req:any, @Param() dto: MongoRoomIdDto, @Body("description") description?: string) {
+    async updateDescription(@Req() req: any, @Param() dto: MongoRoomIdDto, @Body("description") description?: string) {
         dto.myUser = req.user;
         if (!description) {
             throw new BadRequestException("description is required");
@@ -184,7 +195,7 @@ export class GroupChannelController {
 
     @UseInterceptors(imageFileInterceptor)
     @Patch("/:roomId/group/image")
-    async updateImage(@Req() req:any, @Param() dto: MongoRoomIdDto, @UploadedFile() file?: any) {
+    async updateImage(@Req() req: any, @Param() dto: MongoRoomIdDto, @UploadedFile() file?: any) {
         if (!file) {
             throw new BadRequestException("image is required");
         }
@@ -194,10 +205,10 @@ export class GroupChannelController {
 
     @Get("/:roomId/group/available-users-to-add")
     async getAvailableUsersToAdd(
-        @Req() req:any,
+        @Req() req: any,
         @Query() dto: Object,
         @Param() roomId: MongoRoomIdDto
     ) {
-        return resOK(await this.groupService.getAvailableUsersToAdd(dto, roomId.roomId,req.user._id));
+        return resOK(await this.groupService.getAvailableUsersToAdd(dto, roomId.roomId, req.user._id));
     }
 }

@@ -4,25 +4,25 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {Injectable, NotFoundException} from '@nestjs/common';
-import {InjectModel} from "@nestjs/mongoose";
-import {FilterQuery, Model, QueryOptions, UpdateQuery} from "mongoose";
+import { Injectable, NotFoundException } from '@nestjs/common';
+import { InjectModel } from "@nestjs/mongoose";
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from "mongoose";
 import { BaseRoomService } from 'src/core/common/base.room.service';
-import {IGroupSettings} from "./entities/group_setting.entity";
+import { IGroupSettings } from "./entities/group_setting.entity";
 
 
 @Injectable()
-export class GroupSettingsService extends BaseRoomService<IGroupSettings>{
+export class GroupSettingsService extends BaseRoomService<IGroupSettings> {
   constructor(
-      @InjectModel('group_settings')
-      private readonly model: Model<IGroupSettings>,
+    @InjectModel('group_settings')
+    private readonly model: Model<IGroupSettings>,
   ) {
     super();
   }
 
 
   create(obj: Partial<IGroupSettings>, session?): Promise<any> {
-    return Promise.resolve(this.model.create([obj], {session}));
+    return Promise.resolve(this.model.create([obj], { session }));
   }
 
   deleteMany(filter: FilterQuery<IGroupSettings>): Promise<any> {
@@ -41,11 +41,11 @@ export class GroupSettingsService extends BaseRoomService<IGroupSettings>{
     return Promise.resolve(this.model.findByIdAndRemove(id));
   }
 
-  findByIdAndUpdate(id: string, update: Partial<IGroupSettings> |any): Promise<any> {
+  findByIdAndUpdate(id: string, update: Partial<IGroupSettings> | any): Promise<any> {
     return Promise.resolve(this.model.findByIdAndUpdate(id, update));
   }
   updateMany(filter: FilterQuery<IGroupSettings>, update: Partial<IGroupSettings>, options?: QueryOptions<IGroupSettings> | null | undefined): Promise<any> {
-    return Promise.resolve(this.model.updateMany(filter,update,options));
+    return Promise.resolve(this.model.updateMany(filter, update, options));
   }
   async findByIdOrThrow(id: string, select?: string | null | undefined): Promise<IGroupSettings> {
     let m = await this.findById(id, select,)
@@ -54,11 +54,11 @@ export class GroupSettingsService extends BaseRoomService<IGroupSettings>{
   }
 
   findByRoomId(roomId: string, select?: string | null | undefined, options?: QueryOptions<IGroupSettings> | null | undefined) {
-    return Promise.resolve(this.findAll({rId: roomId}, select, options));
+    return Promise.resolve(this.findAll({ rId: roomId }, select, options));
   }
 
-  findByRoomIdAndDelete(roomId: string,  ): Promise<any> {
-    return Promise.resolve(this.model.findOneAndDelete({rId: roomId}));
+  findByRoomIdAndDelete(roomId: string,): Promise<any> {
+    return Promise.resolve(this.model.findOneAndDelete({ rId: roomId }));
   }
 
   findByRoomIdAndUpdate(roomId: string, update: Partial<IGroupSettings>): Promise<any> {
@@ -72,7 +72,7 @@ export class GroupSettingsService extends BaseRoomService<IGroupSettings>{
   }
 
   createMany(obj: Array<Partial<IGroupSettings>>, session): Promise<any> {
-    return Promise.resolve(this.model.create(obj, {session}));
+    return Promise.resolve(this.model.create(obj, { session }));
   }
 
   findOneAndUpdate(filter: FilterQuery<IGroupSettings>, update: Partial<IGroupSettings>, session?, options?: QueryOptions<IGroupSettings> | null | undefined): Promise<IGroupSettings | null> {

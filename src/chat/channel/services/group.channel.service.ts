@@ -49,9 +49,10 @@ import { MongoIdsDto } from "../../../core/common/dto/mongo.ids.dto";
 import { UsersSearchDto } from "../dto/users_search_dto";
 import { MessageStatusParamDto } from "../dto/message_status_param_dto";
 import { DefaultPaginateParams } from "../../../core/common/dto/paginateDto";
-import { IGroupSettings } from "../../group_settings/entities/group_setting.entity";
+import { GroupMessagingPolicy, IGroupSettings } from "../../group_settings/entities/group_setting.entity";
 import { NotificationEmitterChannelService } from "./notification_emitter_channel.service";
 import { LoyaltyPointsService, LoyaltyPointsAction } from "../../../api/user_modules/loyalty_points/loyalty_points.service";
+import { UpdateGroupSettingsDto } from "../dto/update-group-setting.dto";
 
 @Injectable()
 export class GroupChannelService {
@@ -75,6 +76,21 @@ export class GroupChannelService {
     ) {
     }
 
+    // update group setting
+    async updateGroupSettings(gId: string, dto: UpdateGroupSettingsDto) {
+
+        await this.checkGroupAdminMember(gId, dto.myUser._id);
+
+        const updatePayload = {};
+        if (dto.messagingPolicy) {
+            updatePayload['messagingPolicy'] = dto.messagingPolicy;
+        }
+        if (dto.mutedMembers) {
+            updatePayload['mutedMembers'] = dto.mutedMembers;
+        }
+        return this.groupSetting.findByIdAndUpdate(gId, { $set: updatePayload });
+    }
+
     async createGroupChat(dto: CreateGroupRoomDto, session?: mongoose.ClientSession) {
         let config: IAppConfig = await this.appConfig.getConfig();
         let maxGroupCount = config.maxGroupMembers;
@@ -88,7 +104,7 @@ export class GroupChannelService {
             );
             dto.imageBuffer = undefined;
         }
-        ///add me to this group !
+        // add me to this group !
         dto.peerIds.push(dto.myUser._id);
         let groupId = newMongoObjId().toString();
         let users = await this.userService.findByIds(dto.peerIds, "fullName fullNameEn userImage")
@@ -183,6 +199,9 @@ export class GroupChannelService {
             gName: dto.groupName,
             desc: dto.groupDescription,
             extraData: dto.extraData,
+            // ✨ SET THE DEFAULT VALUES HERE
+            messagingPolicy: GroupMessagingPolicy.AllMembers,
+            mutedMembers: [],
         }, session);
 
         await this.socketIoService.joinRoom({
