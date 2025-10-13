@@ -35,6 +35,8 @@ import { V1Controller } from "../../core/common/v1-controller.decorator";
 import { SocialLoginDto } from "./dto/social-login.dto";
 import { RegisterMethod } from "src/core/utils/enums";
 import { RefreshTokenDto } from "./dto/refresh_token.dto";
+import { TwoFactorCodeDto } from "./dto/two_factor_digit.dto";
+import { TwoFactorLoginDto } from "./dto/two_factor_login.dto";
 
 @V1Controller("auth")
 export class AuthController {
@@ -196,8 +198,37 @@ export class AuthController {
       await this.authService.verifyOtpAdminReset(email, otp, newPassword)
     );
   }
+  // generate two factor authentication secret and qr code
+  @UseGuards(VerifiedAuthGuard)
+  @Get("/2fa/generate")
+  async generateTwoFactorAuthenticationSecret(@Req() req: any) {
+    const user = req.user;
+    return resOK(await this.authService.generateTwoFactorSecret(user));
+  }
 
-  
+  // enable two factor authentication
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/2fa/turn-on")
+  async turnOnTwoFactorAuthentication(@Req() req: any, @Body() body: TwoFactorCodeDto) {
+    const user = req.user;
+    return resOK(await this.authService.turnOnTwoFactorAuth(user, body));
+  }
+
+  // turn off two factor authentication
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/2fa/turn-off")
+  async turnOffTwoFactorAuthentication(@Req() req: any) {
+    const user = req.user;
+    return resOK(await this.authService.turnOffTwoFactorAuth(user));
+  }
+
+  @UseGuards(VerifiedAuthGuard)
+  @Post("/2fa/authenticate")
+  async authenticateTwoFactorAuthentication(@Req() req: any, @Body() body: TwoFactorLoginDto) {
+    const user = req.user;
+    return resOK(await this.authService.authenticateTwoFactor(user, body));
+  }
+
 
   @Post("/login")
   @HttpCode(200)

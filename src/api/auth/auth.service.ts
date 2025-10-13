@@ -54,6 +54,7 @@ import { RefreshTokenDto } from "./dto/refresh_token.dto";
 import { authenticator } from 'otplib';
 import { toDataURL } from 'qrcode';
 import { TwoFactorCodeDto } from "./dto/two_factor_digit.dto";
+import { TwoFactorLoginDto } from "./dto/two_factor_login.dto";
 
 @Injectable()
 export class AuthService {
@@ -85,6 +86,14 @@ export class AuthService {
     return { qrCodeDataUrl };
   }
 
+  // turn off two factor authentication
+  async turnOffTwoFactorAuth(user: IUser) {
+    await this.userService.findByIdAndUpdate(user._id, {
+      isTwoFactorEnabled: false,
+      twoFactorSecret: null,
+    });
+  }
+
   async turnOnTwoFactorAuth(user: IUser, dto: TwoFactorCodeDto) {
     const userWithSecret = await this.userService.findById(user._id, "twoFactorSecret");
 
@@ -97,7 +106,6 @@ export class AuthService {
       throw new BadRequestException('Invalid authentication code.');
     }
 
-    // 3. If valid, officially enable 2FA
     await this.userService.findByIdAndUpdate(user._id, {
       isTwoFactorEnabled: true,
     });
@@ -105,8 +113,7 @@ export class AuthService {
     return { message: '2-Step Verification has been enabled.' };
   }
 
-
-   async login(dto: LoginDto, isDev: boolean) {
+  async login(dto: LoginDto, isDev: boolean) {
     let foundedUser: IUser = await this.userService.findOneByEmailOrThrow(
       dto.email,
       "+password userDevice lastMail banTo email registerStatus deletedAt isTwoFactorEnabled twoFactorSecret"
@@ -121,86 +128,27 @@ export class AuthService {
         userId: foundedUser._id,
       });
     }
-    // if (foundedUser.deletedAt) {
-    //     await this.userService.findByIdAndUpdate(foundedUser._id, {
-    //         deletedAt: null
-    //     })
-    // }
-
-    let countryData = await geoIp.lookup(dto.ip);
-    let countryId;
-    if (countryData) {
-      countryId = await this.userCountryService.setUserCountry(
-        foundedUser._id,
-        countryData.country
-      );
-    }
-    await this.userService.findByIdAndUpdate(foundedUser._id, {
-      address: countryData,
-      countryId: countryId,
-    });
-
-    // remeber me implementation
-    let refreshToken: string | undefined = undefined;
-
-    let oldDevice = await this.userDevice.findOne({
-      uId: foundedUser._id,
-      userDeviceId: dto.deviceId,
-    });
-
-    if (oldDevice) {
-      const updatePayload: any = {
-        pushProvider: this._getVPushProvider(dto.pushKey),
-        pushKey: dto.pushKey,
-      };
-
-      if (dto.rememberMe) {
-        refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
-        updatePayload.refreshToken = refreshToken;
-      }
-
-      await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
-
-      let accessToken = this._signJwt(
-        foundedUser._id.toString(),
-        oldDevice._id.toString()
-      );
-
+    if (foundedUser.isTwoFactorEnabled) {
       return resOK({
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        status: foundedUser.registerStatus,
+        twoFactorRequired: true,
+        userId: foundedUser._id,
       });
     }
-    // this is new device
-    let mongoDeviceId = newMongoObjId().toString();
-    let access = this._signJwt(foundedUser._id.toString(), mongoDeviceId);
-    if (dto.rememberMe) {
-      refreshToken = this._signRefreshJwt(foundedUser._id.toString(), mongoDeviceId);
-      // Hash this before storing
-    }
-    await this.userDevice.create({
-      _id: mongoDeviceId,
-      userDeviceId: dto.deviceId,
-      uId: foundedUser._id,
-      language: dto.language,
-      platform: dto.platform,
-      pushProvider: this._getVPushProvider(dto.pushKey),
-      dIp: dto.ip,
-      deviceInfo: dto.deviceInfo,
-      pushKey: dto.pushKey,
-      refreshToken: refreshToken,
-    });
-    await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
-    return resOK({
-      accessToken: access, refreshToken: refreshToken,
-      status: foundedUser.registerStatus,
-    });
+
+    const tokens = await this._finalizeLogin(foundedUser, dto);
+    return resOK(tokens);
+
+
   }
 
-  async authenticateTwoFactor(userId: string, dto: TwoFactorCodeDto) {
-    const user = await this.userService.findById(userId, "twoFactorSecret");
-    if (!user) throw new UnauthorizedException();
+  async authenticateTwoFactor(userId: string, dto: TwoFactorLoginDto) {
+    const user = await this.userService.findById(
+      userId,
+      "twoFactorSecret registerStatus"
+    );
+    if (!user) {
+      throw new UnauthorizedException('User not found.');
+    }
 
     const isCodeValid = authenticator.verify({
       token: dto.code,
@@ -210,7 +158,104 @@ export class AuthService {
     if (!isCodeValid) {
       throw new UnauthorizedException('Invalid authentication code.');
     }
+
+    // If the code is valid, finalize the login and return tokens
+    const tokens = await this._finalizeLogin(user, dto);
+    return resOK(tokens);
   }
+
+  // async login(dto: LoginDto, isDev: boolean) {
+  //   let foundedUser: IUser = await this.userService.findOneByEmailOrThrow(
+  //     dto.email,
+  //     "+password userDevice lastMail banTo email registerStatus deletedAt isTwoFactorEnabled twoFactorSecret"
+  //   );
+  //   await this.comparePassword(dto.password, foundedUser.password);
+  //   if (foundedUser.banTo) {
+  //     throw new BadRequestException(i18nApi.yourAccountBlockedString);
+  //   }
+  //   if (foundedUser.isTwoFactorEnabled) {
+  //     return resOK({
+  //       twoFactorRequired: true,
+  //       userId: foundedUser._id,
+  //     });
+  //   }
+  //   // if (foundedUser.deletedAt) {
+  //   //     await this.userService.findByIdAndUpdate(foundedUser._id, {
+  //   //         deletedAt: null
+  //   //     })
+  //   // }
+
+  //   let countryData = await geoIp.lookup(dto.ip);
+  //   let countryId;
+  //   if (countryData) {
+  //     countryId = await this.userCountryService.setUserCountry(
+  //       foundedUser._id,
+  //       countryData.country
+  //     );
+  //   }
+  //   await this.userService.findByIdAndUpdate(foundedUser._id, {
+  //     address: countryData,
+  //     countryId: countryId,
+  //   });
+
+  //   // remeber me implementation
+  //   let refreshToken: string | undefined = undefined;
+
+  //   let oldDevice = await this.userDevice.findOne({
+  //     uId: foundedUser._id,
+  //     userDeviceId: dto.deviceId,
+  //   });
+
+  //   if (oldDevice) {
+  //     const updatePayload: any = {
+  //       pushProvider: this._getVPushProvider(dto.pushKey),
+  //       pushKey: dto.pushKey,
+  //     };
+
+  //     if (dto.rememberMe) {
+  //       refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
+  //       updatePayload.refreshToken = refreshToken;
+  //     }
+
+  //     await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
+
+  //     let accessToken = this._signJwt(
+  //       foundedUser._id.toString(),
+  //       oldDevice._id.toString()
+  //     );
+
+  //     return resOK({
+  //       accessToken: accessToken,
+  //       refreshToken: refreshToken,
+  //       status: foundedUser.registerStatus,
+  //     });
+  //   }
+  //   // this is new device
+  //   let mongoDeviceId = newMongoObjId().toString();
+  //   let access = this._signJwt(foundedUser._id.toString(), mongoDeviceId);
+  //   if (dto.rememberMe) {
+  //     refreshToken = this._signRefreshJwt(foundedUser._id.toString(), mongoDeviceId);
+  //     // Hash this before storing
+  //   }
+  //   await this.userDevice.create({
+  //     _id: mongoDeviceId,
+  //     userDeviceId: dto.deviceId,
+  //     uId: foundedUser._id,
+  //     language: dto.language,
+  //     platform: dto.platform,
+  //     pushProvider: this._getVPushProvider(dto.pushKey),
+  //     dIp: dto.ip,
+  //     deviceInfo: dto.deviceInfo,
+  //     pushKey: dto.pushKey,
+  //     refreshToken: refreshToken,
+  //   });
+  //   await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
+  //   return resOK({
+  //     accessToken: access, refreshToken: refreshToken,
+  //     status: foundedUser.registerStatus,
+  //   });
+  // }
+
 
   async resetPasswordWithLink(
     email: string,
@@ -933,6 +978,67 @@ export class AuthService {
       dto.session
     );
     return access;
+  }
+
+  private async _finalizeLogin(user: IUser, dto: LoginDto | TwoFactorLoginDto) {
+    // --- This is the logic moved from your original login function ---
+
+    // 1. GeoIP and Country data (optional but good for consistency)
+    let countryData = await geoIp.lookup(dto.ip);
+    if (countryData) {
+      const countryId = await this.userCountryService.setUserCountry(
+        user._id,
+        countryData.country,
+      );
+      await this.userService.findByIdAndUpdate(user._id, {
+        address: countryData,
+        countryId: countryId,
+      });
+    }
+
+    // 2. Device handling and token generation
+    let refreshToken: string | undefined = undefined;
+    const oldDevice = await this.userDevice.findOne({
+      uId: user._id,
+      userDeviceId: dto.deviceId,
+    });
+
+    if (oldDevice) {
+      const updatePayload: any = {
+        pushProvider: this._getVPushProvider(dto.pushKey),
+        pushKey: dto.pushKey,
+      };
+      if (dto.rememberMe) {
+        refreshToken = this._signRefreshJwt(user._id.toString(), oldDevice._id.toString());
+        updatePayload.refreshToken = refreshToken; // You should hash this!
+      }
+      await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
+      const accessToken = this._signJwt(user._id.toString(), oldDevice._id.toString());
+      return { accessToken, refreshToken, status: user.registerStatus };
+    }
+
+    // This is a new device
+    const mongoDeviceId = newMongoObjId().toString();
+    const accessToken = this._signJwt(user._id.toString(), mongoDeviceId);
+    if (dto.rememberMe) {
+      refreshToken = this._signRefreshJwt(user._id.toString(), mongoDeviceId);
+    }
+
+    await this.userDevice.create({
+      _id: mongoDeviceId,
+      userDeviceId: dto.deviceId,
+      uId: user._id,
+      language: dto.language,
+      platform: dto.platform,
+      pushProvider: this._getVPushProvider(dto.pushKey),
+      dIp: dto.ip,
+      deviceInfo: dto.deviceInfo,
+      pushKey: dto.pushKey,
+      refreshToken: refreshToken, // You should hash this!
+    });
+
+    await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
+    return { accessToken, refreshToken, status: user.registerStatus };
   }
 
   private _jwtVerify(token: string): JwtDecodeRes {
