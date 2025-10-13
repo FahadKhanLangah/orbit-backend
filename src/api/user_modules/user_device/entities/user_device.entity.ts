@@ -4,8 +4,8 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import mongoose, {Schema} from "mongoose";
-import {Platform, VPushProvider} from "../../../../core/utils/enums";
+import mongoose, { Schema } from "mongoose";
+import { Platform, VPushProvider } from "../../../../core/utils/enums";
 
 export interface IUserDevice {
     _id: string
@@ -25,14 +25,15 @@ export interface IUserDevice {
     clintVersion?: string,
     createdAt: Date,
     updatedAt: Date,
+    refreshToken?: string
 }
 
 export const UserDeviceSchema = new mongoose.Schema(
     {
-        userDeviceId: {type: String, required: true},
-        uId: {type: Schema.Types.ObjectId, ref: "user", required: true, index: 1},
-        deviceInfo: {type: Object, default: {}},
-        dIp: {type: String, required: true},
+        userDeviceId: { type: String, required: true },
+        uId: { type: Schema.Types.ObjectId, ref: "user", required: true, index: 1 },
+        deviceInfo: { type: Object, default: {} },
+        dIp: { type: String, required: true },
         pushProvider: {
             type: String,
             default: null,
@@ -42,14 +43,18 @@ export const UserDeviceSchema = new mongoose.Schema(
             required: true,
             enum: Object.values(Platform),
         },
-        pushKey: {type: String, default: null},
-        voipKey: {type: String, default: null},
-        language: {type: String, default: "en"},
-        clintVersion: {type: String,},
-        lastSeenAt: {type: Date, default: Date.now()},
-        visits: {type: Number, default: 1},
-        createdAt: {type: Date },
-        updatedAt: {type: Date, select: false}
+        pushKey: { type: String, default: null },
+        voipKey: { type: String, default: null },
+        language: { type: String, default: "en" },
+        clintVersion: { type: String, },
+        lastSeenAt: { type: Date, default: Date.now() },
+        visits: { type: Number, default: 1 },
+        createdAt: { type: Date },
+        updatedAt: { type: Date, select: false },
+        refreshToken: {
+            type: String,
+            select: false,
+        },
     },
     {
         timestamps: true

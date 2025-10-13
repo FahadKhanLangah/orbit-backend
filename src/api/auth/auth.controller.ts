@@ -34,10 +34,11 @@ import VerifyEmailDto from "./dto/verify.email.dto";
 import { V1Controller } from "../../core/common/v1-controller.decorator";
 import { SocialLoginDto } from "./dto/social-login.dto";
 import { RegisterMethod } from "src/core/utils/enums";
+import { RefreshTokenDto } from "./dto/refresh_token.dto";
 
 @V1Controller("auth")
 export class AuthController {
-  constructor(private readonly authService: AuthService) {}
+  constructor(private readonly authService: AuthService) { }
 
   // @Get("/requests")
   // async list(@Query() q: AdminListQueryDto) {
@@ -196,6 +197,8 @@ export class AuthController {
     );
   }
 
+  
+
   @Post("/login")
   @HttpCode(200)
   async login(
@@ -230,6 +233,11 @@ export class AuthController {
     }
     dto.ip = ipAddress;
     return resOK(await this.authService.register(dto));
+  }
+
+  @Post('/refresh')
+  async refreshAccessToken(@Body() dto: RefreshTokenDto) {
+    return resOK(await this.authService.refreshAccessToken(dto));
   }
 
   // @Post("/send-otp-register")

@@ -73,6 +73,8 @@ export interface IUser {
   userGlobalCallStatus?: UserGlobalCallStatus;
   socialId?: string;
   provider?: string;
+  // remeber Me true or false
+  rememberMe?: boolean;
 }
 
 export enum DpVisibilityType {

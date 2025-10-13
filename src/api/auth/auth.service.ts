@@ -50,6 +50,7 @@ import { MailEmitterService } from "../mail/mail.emitter.service";
 import { SocialLoginDto } from "./dto/social-login.dto";
 import axios from "axios";
 import * as crypto from "crypto";
+import { RefreshTokenDto } from "./dto/refresh_token.dto";
 
 @Injectable()
 export class AuthService {
@@ -64,7 +65,7 @@ export class AuthService {
     private readonly userCountryService: UserCountryService,
     private readonly notificationEmitterService: NotificationEmitterService,
     private readonly loyaltyPointsService: LoyaltyPointsService
-  ) {}
+  ) { }
 
   async resetPasswordWithLink(
     email: string,
@@ -427,27 +428,64 @@ export class AuthService {
       countryId: countryId,
     });
 
+    // remeber me implementation
+    let refreshToken: string | undefined = undefined;
+
     let oldDevice = await this.userDevice.findOne({
       uId: foundedUser._id,
       userDeviceId: dto.deviceId,
     });
+
     if (oldDevice) {
-      await this.userDevice.findByIdAndUpdate(oldDevice._id, {
+      const updatePayload: any = {
         pushProvider: this._getVPushProvider(dto.pushKey),
         pushKey: dto.pushKey,
-      });
-      let access = this._signJwt(
+      };
+
+      if (dto.rememberMe) {
+        refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
+        updatePayload.refreshToken = refreshToken; 
+      }
+
+      await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
+
+      let accessToken = this._signJwt(
         foundedUser._id.toString(),
         oldDevice._id.toString()
       );
+
       return resOK({
-        accessToken: access,
+        accessToken: accessToken,
+        refreshToken: refreshToken,
         status: foundedUser.registerStatus,
       });
     }
+
+    // if (oldDevice) {
+    //   await this.userDevice.findByIdAndUpdate(oldDevice._id, {
+    //     pushProvider: this._getVPushProvider(dto.pushKey),
+    //     pushKey: dto.pushKey,
+    //   });
+    //   if (dto.rememberMe) {
+    //     refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
+    //     oldDevice.refreshToken = refreshToken;
+    //   }
+    //   let access = this._signJwt(
+    //     foundedUser._id.toString(),
+    //     oldDevice._id.toString()
+    //   );
+    //   return resOK({
+    //     accessToken: access,
+    //     status: foundedUser.registerStatus,
+    //   });
+    // }
     // this is new device
     let mongoDeviceId = newMongoObjId().toString();
     let access = this._signJwt(foundedUser._id.toString(), mongoDeviceId);
+    if (dto.rememberMe) {
+      refreshToken = this._signRefreshJwt(foundedUser._id.toString(), mongoDeviceId);
+      // Hash this before storing
+    }
     await this.userDevice.create({
       _id: mongoDeviceId,
       userDeviceId: dto.deviceId,
@@ -458,12 +496,39 @@ export class AuthService {
       dIp: dto.ip,
       deviceInfo: dto.deviceInfo,
       pushKey: dto.pushKey,
+      refreshToken: refreshToken,
     });
     await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
     return resOK({
-      accessToken: access,
+      accessToken: access, refreshToken: refreshToken,
       status: foundedUser.registerStatus,
     });
+  }
+
+  async refreshAccessToken(dto: RefreshTokenDto) {
+    try {
+
+      const payload = this.jwtService.verify(dto.refreshToken, {
+        secret: process.env.JWT_REFRESH_SECRET,
+      });
+      const { userId, deviceId } = payload;
+  
+      const device = await this.userDevice.findById(deviceId,"+refreshToken");
+
+      if (!device || !device.refreshToken) {
+        throw new UnauthorizedException('Access Denied. Please log in again.');
+      }
+      if (dto.refreshToken !== device.refreshToken) {
+        throw new UnauthorizedException('Access Denied. Token has been invalidated.');
+      }
+
+      const newAccessToken = this._signJwt(userId, deviceId);
+
+      return { accessToken: newAccessToken };
+
+    } catch (error) {
+      throw new UnauthorizedException('Refresh token expired or invalid. Please log in again.');
+    }
   }
 
   async register(dto: RegisterDto) {
@@ -746,7 +811,7 @@ export class AuthService {
     mailType: MailType,
     isDev: boolean,
     session?
-  ) {}
+  ) { }
 
   async generateUniqueCode(): Promise<number> {
     let uniqueCode: number;
@@ -785,6 +850,16 @@ export class AuthService {
       deviceId: deviceId.toString(),
       accessType: AccessTokenType.Access,
     });
+  }
+
+  private _signRefreshJwt(userId: string, deviceId: string): string {
+    return this.jwtService.sign(
+      { userId, deviceId },
+      {
+        secret: process.env.JWT_REFRESH_SECRET,
+        expiresIn: '30d',
+      }
+    );
   }
 
   private async deleteDevicesAndCreateNew(dto: {

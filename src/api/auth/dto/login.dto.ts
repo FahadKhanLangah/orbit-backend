@@ -4,7 +4,7 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {Allow, IsEmail, IsEnum, IsNotEmpty, MaxLength, ValidateIf} from "class-validator";
+import {Allow, IsBoolean, IsEmail, IsEnum, IsNotEmpty, IsOptional, MaxLength, ValidateIf} from "class-validator";
 import {Trim} from "class-sanitizer";
 import { Platform, RegisterMethod } from "../../../core/utils/enums";
 
@@ -43,4 +43,8 @@ export default class LoginDto {
     @Trim()
     @MaxLength(255)
     deviceId: string;
+
+    @IsBoolean()
+    @IsOptional()
+    rememberMe?: boolean;
 }
