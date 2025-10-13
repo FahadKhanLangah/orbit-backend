@@ -75,6 +75,9 @@ export interface IUser {
   provider?: string;
   // remeber Me true or false
   rememberMe?: boolean;
+  // two factor authentication
+  isTwoFactorEnabled?: boolean;
+  twoFactorSecret?: string;
 }
 
 export enum DpVisibilityType {
@@ -193,6 +196,14 @@ export const UserSchema = new mongoose.Schema(
 
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
+    isTwoFactorEnabled: {
+      type: Boolean,
+      default: false,
+    },
+    twoFactorSecret: {
+      type: String,
+      select: false,
+    },
 
   },
   {

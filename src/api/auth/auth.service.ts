@@ -51,6 +51,9 @@ import { SocialLoginDto } from "./dto/social-login.dto";
 import axios from "axios";
 import * as crypto from "crypto";
 import { RefreshTokenDto } from "./dto/refresh_token.dto";
+import { authenticator } from 'otplib';
+import { toDataURL } from 'qrcode';
+import { TwoFactorCodeDto } from "./dto/two_factor_digit.dto";
 
 @Injectable()
 export class AuthService {
@@ -66,6 +69,148 @@ export class AuthService {
     private readonly notificationEmitterService: NotificationEmitterService,
     private readonly loyaltyPointsService: LoyaltyPointsService
   ) { }
+
+
+  async generateTwoFactorSecret(user: IUser) {
+    // 1. Generate a new secret key
+    const secret = authenticator.generateSecret();
+
+    // 2. Create the OTP Auth URL (app name + user email)
+    const otpAuthUrl = authenticator.keyuri(user.email, 'Orbit', secret);
+
+    await this.userService.findByIdAndUpdate(user._id, {
+      twoFactorSecret: secret,
+    });
+    const qrCodeDataUrl = await toDataURL(otpAuthUrl);
+    return { qrCodeDataUrl };
+  }
+
+  async turnOnTwoFactorAuth(user: IUser, dto: TwoFactorCodeDto) {
+    const userWithSecret = await this.userService.findById(user._id, "twoFactorSecret");
+
+    const isCodeValid = authenticator.verify({
+      token: dto.code,
+      secret: userWithSecret.twoFactorSecret,
+    });
+
+    if (!isCodeValid) {
+      throw new BadRequestException('Invalid authentication code.');
+    }
+
+    // 3. If valid, officially enable 2FA
+    await this.userService.findByIdAndUpdate(user._id, {
+      isTwoFactorEnabled: true,
+    });
+
+    return { message: '2-Step Verification has been enabled.' };
+  }
+
+
+   async login(dto: LoginDto, isDev: boolean) {
+    let foundedUser: IUser = await this.userService.findOneByEmailOrThrow(
+      dto.email,
+      "+password userDevice lastMail banTo email registerStatus deletedAt isTwoFactorEnabled twoFactorSecret"
+    );
+    await this.comparePassword(dto.password, foundedUser.password);
+    if (foundedUser.banTo) {
+      throw new BadRequestException(i18nApi.yourAccountBlockedString);
+    }
+    if (foundedUser.isTwoFactorEnabled) {
+      return resOK({
+        twoFactorRequired: true,
+        userId: foundedUser._id,
+      });
+    }
+    // if (foundedUser.deletedAt) {
+    //     await this.userService.findByIdAndUpdate(foundedUser._id, {
+    //         deletedAt: null
+    //     })
+    // }
+
+    let countryData = await geoIp.lookup(dto.ip);
+    let countryId;
+    if (countryData) {
+      countryId = await this.userCountryService.setUserCountry(
+        foundedUser._id,
+        countryData.country
+      );
+    }
+    await this.userService.findByIdAndUpdate(foundedUser._id, {
+      address: countryData,
+      countryId: countryId,
+    });
+
+    // remeber me implementation
+    let refreshToken: string | undefined = undefined;
+
+    let oldDevice = await this.userDevice.findOne({
+      uId: foundedUser._id,
+      userDeviceId: dto.deviceId,
+    });
+
+    if (oldDevice) {
+      const updatePayload: any = {
+        pushProvider: this._getVPushProvider(dto.pushKey),
+        pushKey: dto.pushKey,
+      };
+
+      if (dto.rememberMe) {
+        refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
+        updatePayload.refreshToken = refreshToken;
+      }
+
+      await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
+
+      let accessToken = this._signJwt(
+        foundedUser._id.toString(),
+        oldDevice._id.toString()
+      );
+
+      return resOK({
+        accessToken: accessToken,
+        refreshToken: refreshToken,
+        status: foundedUser.registerStatus,
+      });
+    }
+    // this is new device
+    let mongoDeviceId = newMongoObjId().toString();
+    let access = this._signJwt(foundedUser._id.toString(), mongoDeviceId);
+    if (dto.rememberMe) {
+      refreshToken = this._signRefreshJwt(foundedUser._id.toString(), mongoDeviceId);
+      // Hash this before storing
+    }
+    await this.userDevice.create({
+      _id: mongoDeviceId,
+      userDeviceId: dto.deviceId,
+      uId: foundedUser._id,
+      language: dto.language,
+      platform: dto.platform,
+      pushProvider: this._getVPushProvider(dto.pushKey),
+      dIp: dto.ip,
+      deviceInfo: dto.deviceInfo,
+      pushKey: dto.pushKey,
+      refreshToken: refreshToken,
+    });
+    await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
+    return resOK({
+      accessToken: access, refreshToken: refreshToken,
+      status: foundedUser.registerStatus,
+    });
+  }
+
+  async authenticateTwoFactor(userId: string, dto: TwoFactorCodeDto) {
+    const user = await this.userService.findById(userId, "twoFactorSecret");
+    if (!user) throw new UnauthorizedException();
+
+    const isCodeValid = authenticator.verify({
+      token: dto.code,
+      secret: user.twoFactorSecret,
+    });
+
+    if (!isCodeValid) {
+      throw new UnauthorizedException('Invalid authentication code.');
+    }
+  }
 
   async resetPasswordWithLink(
     email: string,
@@ -400,111 +545,6 @@ export class AuthService {
     return true;
   }
 
-  async login(dto: LoginDto, isDev: boolean) {
-    let foundedUser: IUser = await this.userService.findOneByEmailOrThrow(
-      dto.email,
-      "+password userDevice lastMail banTo email registerStatus deletedAt"
-    );
-    await this.comparePassword(dto.password, foundedUser.password);
-    if (foundedUser.banTo) {
-      throw new BadRequestException(i18nApi.yourAccountBlockedString);
-    }
-    // if (foundedUser.deletedAt) {
-    //     await this.userService.findByIdAndUpdate(foundedUser._id, {
-    //         deletedAt: null
-    //     })
-    // }
-
-    let countryData = await geoIp.lookup(dto.ip);
-    let countryId;
-    if (countryData) {
-      countryId = await this.userCountryService.setUserCountry(
-        foundedUser._id,
-        countryData.country
-      );
-    }
-    await this.userService.findByIdAndUpdate(foundedUser._id, {
-      address: countryData,
-      countryId: countryId,
-    });
-
-    // remeber me implementation
-    let refreshToken: string | undefined = undefined;
-
-    let oldDevice = await this.userDevice.findOne({
-      uId: foundedUser._id,
-      userDeviceId: dto.deviceId,
-    });
-
-    if (oldDevice) {
-      const updatePayload: any = {
-        pushProvider: this._getVPushProvider(dto.pushKey),
-        pushKey: dto.pushKey,
-      };
-
-      if (dto.rememberMe) {
-        refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
-        updatePayload.refreshToken = refreshToken; 
-      }
-
-      await this.userDevice.findByIdAndUpdate(oldDevice._id, updatePayload);
-
-      let accessToken = this._signJwt(
-        foundedUser._id.toString(),
-        oldDevice._id.toString()
-      );
-
-      return resOK({
-        accessToken: accessToken,
-        refreshToken: refreshToken,
-        status: foundedUser.registerStatus,
-      });
-    }
-
-    // if (oldDevice) {
-    //   await this.userDevice.findByIdAndUpdate(oldDevice._id, {
-    //     pushProvider: this._getVPushProvider(dto.pushKey),
-    //     pushKey: dto.pushKey,
-    //   });
-    //   if (dto.rememberMe) {
-    //     refreshToken = this._signRefreshJwt(foundedUser._id.toString(), oldDevice._id.toString());
-    //     oldDevice.refreshToken = refreshToken;
-    //   }
-    //   let access = this._signJwt(
-    //     foundedUser._id.toString(),
-    //     oldDevice._id.toString()
-    //   );
-    //   return resOK({
-    //     accessToken: access,
-    //     status: foundedUser.registerStatus,
-    //   });
-    // }
-    // this is new device
-    let mongoDeviceId = newMongoObjId().toString();
-    let access = this._signJwt(foundedUser._id.toString(), mongoDeviceId);
-    if (dto.rememberMe) {
-      refreshToken = this._signRefreshJwt(foundedUser._id.toString(), mongoDeviceId);
-      // Hash this before storing
-    }
-    await this.userDevice.create({
-      _id: mongoDeviceId,
-      userDeviceId: dto.deviceId,
-      uId: foundedUser._id,
-      language: dto.language,
-      platform: dto.platform,
-      pushProvider: this._getVPushProvider(dto.pushKey),
-      dIp: dto.ip,
-      deviceInfo: dto.deviceInfo,
-      pushKey: dto.pushKey,
-      refreshToken: refreshToken,
-    });
-    await this._pushNotificationSubscribe(dto.pushKey, dto.platform);
-    return resOK({
-      accessToken: access, refreshToken: refreshToken,
-      status: foundedUser.registerStatus,
-    });
-  }
-
   async refreshAccessToken(dto: RefreshTokenDto) {
     try {
 
@@ -512,8 +552,8 @@ export class AuthService {
         secret: process.env.JWT_REFRESH_SECRET,
       });
       const { userId, deviceId } = payload;
-  
-      const device = await this.userDevice.findById(deviceId,"+refreshToken");
+
+      const device = await this.userDevice.findById(deviceId, "+refreshToken");
 
       if (!device || !device.refreshToken) {
         throw new UnauthorizedException('Access Denied. Please log in again.');
