@@ -33,6 +33,7 @@ import { RoomIdAndMsgIdDto } from "../../../core/common/dto/room.id.and.msg.id.d
 import { VoteOnPollDto } from "src/chat/message/dto/VoteOnPollDto";
 import { MongoIdDto } from "src/core/common/dto/mongo.id.dto";
 import { MongoMessageIdDto } from "src/core/common/dto/mongo.messageId.dto";
+import { TranslateMessageDto } from "src/chat/message/dto/translate-message.dto";
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller("channel/:roomId/message") 
@@ -176,5 +177,20 @@ export class MessageChannelController {
   ) {
     dto.myUser = req.user;
     return resOK(await this.channelMessageService.replyFromNotification(dto));
+  }
+
+   @Post('/:messageId/translate')
+  async translateMessage(
+    @Req() req: any,
+    @Param() dto: RoomIdAndMsgIdDto,
+    @Body() translateDto: TranslateMessageDto,
+  ) {
+    dto.myUser = req.user;
+    return resOK(
+      await this.channelMessageService.translateMessage(
+        dto,
+        translateDto.targetLanguage,
+      ),
+    );
   }
 }

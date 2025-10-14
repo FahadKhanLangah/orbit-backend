@@ -35,9 +35,11 @@ import { BroadcastChannelController } from "src/chat/channel/controllers/broadca
 import { MessageChannelController } from "src/chat/channel/controllers/message.channel.controller";
 import { GroupChannelController } from "src/chat/channel/controllers/group.channel.controller";
 import { RoomMemberSchema } from "src/chat/room_member/entities/room_member.entity";
+import { TranslationModule } from "src/common/transalation/translation.module";
 
 @Module({
   imports: [
+    TranslationModule,
     UserModule,
     MessageModule,
     RoomMemberModule,

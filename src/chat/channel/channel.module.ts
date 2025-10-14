@@ -39,6 +39,7 @@ import { RoomMemberSchema } from "../room_member/entities/room_member.entity";
 import { UserSchema } from "src/api/user_modules/user/entities/user.entity";
 import { SchedulingService } from "./services/scheduling.service";
 import { MessageSchema } from "../message/entities/message.entity";
+import { TranslationModule } from "src/common/transalation/translation.module";
 
 @Module({
   controllers: [
@@ -80,6 +81,7 @@ import { MessageSchema } from "../message/entities/message.entity";
     OrderRoomSettingsModule,
     UserDeviceModule,
     LoyaltyPointsModule,
+    TranslationModule
 
   ],
   exports: [ChannelService, MessageChannelService],

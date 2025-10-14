@@ -53,6 +53,7 @@ import { Types } from "mongoose";
 import { InjectQueue } from "@nestjs/bullmq";
 import { Queue } from "bullmq";
 import { GroupMessagingPolicy } from "src/chat/group_settings/entities/group_setting.entity";
+import { TranslationService } from "src/common/transalation/translation.service";
 const objectIdRegExp = /[a-f\d]{24}/gi;
 
 @Injectable()
@@ -72,7 +73,8 @@ export class MessageChannelService {
     private readonly groupSetting: GroupSettingsService,
     private readonly broadcastSetting: BroadcastSettingsService,
     private readonly groupMessageStatusService: GroupMessageStatusService,
-    private readonly userBan: UserBanService
+    private readonly userBan: UserBanService,
+    private readonly translationService: TranslationService,
   ) { }
 
   async createMessage(dto: SendMessageDto, isSilent: boolean = false) {
@@ -781,5 +783,28 @@ export class MessageChannelService {
 
     // Send the message using existing createMessage logic
     return await this.createMessage(sendDto, false);
+  }
+
+  async translateMessage(dto: RoomIdAndMsgIdDto, targetLanguage: string) {
+
+    await this.middlewareService.isThereRoomMemberOrThrow(
+      dto.roomId,
+      dto.myUser._id,
+    );
+
+    const msg: IMessage = await this.messageService.getByIdOrFail(dto.messageId);
+
+    if (msg.mT !== MessageType.Text) {
+      throw new BadRequestException('Only text messages can be translated.');
+    }
+
+
+    const translatedText = await this.translationService.translateText(
+      msg.c, // The original content
+      targetLanguage,
+    );
+
+    // 6. Return the translated text to the user
+    return { translatedText };
   }
 }
