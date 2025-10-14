@@ -1,28 +1,28 @@
 
-import {BadRequestException, ForbiddenException, Injectable} from '@nestjs/common';
-import {StoryService} from "../story/story.service";
-import {CreateStoryDto} from "./dto/story.dto";
-import {resOK} from "../../../core/utils/res.helpers";
-import {MongoIdDto} from "../../../core/common/dto/mongo.id.dto";
-import {CreateS3UploaderDto} from "../../../common/file_uploader/create-s3_uploader.dto";
-import {FileUploaderService} from "../../../common/file_uploader/file_uploader.service";
-import {jsonDecoder} from "../../../core/utils/app.validator";
-import {newMongoObjId} from "../../../core/utils/utils";
-import {BanService} from "../../ban/ban.service";
-import {UserBanService} from "../../user_modules/user_ban/user_ban.service";
-import {PaginationParameters} from "mongoose-paginate-v2";
-import {UserService} from "../../user_modules/user/user.service";
-import {StoryPrivacy, UserPrivacyTypes, MessageType} from "../../../core/utils/enums";
-import {IUser} from "../../user_modules/user/entities/user.entity";
-import {StoryAttachmentService} from "../story_attachment/story_attachment.service";
-import {ChannelService} from "../../../chat/channel/services/channel.service";
-import {MessageChannelService} from "../../../chat/channel/services/message.channel.service";
-import {SendMessageDto} from "../../../chat/channel/dto/send.message.dto";
-import {MongoPeerIdDto} from "../../../core/common/dto/mongo.peer.id.dto";
-import {v4 as uuidv4} from 'uuid';
-import {MemoryService} from "../memory/memory.service";
-import {SocketIoService} from "../../../chat/socket_io/socket_io.service";
-import {SocketEventsType} from "../../../core/utils/enums";
+import { BadRequestException, ForbiddenException, Injectable } from '@nestjs/common';
+import { StoryService } from "../story/story.service";
+import { CreateStoryDto } from "./dto/story.dto";
+import { resOK } from "../../../core/utils/res.helpers";
+import { MongoIdDto } from "../../../core/common/dto/mongo.id.dto";
+import { CreateS3UploaderDto } from "../../../common/file_uploader/create-s3_uploader.dto";
+import { FileUploaderService } from "../../../common/file_uploader/file_uploader.service";
+import { jsonDecoder } from "../../../core/utils/app.validator";
+import { newMongoObjId } from "../../../core/utils/utils";
+import { BanService } from "../../ban/ban.service";
+import { UserBanService } from "../../user_modules/user_ban/user_ban.service";
+import { PaginationParameters } from "mongoose-paginate-v2";
+import { UserService } from "../../user_modules/user/user.service";
+import { StoryPrivacy, UserPrivacyTypes, MessageType } from "../../../core/utils/enums";
+import { IUser } from "../../user_modules/user/entities/user.entity";
+import { StoryAttachmentService } from "../story_attachment/story_attachment.service";
+import { ChannelService } from "../../../chat/channel/services/channel.service";
+import { MessageChannelService } from "../../../chat/channel/services/message.channel.service";
+import { SendMessageDto } from "../../../chat/channel/dto/send.message.dto";
+import { MongoPeerIdDto } from "../../../core/common/dto/mongo.peer.id.dto";
+import { v4 as uuidv4 } from 'uuid';
+import { MemoryService } from "../memory/memory.service";
+import { SocketIoService } from "../../../chat/socket_io/socket_io.service";
+import { SocketEventsType } from "../../../core/utils/enums";
 
 @Injectable()
 export class UserStoryService {
@@ -43,6 +43,9 @@ export class UserStoryService {
     async create(dto: CreateStoryDto) {
         let exceptPeople = [];
 
+        if (dto.hasMedia() && !dto._mediaFile) {
+            throw new BadRequestException("Media file is required for this story type.");
+        }
         if (!dto.isText() && !dto._mediaFile)
             throw new BadRequestException("file data required");
         if (dto._mediaFile) {
@@ -75,7 +78,7 @@ export class UserStoryService {
         if (dto.storyPrivacy === StoryPrivacy.Public || !dto.storyPrivacy) {
             // For public stories, include all users except blocked ones
             dto.somePeople = (await this.userService.findAll({
-                _id: {$nin: exceptPeople},
+                _id: { $nin: exceptPeople },
             })).map(user => user._id);
             console.log('Public story - somePeople set to all users:', dto.somePeople.length);
         } else if (dto.storyPrivacy === StoryPrivacy.SomePeople) {
@@ -98,7 +101,7 @@ export class UserStoryService {
                 allExceptPeople.push(...dto.exceptPeople);
             }
             dto.somePeople = (await this.userService.findAll({
-                _id: {$nin: allExceptPeople},
+                _id: { $nin: allExceptPeople },
             })).map(user => user._id);
             console.log('MyContactsExcept story - somePeople set to all users except excluded:', dto.somePeople.length);
         }
@@ -106,7 +109,7 @@ export class UserStoryService {
         let story = await this.storyService.create(dto.toJson());
         delete story['somePeople']
         let att = await this.storyAttachmentService.create({
-            storyId: story ["_id"],
+            storyId: story["_id"],
             likes: [],
             reply: [],
             shares: [],
@@ -149,7 +152,7 @@ export class UserStoryService {
 
     async getMyStories(myId: string) {
         let myStories = await this.storyService.findAll({
-            expireAt: {$gte: new Date()},
+            expireAt: { $gte: new Date() },
             userId: myId
         })
     }
@@ -169,8 +172,8 @@ export class UserStoryService {
         }).get();
         return this.storyService.aggregateV2(
             this.storyStages(myIdObj, {
-                expireAt: {$gte: new Date()},
-                userId: {$nin: blocked},
+                expireAt: { $gte: new Date() },
+                userId: { $nin: blocked },
                 somePeople: myIdObj,
             }),
             paginationParameters[1].page,
@@ -191,7 +194,7 @@ export class UserStoryService {
             {
                 $group: {
                     _id: "$userId",
-                    stories: {$push: "$$ROOT"}
+                    stories: { $push: "$$ROOT" }
                 }
             },
             {
@@ -239,7 +242,7 @@ export class UserStoryService {
                 $project: {
                     _id: 0,
                     stories: 1,
-                    userData: {$arrayElemAt: ["$userData", 0]}
+                    userData: { $arrayElemAt: ["$userData", 0] }
                 }
             },
             {
@@ -280,8 +283,8 @@ export class UserStoryService {
         await this.storyService.findOneAndUpdate(
             {
                 _id: dto.id,
-                "views.viewerId": {$ne: newMongoObjId(dto.myUser._id)},
-                userId: {$ne: dto.myUser._id},
+                "views.viewerId": { $ne: newMongoObjId(dto.myUser._id) },
+                userId: { $ne: dto.myUser._id },
             },
             {
                 $addToSet: {
@@ -376,7 +379,7 @@ export class UserStoryService {
         }).get();
         return await this.storyService.aggregateV2(
             this.storyStages(myIdObj, {
-                expireAt: {$gte: new Date()},
+                expireAt: { $gte: new Date() },
                 userId: myIdObj,
             }),
             paginationParameters[1].page,

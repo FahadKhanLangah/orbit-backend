@@ -3,10 +3,10 @@
  * All rights reserved. Use of this source code is governed by a
  * MIT license that can be found in the LICENSE file.
  */
-import {Allow, IsEnum, IsJSON, IsNotEmpty, ValidateIf} from "class-validator";
-import {MessageType, StoryFontType, StoryPrivacy, StoryTextAlign, StoryType} from "../../../../core/utils/enums";
+import { Allow, IsEnum, IsJSON, IsNotEmpty, ValidateIf } from "class-validator";
+import { MessageType, StoryFontType, StoryPrivacy, StoryTextAlign, StoryType } from "../../../../core/utils/enums";
 import CommonDto from "../../../../core/common/dto/common.dto";
-import {IStory} from "../../story/entities/story.entity";
+import { IStory } from "../../story/entities/story.entity";
 import * as Buffer from "buffer";
 
 export class CreateStoryDto extends CommonDto {
@@ -24,7 +24,7 @@ export class CreateStoryDto extends CommonDto {
     @IsNotEmpty()
     @Allow()
     @ValidateIf(object => object["storyPrivacy"] == StoryPrivacy.SomePeople)
-    somePeople?: any ;
+    somePeople?: any;
 
     @IsNotEmpty()
     @Allow()
@@ -111,10 +111,17 @@ export class CreateStoryDto extends CommonDto {
             return true
         }
     }
+    hasMedia(): boolean {
+        return this.isImage() || this.isVideo() || this.isVoice();
+    }
 
 }
 
-function attachmentValidationStory(object) {
-    let mT = object["storyType"] as String
-    return mT != StoryType.Text
+// function attachmentValidationStory(object) {
+//     let mT = object["storyType"] as String
+//     return mT != StoryType.Text
+// }
+
+function attachmentValidationStory(object: CreateStoryDto) {
+    return object.hasMedia(); // Use the new helper method
 }
