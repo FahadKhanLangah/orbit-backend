@@ -51,6 +51,7 @@ import {
 import { SettingsModule } from "../setting/settings.module";
 import { TransactionSchema } from "../transactions/schemas/transaction.schema";
 import { VerificationModule } from "../verification/verification.module";
+import { DriverModule } from "src/ride/driver/driver.module";
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -96,7 +97,8 @@ import { VerificationModule } from "../verification/verification.module";
     GiftModule,
     SocketIoModule,
     SettingsModule,
-    VerificationModule
+    VerificationModule,
+    DriverModule
   ],
 })
 export class AdminPanelModule {}

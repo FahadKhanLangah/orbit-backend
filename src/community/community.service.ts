@@ -79,8 +79,9 @@ export class CommunityService {
     // Step 3: Update the Database - Set the new image URL on the community document.
     community.cImg = url;
     await community.save();
-
-    // Step 4: Send Real-time Notifications - Inform all associated groups of the change.
+    return url;
+  }
+  // Step 4: Send Real-time Notifications - Inform all associated groups of the change.
     // if (community.groups && community.groups.length > 0) {
     //   for (const groupId of community.groups) {
     //     const msgDto = getMsgDtoObj({
@@ -103,8 +104,6 @@ export class CommunityService {
     //     });
     //   }
     // }
-    return url;
-  }
 
   async getAllCommunities(): Promise<ICommunity[]> {
     return this.communityModel.find().populate("groups").exec();

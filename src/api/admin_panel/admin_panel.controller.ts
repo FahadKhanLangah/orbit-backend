@@ -35,6 +35,9 @@ import { TransactionService } from "../transactions/transaction.service";
 import { VerificationService } from "../verification/verification.service";
 import { VerificationStatus } from "../verification/schema/verification-request.schema";
 import { BroadcastMessageDto } from "./dto/broadcast-message.dto";
+import { DriverService } from "src/ride/driver/driver.service";
+import { driverProfileStatus } from "src/ride/driver/entity/driver.entity";
+import { GetDriversFilterDto, UpdateDriverStatusDto } from "src/ride/driver/dto/status-dto";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -45,8 +48,15 @@ export class AdminPanelController {
     private readonly subscriptionPlanService: SubscriptionPlanService,
     private readonly settingsService: SettingsService,
     private readonly transactionService: TransactionService,
-    private readonly verificationService: VerificationService
-  ) {}
+    private readonly verificationService: VerificationService,
+    private readonly driverService: DriverService
+  ) { }
+
+  // get all drivers 
+  @Get("all-drivers")
+  async getAllDriver() {
+    return await this.driverService.getAllDrivers();
+  }
 
   @Post("/send-broadcast/notification")
   @UseInterceptors(imageFileInterceptor)
@@ -405,5 +415,18 @@ export class AdminPanelController {
       return resOK("YOU ARE VIEWER !!!");
     }
     return resOK(await this.adminPanelService.deleteGift(dto.id));
+  }
+
+ @Get('/drivers')
+  async getSelectedDrivers(@Query() filterDto: GetDriversFilterDto) {
+    return this.driverService.getSelectedDrivers(filterDto);
+  }
+
+  @Patch('/driver/update-status/:id')
+  async updateStatus(
+    @Param() Param: MongoIdDto,
+    @Body() status: UpdateDriverStatusDto
+  ) {
+    return this.driverService.updateDriverStatus(Param.id, status)
   }
 }

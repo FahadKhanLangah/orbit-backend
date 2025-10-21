@@ -66,6 +66,7 @@ import { SettingsModule } from "./api/setting/settings.module";
 import { VerificationModule } from "./api/verification/verification.module";
 import { AdModule } from "./api/ad_system/ad.module";
 import { TranslationModule } from "./common/transalation/translation.module";
+import { RideModule } from "./ride/ride.module";
 
 
 @Module({
@@ -142,7 +143,8 @@ import { TranslationModule } from "./common/transalation/translation.module";
     UserModule,
     VerificationModule,
     AdModule,
-    TranslationModule
+    TranslationModule,
+    RideModule
   ],
   controllers: [AppController],
   providers: [

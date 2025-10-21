@@ -41,6 +41,7 @@ export enum UserRole {
   Admin = "admin",
   Moderator = "moderator",
   HasBadge = "hasBadge",
+  Rider = "rider",
 }
 
 export enum AccessTokenType {
