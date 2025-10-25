@@ -68,6 +68,7 @@ import { AdModule } from "./api/ad_system/ad.module";
 import { TranslationModule } from "./common/transalation/translation.module";
 import { RideModule } from "./ride/ride.module";
 import { GoogleMapsModule } from './google-maps/google-maps.module';
+import { MpessaModule } from './mpessa/mpesa.module';
 
 
 @Module({
@@ -146,7 +147,8 @@ import { GoogleMapsModule } from './google-maps/google-maps.module';
     AdModule,
     TranslationModule,
     RideModule,
-    GoogleMapsModule
+    GoogleMapsModule,
+    MpessaModule
   ],
   controllers: [AppController],
   providers: [
