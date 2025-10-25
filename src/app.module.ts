@@ -67,11 +67,12 @@ import { VerificationModule } from "./api/verification/verification.module";
 import { AdModule } from "./api/ad_system/ad.module";
 import { TranslationModule } from "./common/transalation/translation.module";
 import { RideModule } from "./ride/ride.module";
+import { GoogleMapsModule } from './google-maps/google-maps.module';
 
 
 @Module({
   imports: [
-   
+
     ScheduleModule.forRoot(),
     EventEmitterModule.forRoot(),
     ConfigModule.forRoot({
@@ -80,7 +81,7 @@ import { RideModule } from "./ride/ride.module";
       envFilePath: path.join(root.path, ".env." + process.env.NODE_ENV),
     }),
     ThrottlerModule.forRoot({
-      ttl: 60 * 5, 
+      ttl: 60 * 5,
       limit: 800,
       ignoreUserAgents: [/googlebot/gi, /bingbot/gi, /baidubot/gi],
     }),
@@ -144,7 +145,8 @@ import { RideModule } from "./ride/ride.module";
     VerificationModule,
     AdModule,
     TranslationModule,
-    RideModule
+    RideModule,
+    GoogleMapsModule
   ],
   controllers: [AppController],
   providers: [
@@ -156,6 +158,7 @@ import { RideModule } from "./ride/ride.module";
       provide: APP_GUARD,
       useClass: ThrottlerGuard,
     },
+
   ],
 })
-export class AppModule {}
+export class AppModule { }

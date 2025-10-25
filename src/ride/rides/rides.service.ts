@@ -7,6 +7,10 @@ import { CreateRideDto } from './dto/create-ride.dto';
 import { IVehicle, VehicleCategory } from '../vehicle/entity/vehicle.entity';
 import { GetFareEstimateDto } from './dto/get-fare-estimate.dto';
 import { IDriver } from '../driver/entity/driver.entity';
+import { GoogleMapsService } from 'src/google-maps/google-maps.service';
+import { SocketIoService } from 'src/chat/socket_io/socket_io.service';
+import { SocketEventsType } from 'src/core/utils/enums';
+import { UpdateLocationDto } from '../driver/dto/update-location.dto';
 
 const PRICING_CONFIG = {
   baseFare: 150,
@@ -34,6 +38,8 @@ export class RidesService {
     @InjectModel('Ride') private readonly rideModel: Model<IRide>,
     @InjectModel('Driver') private readonly driverModel: Model<IDriver>,
     @InjectModel('Vehicle') private readonly vehicleModel: Model<IVehicle>,
+    private readonly googleMapsService: GoogleMapsService,
+    private readonly socketIoService: SocketIoService
   ) { }
   async requestRide(user: IUser, createRideDto: CreateRideDto): Promise<IRide> {
     const activeRide = await this.rideModel.findOne({
@@ -81,9 +87,57 @@ export class RidesService {
     ride.vehicleId = vehicleId;
     ride.status = RideStatus.Accepted;
 
-    // In a real app, notify the user their ride is accepted via WebSocket/push notification.
-
+    this.socketIoService.io.to(ride.userId.toString()).emit(
+      SocketEventsType.v1RideAccepted,
+      JSON.stringify({ rideId: ride._id, driverId: driver._id })
+    );
     return await ride.save();
+  }
+
+  async findNearbyDriversAndNotify(ride: IRide) {
+    const vehicles = await this.vehicleModel.find({ category: ride.category, isActive: true }).select('driverId').exec();
+    const driverIdsWithMatchingVehicle = vehicles.map(v => v.driverId);
+    const nearbyDrivers = await this.driverModel.find({
+      _id: { $in: driverIdsWithMatchingVehicle },
+      status: 'online',
+      currentLocation: {
+        $near: {
+          $geometry: {
+            type: 'Point',
+            coordinates: [ride.pickup.longitude, ride.pickup.latitude],
+          },
+          $maxDistance: 5000,
+        },
+      },
+    }).limit(10).exec();
+
+    console.log(`Found ${nearbyDrivers.length} nearby drivers for ride ${ride._id}`);
+    if (nearbyDrivers.length > 0) {
+      for (const driver of nearbyDrivers) {
+        this.socketIoService.io.to(driver.userId.toString()).emit(
+          SocketEventsType.v1RideRequested,
+          JSON.stringify({
+            rideId: ride._id.toString(),
+            pickup: ride.pickup,
+            destination: ride.destination,
+            category: ride.category,
+            date: new Date(),
+          }),
+        );
+      }
+    } else {
+      console.log("No nearby drivers found for ride request.");
+      await this.rideModel.findByIdAndUpdate(ride._id, { status: RideStatus.NoDriversAvailable });
+      this.socketIoService.io.to(ride.userId.toString()).emit(
+        SocketEventsType.v1RideRequested,
+        JSON.stringify({
+          rideId: ride._id.toString(),
+          status: RideStatus.NoDriversAvailable,
+          date: new Date(),
+        }),
+      );
+    }
+    return nearbyDrivers;
   }
 
   async startRide(driverUser: IUser, rideId: string): Promise<IRide> {
@@ -106,13 +160,11 @@ export class RidesService {
       throw new ConflictException(`Cannot complete a ride with status "${ride.status}".`);
     }
 
-    // --- Final Fare Calculation (similar to your estimate logic) ---
-    // In a real app, you'd get the *actual* distance/duration from a service.
-    const routeDetails = await this.getRouteDetails(ride.pickup, ride.destination);
+    const routeDetails = await this.googleMapsService.getDistanceAndDuration(ride.pickup, ride.destination);
     const fareDetails = await this.getFareEstimate({
       pickup: ride.pickup,
       destination: ride.destination,
-      category: VehicleCategory.Economy
+      category: ride.category
     });
 
     ride.status = RideStatus.Completed;
@@ -125,6 +177,81 @@ export class RidesService {
     // Here you would trigger payment logic if paymentMethod is 'Wallet' or 'Online'.
 
     return await ride.save();
+  }
+
+  async findActiveRideForDriver(driverUser: IUser): Promise<IRide | null> {
+    const driver = await this.driverModel.findOne({ userId: driverUser._id });
+    if (!driver) {
+      throw new ForbiddenException('You are not a registered driver.');
+    }
+    const activeRide = await this.rideModel.findOne({
+      driverId: driver._id,
+      status: {
+        $in: [
+          RideStatus.Accepted,
+          RideStatus.InProgress,
+        ],
+      },
+    });
+
+    return activeRide;
+  }
+
+  async updateLocation(user: IUser, dto: UpdateLocationDto): Promise<IDriver> {
+    return this.driverModel.findOneAndUpdate(
+      { userId: user._id },
+      {
+        $set: {
+          currentLocation: {
+            type: 'Point',
+            coordinates: [dto.longitude, dto.latitude],
+          },
+        },
+      },
+      { new: true },
+    );
+  }
+
+  async getFareEstimate(dto: GetFareEstimateDto) {
+    const routeDetails = await this.googleMapsService.getDistanceAndDuration(
+      dto.pickup,
+      dto.destination,
+    );
+    const distanceInKm = routeDetails.distance / 1000;
+    const durationInMinutes = routeDetails.duration / 60;
+    const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
+    const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
+
+    const baseFare = PRICING_CONFIG.baseFare;
+    const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
+    const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
+
+    const nightMultiplier = this.getNightMultiplier();
+    const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
+    const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
+
+    const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
+    const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
+
+    const subtotal = baseFare + distanceFare + timeFare;
+    const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
+
+    return {
+      totalFare: Math.ceil(finalFare / 5) * 5,
+      breakdown: {
+        baseFare: baseFare,
+        distanceFare: parseFloat(distanceFare.toFixed(2)),
+        timeFare: parseFloat(timeFare.toFixed(2)),
+        nightMultiplier: nightMultiplier,
+        weatherMultiplier: weatherMultiplier,
+        roadConditionMultiplier: roadConditionMultiplier,
+        fuelTypeAdjustment: fuelTypeAdjustment,
+      },
+      route: {
+        distance: `${distanceInKm.toFixed(2)} km`,
+        duration: `${Math.round(durationInMinutes)} mins`,
+      },
+    };
   }
 
   private async _findAndAuthorizeRideForDriver(driverUser: IUser, rideId: string): Promise<IRide> {
@@ -145,84 +272,6 @@ export class RidesService {
     return ride;
   }
 
-  async getFareEstimate(dto: GetFareEstimateDto) {
-    // STEP 1: Get Distance & Duration from an external service
-    // This requires a real API call (e.g., Google Maps Distance Matrix API).
-    // We will simulate the response here.
-    const routeDetails = await this.getRouteDetails(dto.pickup, dto.destination);
-    const distanceInKm = routeDetails.distance / 1000;
-    const durationInMinutes = routeDetails.duration / 60;
-
-    // STEP 2: Get external factors
-    const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
-    const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
-
-    // STEP 3: Calculate base fare based on distance and time
-    const baseFare = PRICING_CONFIG.baseFare;
-    const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
-    const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
-
-    // STEP 4: Apply multipliers
-    const nightMultiplier = this.getNightMultiplier();
-    const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
-    const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
-
-    // STEP 5: Apply adjustments
-    // We determine the fuel type from the vehicle category
-    const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
-    const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
-
-    // STEP 6: Calculate the final fare
-    const subtotal = baseFare + distanceFare + timeFare;
-    const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
-
-    // STEP 7: Return a detailed breakdown
-    return {
-      totalFare: Math.ceil(finalFare / 5) * 5, // Round to nearest 5 PKR
-      breakdown: {
-        baseFare: baseFare,
-        distanceFare: parseFloat(distanceFare.toFixed(2)),
-        timeFare: parseFloat(timeFare.toFixed(2)),
-        nightMultiplier: nightMultiplier,
-        weatherMultiplier: weatherMultiplier,
-        roadConditionMultiplier: roadConditionMultiplier,
-        fuelTypeAdjustment: fuelTypeAdjustment,
-      },
-      route: {
-        distance: `${distanceInKm.toFixed(2)} km`,
-        duration: `${Math.round(durationInMinutes)} mins`,
-      },
-    };
-  }
-
-  async findNearbyDriversAndNotify(ride: IRide) {
-    // 1. Find drivers who have a vehicle matching the requested category.
-    const vehicles = await this.vehicleModel.find({ category: ride.category, isActive: true }).select('driverId').exec();
-    const driverIdsWithMatchingVehicle = vehicles.map(v => v.driverId);
-
-    // 2. Use a geospatial query to find the nearest available drivers.
-    const nearbyDrivers = await this.driverModel.find({
-      _id: { $in: driverIdsWithMatchingVehicle }, // Only drivers with the right car
-      status: 'online', // Driver must be online and available
-      currentLocation: {
-        $near: {
-          $geometry: {
-            type: 'Point',
-            coordinates: [ride.pickup.longitude, ride.pickup.latitude],
-          },
-          $maxDistance: 5000, 
-        },
-      },
-    }).limit(10).exec();
-
-    console.log(`Found ${nearbyDrivers.length} nearby drivers for ride ${ride._id}`);
-    if (nearbyDrivers.length > 0) {
-      // this.eventsGateway.notifyDrivers(nearbyDrivers, ride);
-      console.log('Notification would be sent via WebSockets here.');
-    }
-    return nearbyDrivers;
-  }
-
   private getNightMultiplier(): number {
     const now = new Date();
     const currentHour = now.getHours();
@@ -232,15 +281,6 @@ export class RidesService {
       return rate;
     }
     return 1.0;
-  }
-
-  private async getRouteDetails(pickup: any, destination: any): Promise<{ distance: number; duration: number }> {
-    console.log(`Fetching route from ${pickup.latitude} to ${destination.latitude}`);
-    // MOCK: In a real app, call Google Maps API here.
-    return {
-      distance: 12500, // 12.5 km in meters
-      duration: 1800, // 30 minutes in seconds
-    };
   }
 
   private async getWeatherCondition(location: any): Promise<'bad' | 'normal'> {
@@ -254,4 +294,5 @@ export class RidesService {
     // MOCK: This is complex. It could be based on predefined zones.
     return 'good'; // or 'poor'
   }
+
 }

@@ -13,9 +13,6 @@ export class RidesController {
     private readonly rideService: RidesService
   ) { }
 
-  // get Nearby Rides for Driver - Optional
-
-
   @Post('request')
   async requestRide(
     @Req() req: any,
@@ -28,16 +25,6 @@ export class RidesController {
   @Post('fare-estimate')
   async getFareEstimate(@Body() getFareEstimateDto: GetFareEstimateDto) {
     return this.rideService.getFareEstimate(getFareEstimateDto);
-  }
-
-  @Patch(':id/accept')
-  async acceptRide(
-    @Req() req: any,
-    @Param('id') rideId: string,
-    @Body() acceptRideDto: AcceptRideDto, // DTO to get vehicleId
-  ) {
-    const driverUser = req.user;
-    return this.rideService.acceptRide(driverUser, rideId, acceptRideDto.vehicleId);
   }
 
   @Patch(':id/start')

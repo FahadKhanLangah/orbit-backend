@@ -15,6 +15,8 @@ import { MessageModule } from "../message/message.module";
 import { RoomMiddlewareModule } from "../room_middleware/room_middleware.module";
 import { UserDeviceModule } from "../../api/user_modules/user_device/user_device.module";
 import { CallHistoryModule } from "../call_modules/call_history/call_history.module";
+import { RideModule } from "src/ride/ride.module";
+import { RidesModule } from "src/ride/rides/rides.module";
 
 @Module({
   providers: [SocketIoGateway, SocketIoService],
@@ -27,7 +29,8 @@ import { CallHistoryModule } from "../call_modules/call_history/call_history.mod
     CallHistoryModule,
     CallMemberModule,
     UserDeviceModule,
+    forwardRef(() => RidesModule)
   ],
-  exports: [SocketIoService,SocketIoGateway],
+  exports: [SocketIoService, SocketIoGateway],
 })
-export class SocketIoModule {}
+export class SocketIoModule { }

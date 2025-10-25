@@ -7,7 +7,8 @@ export enum RideStatus {
   InProgress = 'in_progress',
   Completed = 'completed',
   Cancelled = 'cancelled',
-  Scheduled = 'scheduled'
+  Scheduled = 'scheduled',
+  NoDriversAvailable = 'no_drivers_available'
 }
 export enum PaymentMethod {
   Cash = 'cash',

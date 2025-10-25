@@ -53,16 +53,17 @@ export const DriverSchema = new Schema({
     vehicleInspection: { type: String },
     kraPin: { type: String },
     driverPhoto: { type: String },
-    currentLocation: {
-      type: {
-        type: String,
-        enum: ['Point'],
-        default: 'Point',
-      },
-      coordinates: {
-        type: [Number],
-        default: [0, 0],
-      },
+
+  },
+  currentLocation: {
+    type: {
+      type: String,
+      enum: ['Point'],
+      default: 'Point',
+    },
+    coordinates: {
+      type: [Number],
+      default: [0, 0],
     },
   },
   createdAt: Date,

@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { RidesController } from './rides.controller';
 import { RidesService } from './rides.service';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -6,6 +6,8 @@ import { RideSchema } from './entity/ride.entity';
 import { AuthModule } from 'src/api/auth/auth.module';
 import { DriverSchema } from '../driver/entity/driver.entity';
 import { VehicleSchema } from '../vehicle/entity/vehicle.entity';
+import { GoogleMapsModule } from 'src/google-maps/google-maps.module';
+import { SocketIoModule } from 'src/chat/socket_io/socket_io.module';
 
 @Module({
   imports: [
@@ -14,9 +16,12 @@ import { VehicleSchema } from '../vehicle/entity/vehicle.entity';
       { name: "Driver", schema: DriverSchema },
       { name: "Vehicle", schema: VehicleSchema }
     ]),
-    AuthModule
+    AuthModule,
+    GoogleMapsModule,
+    forwardRef(() => SocketIoModule),
   ],
   controllers: [RidesController],
-  providers: [RidesService]
+  providers: [RidesService],
+  exports: [RidesService],
 })
 export class RidesModule { }

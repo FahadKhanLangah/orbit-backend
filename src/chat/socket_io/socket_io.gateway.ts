@@ -12,14 +12,15 @@ import {
     OnGatewayInit,
     OnGatewayConnection, OnGatewayDisconnect, ConnectedSocket
 } from '@nestjs/websockets';
-import {SocketIoService} from './socket_io.service';
-import {BadRequestException, UseFilters} from "@nestjs/common";
+import { SocketIoService } from './socket_io.service';
+import { BadRequestException, UseFilters } from "@nestjs/common";
 
-import {Server, Socket} from "socket.io";
+import { Server, Socket } from "socket.io";
 import { IUser } from "../../api/user_modules/user/entities/user.entity";
 import { WsCatchAllFilter } from "../../core/exception_filter/ws-catch-all-filter";
 import { SocketEventsType } from "../../core/utils/enums";
 import { jsonDecoder } from "../../core/utils/app.validator";
+import { RidesService } from 'src/ride/rides/rides.service';
 
 
 declare module "socket.io" {
@@ -43,7 +44,9 @@ declare module "socket.io" {
 export class SocketIoGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     @WebSocketServer() io: Server;
 
-    constructor(private readonly socketIoService: SocketIoService) {
+    constructor(private readonly socketIoService: SocketIoService,
+        private readonly ridesService: RidesService
+    ) {
 
     }
 
@@ -59,6 +62,32 @@ export class SocketIoGateway implements OnGatewayInit, OnGatewayConnection, OnGa
         await this.socketIoService.handleDisconnect(client);
     }
 
+    @SubscribeMessage(SocketEventsType.v1RideAccepted)
+    async handleAcceptRide(
+        @MessageBody() data: { rideId: string, vehicleId: string },
+        @ConnectedSocket() client: Socket
+    ) {
+
+        const driverUser = client.user;
+        await this.ridesService.acceptRide(driverUser, data.rideId, data.vehicleId);
+
+    }
+
+    @SubscribeMessage(SocketEventsType.v1RideLocationUpdate)
+    async handleUpdateLocation(
+        @MessageBody() data: { latitude: number, longitude: number },
+        @ConnectedSocket() client: Socket
+    ) {
+        const driverUser = client.user;
+        await this.ridesService.updateLocation(driverUser, data);
+        const activeRide = await this.ridesService.findActiveRideForDriver(driverUser);
+        if (activeRide) {
+            this.io.to(activeRide.userId.toString()).emit(SocketEventsType.v1RideLocationUpdate, {
+                rideId: activeRide._id,
+                location: data
+            });
+        }
+    }
 
     @SubscribeMessage(SocketEventsType.v1MyOnline)
     async myOnline(
