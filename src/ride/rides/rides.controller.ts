@@ -1,10 +1,9 @@
 import { Body, Controller, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { RidesService } from './rides.service';
-import { IUser } from 'src/api/user_modules/user/entities/user.entity';
 import { CreateRideDto } from './dto/create-ride.dto';
 import { GetFareEstimateDto } from './dto/get-fare-estimate.dto';
-import { AcceptRideDto } from './dto/accept-ride.dto';
+
 
 @UseGuards(VerifiedAuthGuard)
 @Controller('rides')

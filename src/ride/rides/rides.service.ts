@@ -20,9 +20,10 @@ const PRICING_CONFIG = {
     [VehicleCategory.OrbitXL]: 60,
     [VehicleCategory.OrbitGreen]: 40,
   },
+  systemCommissionRate: 0.15,
   perMinuteRate: 5,
   multipliers: {
-    night: { startHour: 22, endHour: 6, rate: 1.4 }, // 10 PM to 6 AM
+    night: { startHour: 22, endHour: 6, rate: 1.4 },
     weather: { bad: 1.3, normal: 1.0 },
     roadCondition: { poor: 1.15, good: 1.0 },
   },
@@ -38,9 +39,11 @@ export class RidesService {
     @InjectModel('Ride') private readonly rideModel: Model<IRide>,
     @InjectModel('Driver') private readonly driverModel: Model<IDriver>,
     @InjectModel('Vehicle') private readonly vehicleModel: Model<IVehicle>,
+    @InjectModel('User') private readonly userModel: Model<IUser>,
     private readonly googleMapsService: GoogleMapsService,
     private readonly socketIoService: SocketIoService
   ) { }
+
   async requestRide(user: IUser, createRideDto: CreateRideDto): Promise<IRide> {
     const activeRide = await this.rideModel.findOne({
       userId: user._id,
@@ -57,12 +60,22 @@ export class RidesService {
     if (activeRide) {
       throw new ConflictException('You already have an active ride request.');
     }
+    const estimatedFareData = await this.getFareEstimate({
+      pickup: createRideDto.pickup,
+      destination: createRideDto.destination,
+      category: createRideDto.category,
+    });
+
+    const estimatedFare = estimatedFareData.totalFare;
+    const systemCommission = estimatedFare * PRICING_CONFIG.systemCommissionRate;
     const newRide = new this.rideModel({
       userId: user._id,
       pickup: createRideDto.pickup,
       destination: createRideDto.destination,
       paymentMethod: createRideDto.paymentMethod,
       category: createRideDto.category,
+      estimatedFare: estimatedFare,
+      systemCommission: systemCommission,
     });
 
     await newRide.save();
@@ -95,6 +108,7 @@ export class RidesService {
   }
 
   async findNearbyDriversAndNotify(ride: IRide) {
+    const requiredCommission = ride.systemCommission;
     const vehicles = await this.vehicleModel.find({ category: ride.category, isActive: true }).select('driverId').exec();
     const driverIdsWithMatchingVehicle = vehicles.map(v => v.driverId);
     const nearbyDrivers = await this.driverModel.find({
@@ -109,9 +123,7 @@ export class RidesService {
           $maxDistance: 5000,
         },
       },
-    }).limit(10).exec();
-
-    console.log(`Found ${nearbyDrivers.length} nearby drivers for ride ${ride._id}`);
+    }).populate('userId', 'balance').limit(10).exec();
     if (nearbyDrivers.length > 0) {
       for (const driver of nearbyDrivers) {
         this.socketIoService.io.to(driver.userId.toString()).emit(
@@ -145,6 +157,23 @@ export class RidesService {
 
     if (ride.status !== RideStatus.Accepted) {
       throw new ConflictException(`Cannot start a ride with status "${ride.status}".`);
+    }
+
+
+    const commissionToDeduct = ride.systemCommission;
+    if (driverUser.balance < commissionToDeduct) {
+      console.error(`User ${driverUser._id} balance is too low to start ride ${ride._id}`);
+      throw new ConflictException('Your wallet balance is too low to start this ride. Please top up.');
+    }
+    await this.userModel.updateOne(
+      { _id: driverUser._id },
+      { $inc: { balance: -commissionToDeduct } }
+    );
+
+    const driver = await this.driverModel.findOne({ userId: driverUser._id });
+    if (10 < commissionToDeduct) {
+      console.error(`Driver ${driver._id} balance is too low to start ride ${ride._id}`);
+      throw new ConflictException('Your wallet balance is too low to start this ride. Please top up.');
     }
 
     ride.status = RideStatus.InProgress;
@@ -294,5 +323,4 @@ export class RidesService {
     // MOCK: This is complex. It could be based on predefined zones.
     return 'good'; // or 'poor'
   }
-
 }

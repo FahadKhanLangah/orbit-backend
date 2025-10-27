@@ -5,6 +5,7 @@ export interface MpesaAuthResponse {
 }
 
 export interface StkPushRequest {
+  userId: string;
   phone: string;
   amount: number;
   accountReference: string;

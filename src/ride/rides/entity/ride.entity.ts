@@ -10,15 +10,16 @@ export enum RideStatus {
   Scheduled = 'scheduled',
   NoDriversAvailable = 'no_drivers_available'
 }
-export enum PaymentMethod {
-  Cash = 'cash',
-  Wallet = 'wallet',
-  Online = 'online'
-}
 
 export enum PaymentStatus {
   Unpaid = 'unpaid',
   Paid = 'paid'
+}
+
+export enum PaymentMethod {
+  Cash = 'cash',
+  Wallet = 'wallet',
+  Online = 'online'
 }
 export interface IRide extends Document {
   _id: string;
@@ -47,6 +48,8 @@ export interface IRide extends Document {
     nightMultiplier: number;
     fuelTypeAdjustment: number;
   },
+  estimatedFare: number;
+  systemCommission: number;
   status: RideStatus;
   category: VehicleCategory;
   paymentMethod: PaymentMethod;
@@ -84,6 +87,8 @@ export const RideSchema = new Schema({
     nightMultiplier: Number,
     fuelTypeAdjustment: Number,
   },
+  estimatedFare: { type: Number },
+  systemCommission: { type: Number },
   status: {
     type: String,
     enum: RideStatus,

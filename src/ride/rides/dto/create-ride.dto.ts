@@ -8,6 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 import { PaymentMethod } from '../entity/ride.entity';
+import { VehicleCategory } from 'src/ride/vehicle/entity/vehicle.entity';
 
 
 class LocationDto {
@@ -39,5 +40,5 @@ export class CreateRideDto {
 
   @IsNotEmpty()
   @IsString()
-  category: string;
+  category: VehicleCategory;
 }

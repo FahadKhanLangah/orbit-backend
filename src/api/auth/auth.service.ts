@@ -853,7 +853,7 @@ export class AuthService {
     // Use direct MongoDB query to bypass validation for authentication
     let user: IUser = await this.userService.findByIdForAuth(
       jwtDecodeRes.userId,
-      "fullName fullNameEn verifiedAt userImage userType banTo deletedAt registerStatus"
+      "fullName fullNameEn phoneNumber verifiedAt userImage userType banTo deletedAt registerStatus"
     );
     if (!user) throw new ForbiddenException(i18nApi.whileAuthCanFindYouString);
     user._id = user._id.toString();

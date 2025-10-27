@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document, Schema as MongooseSchema } from 'mongoose';
+import { IUser } from 'src/api/user_modules/user/entities/user.entity';
 
 export type MpesaTransactionDocument = MpesaTransaction & Document;
 
@@ -34,6 +35,9 @@ export interface IMpesaTransaction {
 
 @Schema({ timestamps: true })
 export class MpesaTransaction {
+  @Prop({ type: MongooseSchema.Types.ObjectId, ref: 'User', required: true })
+  userId: MongooseSchema.Types.ObjectId | IUser;
+
   @Prop({ required: true, enum: MpesaTransactionType })
   transactionType: MpesaTransactionType;
 

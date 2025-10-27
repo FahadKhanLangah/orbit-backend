@@ -11,7 +11,6 @@ export interface IDriver {
   userId: string;
   rating: number;
   totalRides: number;
-  walletBalance: number;
   status: driverProfileStatus;
   documents: {
     nationalId?: string;
@@ -43,7 +42,6 @@ export const DriverSchema = new Schema({
   status: { type: String, enum: driverProfileStatus, default: driverProfileStatus.PENDING },
   rating: { type: Number, default: 0 },
   totalRides: { type: Number, default: 0 },
-  walletBalance: { type: Number, default: 0 },
   documents: {
     nationalId: { type: String },
     passport: { type: String },
