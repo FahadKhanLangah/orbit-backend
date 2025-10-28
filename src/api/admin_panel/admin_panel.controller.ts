@@ -38,6 +38,7 @@ import { BroadcastMessageDto } from "./dto/broadcast-message.dto";
 import { DriverService } from "src/ride/driver/driver.service";
 import { driverProfileStatus } from "src/ride/driver/entity/driver.entity";
 import { GetDriversFilterDto, UpdateDriverStatusDto } from "src/ride/driver/dto/status-dto";
+import { RidesService } from "src/ride/rides/rides.service";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -49,8 +50,15 @@ export class AdminPanelController {
     private readonly settingsService: SettingsService,
     private readonly transactionService: TransactionService,
     private readonly verificationService: VerificationService,
-    private readonly driverService: DriverService
+    private readonly driverService: DriverService,
+    private readonly rideService: RidesService,
   ) { }
+
+  // update loyalty points settings
+  @Put("loyalty-points/settings")
+  async updateLoyaltyPointsSettings(@Body() body: any) {
+    return await this.rideService.updateLoyaltySettings(body);
+  }
 
   // get all drivers 
   @Get("all-drivers")
@@ -417,7 +425,7 @@ export class AdminPanelController {
     return resOK(await this.adminPanelService.deleteGift(dto.id));
   }
 
- @Get('/drivers')
+  @Get('/drivers')
   async getSelectedDrivers(@Query() filterDto: GetDriversFilterDto) {
     return this.driverService.getSelectedDrivers(filterDto);
   }

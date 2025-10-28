@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { RidesService } from './rides.service';
 import { CreateRideDto } from './dto/create-ride.dto';
@@ -19,6 +19,13 @@ export class RidesController {
   ) {
     const user = req.user;
     return await this.rideService.requestRide(user, createRideDto)
+  }
+
+  // get my rides 
+  @Get('my-rides')
+  async getMyRides(@Req() req: any) {
+    const user = req.user;
+    return this.rideService.getRidesByUser(user);
   }
 
   @Post('fare-estimate')
@@ -43,4 +50,19 @@ export class RidesController {
     const driverUser = req.user;
     return this.rideService.completeRide(driverUser, rideId);
   }
+
+  // get loyalty points settings
+  @Get('loyalty-points/settings')
+  async getLoyaltyPointsSettings() {
+    return await this.rideService.getLoyaltySettings();
+  }
+
+  @Patch(':id/cancel')
+  async cancelRide(
+    @Req() req: any,
+    @Param('id') rideId: string,
+  ) {
+    const user = req.user;
+    return this.rideService.cancelRide(user, rideId);
+  } 
 }

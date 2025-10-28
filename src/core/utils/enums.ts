@@ -220,13 +220,15 @@ export enum SocketEventsType {
   v1MyOnline = "v1MyOnline",
   v1RoomStatusChange = "v1RoomStatusChange",
   v1IceCandidate = "v1IceCandidate",
-  
+
   // rides events
   v1RideRequested = "v1RideRequested",
   v1RideAccepted = "v1RideAccepted",
   v1RideStarted = "v1RideStarted",
   v1RideCompleted = "v1RideCompleted",
   v1RideLocationUpdate = "v1RideLocationUpdate",
+  v1RideCancelledByUser = "v1RideCancelledByUser",
+  v1RideCancelledByDriver = "v1RideCancelledByDriver",
 }
 
 export enum NotificationType {

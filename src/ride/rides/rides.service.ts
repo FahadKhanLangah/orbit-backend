@@ -1,7 +1,7 @@
 import { ConflictException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IRide, RideStatus } from './entity/ride.entity';
+import { IRide, PaymentMethod, RideStatus } from './entity/ride.entity';
 import { IUser } from 'src/api/user_modules/user/entities/user.entity';
 import { CreateRideDto } from './dto/create-ride.dto';
 import { IVehicle, VehicleCategory } from '../vehicle/entity/vehicle.entity';
@@ -11,6 +11,7 @@ import { GoogleMapsService } from 'src/google-maps/google-maps.service';
 import { SocketIoService } from 'src/chat/socket_io/socket_io.service';
 import { SocketEventsType } from 'src/core/utils/enums';
 import { UpdateLocationDto } from '../driver/dto/update-location.dto';
+import { LoyaltySetting } from './entity/loyalty_points.entity';
 
 const PRICING_CONFIG = {
   baseFare: 150,
@@ -40,6 +41,7 @@ export class RidesService {
     @InjectModel('Driver') private readonly driverModel: Model<IDriver>,
     @InjectModel('Vehicle') private readonly vehicleModel: Model<IVehicle>,
     @InjectModel('User') private readonly userModel: Model<IUser>,
+    @InjectModel(LoyaltySetting.name) private readonly loyaltySettingModel: Model<LoyaltySetting>,
     private readonly googleMapsService: GoogleMapsService,
     private readonly socketIoService: SocketIoService
   ) { }
@@ -154,12 +156,9 @@ export class RidesService {
 
   async startRide(driverUser: IUser, rideId: string): Promise<IRide> {
     const ride = await this._findAndAuthorizeRideForDriver(driverUser, rideId);
-
     if (ride.status !== RideStatus.Accepted) {
       throw new ConflictException(`Cannot start a ride with status "${ride.status}".`);
     }
-
-
     const commissionToDeduct = ride.systemCommission;
     if (driverUser.balance < commissionToDeduct) {
       console.error(`User ${driverUser._id} balance is too low to start ride ${ride._id}`);
@@ -169,13 +168,6 @@ export class RidesService {
       { _id: driverUser._id },
       { $inc: { balance: -commissionToDeduct } }
     );
-
-    const driver = await this.driverModel.findOne({ userId: driverUser._id });
-    if (10 < commissionToDeduct) {
-      console.error(`Driver ${driver._id} balance is too low to start ride ${ride._id}`);
-      throw new ConflictException('Your wallet balance is too low to start this ride. Please top up.');
-    }
-
     ride.status = RideStatus.InProgress;
     ride.startedAt = new Date();
     await ride.save();
@@ -184,11 +176,9 @@ export class RidesService {
 
   async completeRide(driverUser: IUser, rideId: string): Promise<IRide> {
     const ride = await this._findAndAuthorizeRideForDriver(driverUser, rideId);
-
     if (ride.status !== RideStatus.InProgress) {
       throw new ConflictException(`Cannot complete a ride with status "${ride.status}".`);
     }
-
     const routeDetails = await this.googleMapsService.getDistanceAndDuration(ride.pickup, ride.destination);
     const fareDetails = await this.getFareEstimate({
       pickup: ride.pickup,
@@ -203,8 +193,23 @@ export class RidesService {
     ride.fare = fareDetails.totalFare;
     ride.fareBreakdown = fareDetails.breakdown;
 
-    // Here you would trigger payment logic if paymentMethod is 'Wallet' or 'Online'.
+    const rider = await this.userModel.findById(ride.userId);
+    if (!rider) {
+      throw new NotFoundException('Rider user not found.');
+    }
+    const driver = await this.userModel.findById(driverUser._id);
+    if (!driver) {
+      throw new NotFoundException('Driver user not found.');
+    }
 
+    // Update driver earnings
+    const driverEarnings = ride.fare - ride.systemCommission;
+    driver.balance += driverEarnings;
+    if (ride.paymentMethod === PaymentMethod.Online) {
+      rider.balance -= ride.fare;
+      await rider.save();
+      await driver.save();
+    }
     return await ride.save();
   }
 
@@ -242,47 +247,94 @@ export class RidesService {
   }
 
   async getFareEstimate(dto: GetFareEstimateDto) {
-    const routeDetails = await this.googleMapsService.getDistanceAndDuration(
-      dto.pickup,
-      dto.destination,
-    );
-    const distanceInKm = routeDetails.distance / 1000;
-    const durationInMinutes = routeDetails.duration / 60;
-    const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
-    const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
+    // const routeDetails = await this.googleMapsService.getDistanceAndDuration(
+    //   dto.pickup,
+    //   dto.destination,
+    // );
+    // const distanceInKm = routeDetails.distance / 1000;
+    // const durationInMinutes = routeDetails.duration / 60;
+    // const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
+    // const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
 
-    const baseFare = PRICING_CONFIG.baseFare;
-    const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
-    const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
+    // const baseFare = PRICING_CONFIG.baseFare;
+    // const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
+    // const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
 
-    const nightMultiplier = this.getNightMultiplier();
-    const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
-    const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
+    // const nightMultiplier = this.getNightMultiplier();
+    // const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
+    // const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
 
-    const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
-    const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
+    // const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
+    // const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
 
-    const subtotal = baseFare + distanceFare + timeFare;
-    const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
+    // const subtotal = baseFare + distanceFare + timeFare;
+    // const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
 
+    // return {
+    //   totalFare: Math.ceil(finalFare / 5) * 5,
+    //   breakdown: {
+    //     baseFare: baseFare,
+    //     distanceFare: parseFloat(distanceFare.toFixed(2)),
+    //     timeFare: parseFloat(timeFare.toFixed(2)),
+    //     nightMultiplier: nightMultiplier,
+    //     weatherMultiplier: weatherMultiplier,
+    //     roadConditionMultiplier: roadConditionMultiplier,
+    //     fuelTypeAdjustment: fuelTypeAdjustment,
+    //   },
+    //   route: {
+    //     distance: `${distanceInKm.toFixed(2)} km`,
+    //     duration: `${Math.round(durationInMinutes)} mins`,
+    //   },
+    // };
     return {
-      totalFare: Math.ceil(finalFare / 5) * 5,
+      totalFare: 450,
       breakdown: {
-        baseFare: baseFare,
-        distanceFare: parseFloat(distanceFare.toFixed(2)),
-        timeFare: parseFloat(timeFare.toFixed(2)),
-        nightMultiplier: nightMultiplier,
-        weatherMultiplier: weatherMultiplier,
-        roadConditionMultiplier: roadConditionMultiplier,
-        fuelTypeAdjustment: fuelTypeAdjustment,
+        baseFare: PRICING_CONFIG.baseFare,
+        distanceFare: 120,
+        timeFare: 200,
+        nightMultiplier: 0,
+        weatherMultiplier: 0,
+        roadConditionMultiplier: 50,
+        fuelTypeAdjustment: 80,
       },
       route: {
-        distance: `${distanceInKm.toFixed(2)} km`,
-        duration: `${Math.round(durationInMinutes)} mins`,
+        distance: `${10} km`,
+        duration: `20 mins`,
       },
     };
   }
 
+  async getRidesByUser(user: IUser): Promise<IRide[]> {
+    const ride = this.rideModel.find({ userId: user._id }).sort({ createdAt: -1 }).exec();
+    if (!ride) {
+      throw new NotFoundException("No rides found for you");
+    }
+    return ride;
+  }
+
+  async cancelRide(user: IUser, rideId: string): Promise<IRide> {
+    const ride = await this.rideModel.findOne({ _id: rideId, userId: user._id });
+    if (!ride) {
+      throw new NotFoundException('Ride not found.');
+    }
+    if (ride.status !== RideStatus.Pending && ride.status !== RideStatus.Accepted) {
+      throw new ConflictException(`Cannot cancel a ride with status "${ride.status}".`);
+    }
+    ride.status = RideStatus.Cancelled;
+    await ride.save();
+
+    if (ride.driverId) {
+      const driver = await this.driverModel.findById(ride.driverId);
+      if (driver) {
+        this.socketIoService.io.to(driver.userId.toString()).emit(
+          SocketEventsType.v1RideCancelledByDriver,
+          JSON.stringify({ rideId: ride._id })
+        );
+      }
+    }
+
+    return ride;
+  }
   private async _findAndAuthorizeRideForDriver(driverUser: IUser, rideId: string): Promise<IRide> {
     const driver = await this.driverModel.findOne({ userId: driverUser._id });
     if (!driver) {
@@ -322,5 +374,27 @@ export class RidesService {
     console.log(`Fetching road conditions for route...`);
     // MOCK: This is complex. It could be based on predefined zones.
     return 'good'; // or 'poor'
+  }
+
+  // Additional methods for loyalty points management could be added here.
+  async getLoyaltySettings(): Promise<LoyaltySetting> {
+    const settings = await this.loyaltySettingModel.findOne({ isActive: true });
+    if (!settings) {
+      throw new NotFoundException('Loyalty settings not found.');
+    }
+    return settings;
+  }
+
+  // for admin to update loyalty settings
+  async updateLoyaltySettings(updateData: Partial<LoyaltySetting>): Promise<LoyaltySetting> {
+    const settings = await this.loyaltySettingModel.findOneAndUpdate(
+      { isActive: true },
+      updateData,
+      { new: true }
+    );
+    if (!settings) {
+      throw new NotFoundException('Loyalty settings not found.');
+    }
+    return settings;
   }
 }

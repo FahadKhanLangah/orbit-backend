@@ -46,10 +46,11 @@ import { UpdateMyDobDto } from "./dto/update-my-dob.dto";
 import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
 import { PurchaseSubscriptionDto } from "../subscription-plan/purchase-subscription.dto";
 import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
+import { FamilyMemberDto } from "./dto/family_member.dto";
 
 @V1Controller("profile")
 export class ProfileController {
-  constructor(private readonly profileService: ProfileService) {}
+  constructor(private readonly profileService: ProfileService) { }
 
   @UseGuards(VerifiedAuthGuard)
   @Post("/archive/:roomId/archive")
@@ -476,5 +477,45 @@ export class ProfileController {
   @Get("/loyalty-points")
   async getUserLoyaltyPoints(@Req() req: any) {
     return resOK(await this.profileService.getUserLoyaltyPoints(req.user));
+  }
+
+  @UseGuards(VerifiedAuthGuard)
+  @Post("family-members/add")
+  async addFamilyMembers(
+    @Req() req: any,
+    @Body() body: FamilyMemberDto
+  ) {
+    console.log("Adding family members:", body);
+    const familyMember = body;
+    return resOK(
+      await this.profileService.addFamilyMembers(
+        req.user._id,
+        familyMember
+      )
+    );
+  }
+
+  // update family members
+  @UseGuards(VerifiedAuthGuard)
+  @Patch("/family-members")
+  async updateFamilyMembers(
+    @Req() req: any,
+    @Body() body: { memberId: string }
+  ) {
+    return resOK(
+      await this.profileService.removeFamilyMember(
+        req.user._id,
+        body.memberId
+      )
+    );
+  }
+
+  // get my family members
+  @UseGuards(VerifiedAuthGuard)
+  @Get("/family-members/my-members")
+  async getMyFamilyMembers(@Req() req: any) {
+    return resOK(
+      await this.profileService.getMyFamilyMembers(req.user._id)
+    );
   }
 }

@@ -339,6 +339,10 @@ export class UserService extends BaseService<IUser> {
     return Promise.resolve(this.model.findById(id, select, options).lean());
   }
 
+  public findByIdForFamilyMembers(id: string): Query<IUser & Document, any> {
+    return this.model.findById(id);
+  }
+
   // Special method for balance operations that bypasses validation
   findByIdForBalance(id: string, select?: string): Promise<IUser | null> {
     console.log(

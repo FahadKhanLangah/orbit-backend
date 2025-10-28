@@ -1,4 +1,4 @@
-import mongoose, { Schema } from "mongoose";
+import mongoose, { Document, Schema } from "mongoose";
 import bcrypt from "bcrypt";
 import pM from "mongoose-paginate-v2";
 import {
@@ -15,7 +15,7 @@ import { IUserDevice } from "../../user_device/entities/user_device.entity";
 import { UserGlobalCallStatus } from "../../../../chat/call_modules/utils/user-global-call-status.model";
 import { ISubscriptionPlan } from "./subscription_plan.entity";
 
-export interface IUser {
+export interface IUser extends Document{
   _id: string;
   email: string;
   fullName: string;
@@ -67,6 +67,11 @@ export interface IUser {
     purchasedAt: Date;
     expiresAt: Date;
   };
+  // family members in case of emergency
+  familyMembers?: {
+    userId: string;
+    relationship?: string;
+  }[];
   currentDevice: IUserDevice;
   resetPasswordOTP?: string;
   resetPasswordOTPExpiry?: Date;
@@ -193,7 +198,18 @@ export const UserSchema = new mongoose.Schema(
       purchasedAt: { type: Date, default: null },
       expiresAt: { type: Date, default: null },
     },
-
+    familyMembers: {
+      type: [
+        {
+          userId: {
+            type: Schema.Types.ObjectId,
+            ref: 'User', 
+            required: true
+          },
+          relationship: { type: String, required: false },
+        }
+      ]
+    },
     socialId: { type: String, default: null },
     provider: { type: String, default: null },
     isTwoFactorEnabled: {

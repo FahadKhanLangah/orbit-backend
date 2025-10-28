@@ -9,6 +9,7 @@ import { VehicleSchema } from '../vehicle/entity/vehicle.entity';
 import { GoogleMapsModule } from 'src/google-maps/google-maps.module';
 import { SocketIoModule } from 'src/chat/socket_io/socket_io.module';
 import { UserSchema } from 'src/api/user_modules/user/entities/user.entity';
+import { LoyaltySetting, LoyaltySettingSchema } from './entity/loyalty_points.entity';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { UserSchema } from 'src/api/user_modules/user/entities/user.entity';
       { name: "Ride", schema: RideSchema },
       { name: "Driver", schema: DriverSchema },
       { name: "Vehicle", schema: VehicleSchema },
-      { name: "User", schema: UserSchema }
+      { name: "User", schema: UserSchema },
+      { name: LoyaltySetting.name, schema: LoyaltySettingSchema }
     ]),
     AuthModule,
     GoogleMapsModule,

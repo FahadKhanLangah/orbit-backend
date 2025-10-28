@@ -33,6 +33,12 @@ export interface IDriver {
       default: [0, 0],
     },
   },
+  // driver family members list that user can add and in emergency contacts
+  familyMembers?: Array<{
+    name: string;
+    relationship: string;
+    contactNumber: string;
+  }>;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,8 +70,16 @@ export const DriverSchema = new Schema({
       default: [0, 0],
     },
   },
+  familyMembers: [{
+    name: { type: String },
+    relationship: { type: String },
+    contactNumber: { type: String },
+  }],
   createdAt: Date,
   updatedAt: Date,
 }, { timestamps: true });
+
+
+DriverSchema.index({ currentLocation: '2dsphere' });
 
 

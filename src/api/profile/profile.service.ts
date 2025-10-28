@@ -814,4 +814,31 @@ export class ProfileService {
       giftMessageId: giftMessageId,
     };
   }
+
+  async addFamilyMembers(userId: string, familyMembers) {
+    const familyMember = { familyMembers }
+    const user = await this.userService.findByIdForFamilyMembers(userId);
+    user.familyMembers.push(familyMembers);
+    await user.save();
+    return user.familyMembers;
+  }
+
+  async removeFamilyMember(userId: string, memberId: string) {
+    const user = await this.userService.findByIdAndUpdate(userId, {
+      $pull: { familyMembers: { id: memberId } },
+    }, { new: true });
+    return user.familyMembers;
+  }
+
+  async getFamilyMembers(userId: string) {
+    const user = await this.userService
+      .findByIdForFamilyMembers(userId).populate('familyMembers.userId');
+    return user.familyMembers || [];
+  }
+
+  async getMyFamilyMembers(userId: string) {
+    const user = await this.userService
+      .findByIdForFamilyMembers(userId).populate('familyMembers.userId');
+    return user.familyMembers || [];
+  }
 }
