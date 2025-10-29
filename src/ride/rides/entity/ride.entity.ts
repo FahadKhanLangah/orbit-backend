@@ -11,6 +11,11 @@ export enum RideStatus {
   NoDriversAvailable = 'no_drivers_available'
 }
 
+export enum DownloadRideFormat{
+  PDF = 'pdf',
+  CSV = 'csv'
+}
+
 export enum PaymentStatus {
   Unpaid = 'unpaid',
   Paid = 'paid'

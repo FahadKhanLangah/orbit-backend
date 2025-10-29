@@ -1,8 +1,11 @@
-import { Body, Controller, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Param, Patch, Post, Query, Req, Res, UseGuards } from '@nestjs/common';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { RidesService } from './rides.service';
 import { CreateRideDto } from './dto/create-ride.dto';
 import { GetFareEstimateDto } from './dto/get-fare-estimate.dto';
+import { Response } from 'express';
+import { PassThrough } from 'stream';
+import { DownloadRideFormat } from './entity/ride.entity';
 
 
 @UseGuards(VerifiedAuthGuard)
@@ -64,5 +67,35 @@ export class RidesController {
   ) {
     const user = req.user;
     return this.rideService.cancelRide(user, rideId);
-  } 
+  }
+  @Get('history/download')
+  async downloadRideHistory(
+    @Req() req: any,
+    @Query('format') format: DownloadRideFormat = DownloadRideFormat.PDF, 
+    @Res() res: Response,
+  ) {
+    const userId = req.user._id; 
+    const fileData = await this.rideService.generateRidesHistory(userId, format);
+
+    let filename = `ride-history-${userId}`;
+
+    if (format === DownloadRideFormat.PDF) {
+      filename += '.pdf';
+      res.setHeader('Content-Type', 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      if (fileData instanceof PassThrough || (fileData && typeof (fileData as any).pipe === 'function')) {
+        (fileData as any).pipe(res);
+      } else {
+        res.send(fileData);
+      }
+
+    } else { 
+      filename += '.csv';
+      res.setHeader('Content-Type', 'text/csv');
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.send(fileData);
+    }
+  }
 }
+
+

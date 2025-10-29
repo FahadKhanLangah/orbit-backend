@@ -30,6 +30,24 @@ export interface IUser extends Document{
   latitude?: number;
   longitude?: number;
   locationUpdatedAt?: Date;
+  // Adding Family, Home and Work Locations for easy navigation.  
+  myLocations?:{
+    family?:{
+      latitude: number;
+      longitude:number;
+      address?:string;
+    },
+    home?:{
+      latitude: number;
+      longitude:number;
+      address?:string;
+    },
+    work?:{
+      latitude: number;
+      longitude:number;
+      address?:string;
+    }
+  }
   lastMail: {
     type: MailType;
     sendAt: Date;
