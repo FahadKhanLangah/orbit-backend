@@ -23,7 +23,7 @@ export class GoogleMapsService {
         origins: [{ lat: origin.latitude, lng: origin.longitude }],
         destinations: [{ lat: destination.latitude, lng: destination.longitude }],
         mode: TravelMode.driving,
-        key: process.env.GOOGLE_MAPS_API_KEY || this.configService.get<string>('GOOGLE_MAPS_API_KEY'),
+        key: process.env.GOOGLE_CLOUD_API_KEY || this.configService.get<string>('GOOGLE_CLOUD_API_KEY'),
       },
     };
 

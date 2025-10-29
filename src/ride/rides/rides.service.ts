@@ -50,104 +50,6 @@ export class RidesService {
     private readonly socketIoService: SocketIoService
   ) { }
 
-  // download ride history
-  async generateRidesHistory(userId: string, format: string): Promise<Buffer | PassThrough> {
-    const user = await this.userModel.findById(userId);
-    if (!user) {
-      throw new NotFoundException('User not found.');
-    }
-
-    const rides = await this.rideModel.find({ userId })
-      .populate<{ driverId: IDriver & { userId: IUser } }>({
-        path: 'driverId',
-        populate: {
-          path: 'userId',
-          select: 'fullName', // Select the fields you need from the User model
-        },
-      })
-      .populate<{ vehicleId: IVehicle }>('vehicleId')
-      .sort({ createdAt: -1 }) // Sort by most recent
-      .exec();
-
-    if (rides.length === 0) {
-      throw new NotFoundException('No ride history found for this user.');
-    }
-
-    if (format === DownloadRideFormat.PDF) {
-      return this._generatePdfStream(user, rides as unknown as (IRide & { driverId: IDriver & { userId: IUser }, vehicleId: IVehicle })[]);
-    } else {
-      return this._generateCsvStream(rides as unknown as IRide[]);
-    }
-  }
-
-  private _generatePdfStream(user: IUser, rides: (IRide & { driverId: IDriver & { userId: IUser }, vehicleId: IVehicle })[]): PassThrough {
-    const doc = new PDFDocument({ margin: 50 });
-    const stream = new PassThrough();
-    doc.pipe(stream);
-
-    // --- PDF Header ---
-    doc.fontSize(20).font('Helvetica-Bold').text('Ride History Report', { align: 'center' });
-    doc.fontSize(14).font('Helvetica').text(`For: ${user.fullName}`, { align: 'center' });
-    doc.moveDown();
-    doc.fontSize(10).text(`Report generated on: ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}`, { align: 'center' });
-    doc.moveDown(2);
-
-    // --- PDF Body (Loop through rides) ---
-    rides.forEach(ride => {
-      const rideDate = ride.createdAt.toLocaleDateString('en-US');
-
-      doc.fontSize(12).font('Helvetica-Bold').text(`Ride on ${rideDate} - Status: ${ride.status.toUpperCase()}`);
-      doc.lineWidth(0.5).moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(0.5);
-
-      doc.font('Helvetica').text(`From: ${ride.pickup.address}`);
-      doc.text(`To: ${ride.destination.address}`);
-      doc.moveDown(0.5);
-
-      const driverName = ride.driverId?.userId?.fullName || 'N/A';
-      const vehicle = ride.vehicleId ? `${ride.vehicleId.model} (${ride.vehicleId.numberPlate})` : 'N/A';
-
-      doc.text(`Fare: ${ride.fare?.toFixed(2) || 'N/A'} PKR`, { continued: true });
-      doc.text(` | Driver: ${driverName}`, { continued: true });
-      doc.text(` | Vehicle: ${vehicle}`);
-      doc.moveDown(2);
-    });
-
-    doc.end();
-    return stream;
-  }
-  private _generateCsvStream(rides: IRide[]): PassThrough {
-    const stream = new PassThrough();
-
-    const fields = [
-      { label: 'Ride ID', value: '_id' },
-      { label: 'Date', value: (row) => new Date(row.createdAt).toISOString() },
-      { label: 'Status', value: 'status' },
-      { label: 'Pickup Address', value: 'pickup.address' },
-      { label: 'Destination Address', value: 'destination.address' },
-      { label: 'Fare (PKR)', value: (row) => row.fare?.toFixed(2) || 'N/A' },
-      { label: 'Payment Method', value: 'paymentMethod' },
-      // Safely access nested data using a function
-      { label: 'Driver Name', value: (row) => (row.driverId as any)?.userId?.fullName || 'N/A' },
-      { label: 'Vehicle Model', value: (row) => (row.vehicleId as IVehicle)?.model || 'N/A' },
-      { label: 'Vehicle Number Plate', value: (row) => (row.vehicleId as IVehicle)?.numberPlate || 'N/A' },
-    ];
-
-    const transformOpts: import('stream').TransformOptions = { highWaterMark: 16384, encoding: 'utf8' };
-    const json2csv = new Transform({ fields }, transformOpts);
-
-    // Pipe the transform to your passthrough stream
-    const processor = json2csv.pipe(stream);
-
-    // Push each ride into the transform
-    for (const ride of rides) {
-      json2csv.write(ride.toObject());
-    }
-    json2csv.end();
-
-    return stream;
-  }
-
-
   async requestRide(user: IUser, createRideDto: CreateRideDto): Promise<IRide> {
     const activeRide = await this.rideModel.findOne({
       userId: user._id,
@@ -349,61 +251,46 @@ export class RidesService {
   }
 
   async getFareEstimate(dto: GetFareEstimateDto) {
-    // const routeDetails = await this.googleMapsService.getDistanceAndDuration(
-    //   dto.pickup,
-    //   dto.destination,
-    // );
-    // const distanceInKm = routeDetails.distance / 1000;
-    // const durationInMinutes = routeDetails.duration / 60;
-    // const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
-    // const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
+    const routeDetails = await this.googleMapsService.getDistanceAndDuration(
+      dto.pickup,
+      dto.destination,
+    );
+    const distanceInKm = routeDetails.distance / 1000;
+    const durationInMinutes = routeDetails.duration / 60;
+    const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
+    const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
 
-    // const baseFare = PRICING_CONFIG.baseFare;
-    // const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
-    // const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
+    const baseFare = PRICING_CONFIG.baseFare;
+    const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
+    const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
 
-    // const nightMultiplier = this.getNightMultiplier();
-    // const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
-    // const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
+    const nightMultiplier = this.getNightMultiplier();
+    const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
+    const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
 
-    // const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
-    // const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
+    const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
+    const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
 
-    // const subtotal = baseFare + distanceFare + timeFare;
-    // const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
+    const subtotal = baseFare + distanceFare + timeFare;
+    const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
 
-    // return {
-    //   totalFare: Math.ceil(finalFare / 5) * 5,
-    //   breakdown: {
-    //     baseFare: baseFare,
-    //     distanceFare: parseFloat(distanceFare.toFixed(2)),
-    //     timeFare: parseFloat(timeFare.toFixed(2)),
-    //     nightMultiplier: nightMultiplier,
-    //     weatherMultiplier: weatherMultiplier,
-    //     roadConditionMultiplier: roadConditionMultiplier,
-    //     fuelTypeAdjustment: fuelTypeAdjustment,
-    //   },
-    //   route: {
-    //     distance: `${distanceInKm.toFixed(2)} km`,
-    //     duration: `${Math.round(durationInMinutes)} mins`,
-    //   },
-    // };
     return {
-      totalFare: 450,
+      totalFare: Math.ceil(finalFare / 5) * 5,
       breakdown: {
-        baseFare: PRICING_CONFIG.baseFare,
-        distanceFare: 120,
-        timeFare: 200,
-        nightMultiplier: 0,
-        weatherMultiplier: 0,
-        roadConditionMultiplier: 50,
-        fuelTypeAdjustment: 80,
+        baseFare: baseFare,
+        distanceFare: parseFloat(distanceFare.toFixed(2)),
+        timeFare: parseFloat(timeFare.toFixed(2)),
+        nightMultiplier: nightMultiplier,
+        weatherMultiplier: weatherMultiplier,
+        roadConditionMultiplier: roadConditionMultiplier,
+        fuelTypeAdjustment: fuelTypeAdjustment,
       },
       route: {
-        distance: `${10} km`,
-        duration: `20 mins`,
+        distance: `${distanceInKm.toFixed(2)} km`,
+        duration: `${Math.round(durationInMinutes)} mins`,
       },
     };
+  
   }
 
   async getRidesByUser(user: IUser): Promise<IRide[]> {
@@ -437,6 +324,7 @@ export class RidesService {
 
     return ride;
   }
+
   private async _findAndAuthorizeRideForDriver(driverUser: IUser, rideId: string): Promise<IRide> {
     const driver = await this.driverModel.findOne({ userId: driverUser._id });
     if (!driver) {
@@ -500,6 +388,102 @@ export class RidesService {
     return settings;
   }
 
+  // download ride history
+  async generateRidesHistory(userId: string, format: string): Promise<Buffer | PassThrough> {
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found.');
+    }
 
+    const rides = await this.rideModel.find({ userId })
+      .populate<{ driverId: IDriver & { userId: IUser } }>({
+        path: 'driverId',
+        populate: {
+          path: 'userId',
+          select: 'fullName', // Select the fields you need from the User model
+        },
+      })
+      .populate<{ vehicleId: IVehicle }>('vehicleId')
+      .sort({ createdAt: -1 }) // Sort by most recent
+      .exec();
+
+    if (rides.length === 0) {
+      throw new NotFoundException('No ride history found for this user.');
+    }
+
+    if (format === DownloadRideFormat.PDF) {
+      return this._generatePdfStream(user, rides as unknown as (IRide & { driverId: IDriver & { userId: IUser }, vehicleId: IVehicle })[]);
+    } else {
+      return this._generateCsvStream(rides as unknown as IRide[]);
+    }
+  }
+
+  private _generatePdfStream(user: IUser, rides: (IRide & { driverId: IDriver & { userId: IUser }, vehicleId: IVehicle })[]): PassThrough {
+    const doc = new PDFDocument({ margin: 50 });
+    const stream = new PassThrough();
+    doc.pipe(stream);
+
+    // --- PDF Header ---
+    doc.fontSize(20).font('Helvetica-Bold').text('Ride History Report', { align: 'center' });
+    doc.fontSize(14).font('Helvetica').text(`For: ${user.fullName}`, { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(10).text(`Report generated on: ${new Date().toLocaleDateString('en-US', { dateStyle: 'long' })}`, { align: 'center' });
+    doc.moveDown(2);
+
+    // --- PDF Body (Loop through rides) ---
+    rides.forEach(ride => {
+      const rideDate = ride.createdAt.toLocaleDateString('en-US');
+
+      doc.fontSize(12).font('Helvetica-Bold').text(`Ride on ${rideDate} - Status: ${ride.status.toUpperCase()}`);
+      doc.lineWidth(0.5).moveTo(50, doc.y).lineTo(550, doc.y).stroke().moveDown(0.5);
+
+      doc.font('Helvetica').text(`From: ${ride.pickup.address}`);
+      doc.text(`To: ${ride.destination.address}`);
+      doc.moveDown(0.5);
+
+      const driverName = ride.driverId?.userId?.fullName || 'N/A';
+      const vehicle = ride.vehicleId ? `${ride.vehicleId.model} (${ride.vehicleId.numberPlate})` : 'N/A';
+
+      doc.text(`Fare: ${ride.fare?.toFixed(2) || 'N/A'} PKR`, { continued: true });
+      doc.text(` | Driver: ${driverName}`, { continued: true });
+      doc.text(` | Vehicle: ${vehicle}`);
+      doc.moveDown(2);
+    });
+
+    doc.end();
+    return stream;
+  }
+
+  private _generateCsvStream(rides: IRide[]): PassThrough {
+    const stream = new PassThrough();
+
+    const fields = [
+      { label: 'Ride ID', value: '_id' },
+      { label: 'Date', value: (row) => new Date(row.createdAt).toISOString() },
+      { label: 'Status', value: 'status' },
+      { label: 'Pickup Address', value: 'pickup.address' },
+      { label: 'Destination Address', value: 'destination.address' },
+      { label: 'Fare ', value: (row) => row.fare?.toFixed(2) || 'N/A' },
+      { label: 'Payment Method', value: 'paymentMethod' },
+      // Safely access nested data using a function
+      { label: 'Driver Name', value: (row) => (row.driverId as any)?.userId?.fullName || 'N/A' },
+      { label: 'Vehicle Model', value: (row) => (row.vehicleId as IVehicle)?.model || 'N/A' },
+      { label: 'Vehicle Number Plate', value: (row) => (row.vehicleId as IVehicle)?.numberPlate || 'N/A' },
+    ];
+
+    const transformOpts: import('stream').TransformOptions = { highWaterMark: 16384, encoding: 'utf8' };
+    const json2csv = new Transform({ fields }, transformOpts);
+
+    // Pipe the transform to your passthrough stream
+    const processor = json2csv.pipe(stream);
+
+    // Push each ride into the transform
+    for (const ride of rides) {
+      json2csv.write(ride.toObject());
+    }
+    json2csv.end();
+
+    return stream;
+  }
 
 }
