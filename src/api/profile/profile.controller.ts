@@ -19,6 +19,7 @@ import {
   Query,
   Delete,
   Version,
+  ValidationPipe,
 } from "@nestjs/common";
 import { ProfileService } from "./profile.service";
 
@@ -47,6 +48,7 @@ import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
 import { PurchaseSubscriptionDto } from "../subscription-plan/purchase-subscription.dto";
 import { SubscriptionPlanService } from "../subscription-plan/subscription-plan.service";
 import { FamilyMemberDto } from "./dto/family_member.dto";
+import { UpdateMyWorkLocationDto } from "./dto/add_or_update_location.dto";
 
 @V1Controller("profile")
 export class ProfileController {
@@ -517,5 +519,27 @@ export class ProfileController {
     return resOK(
       await this.profileService.getMyFamilyMembers(req.user._id)
     );
+  }
+
+  // add or update mylocation 
+  @UseGuards(VerifiedAuthGuard)
+  @Patch("mylocation/work") 
+  async updateMyWorkLocation(
+    @Req() req: any,
+    @Body(new ValidationPipe()) body: UpdateMyWorkLocationDto
+  ) {
+    const userId = req.user._id;
+    const updatedUser = await this.profileService.updateMyWorkLocation(userId, body);
+    return updatedUser.myLocations; 
+  }
+
+  @UseGuards(VerifiedAuthGuard)
+  @Get("mylocation/work-home-family")
+  async getMyLocations(
+    @Req() req: any
+  ) {
+    resOK(
+      await this.profileService.getMyLocations(req.user._id)
+    )
   }
 }

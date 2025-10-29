@@ -15,7 +15,7 @@ import { IUserDevice } from "../../user_device/entities/user_device.entity";
 import { UserGlobalCallStatus } from "../../../../chat/call_modules/utils/user-global-call-status.model";
 import { ISubscriptionPlan } from "./subscription_plan.entity";
 
-export interface IUser extends Document{
+export interface IUser extends Document {
   _id: string;
   email: string;
   fullName: string;
@@ -31,21 +31,21 @@ export interface IUser extends Document{
   longitude?: number;
   locationUpdatedAt?: Date;
   // Adding Family, Home and Work Locations for easy navigation.  
-  myLocations?:{
-    family?:{
+  myLocations?: {
+    family?: {
       latitude: number;
-      longitude:number;
-      address?:string;
+      longitude: number;
+      address?: string;
     },
-    home?:{
+    home?: {
       latitude: number;
-      longitude:number;
-      address?:string;
+      longitude: number;
+      address?: string;
     },
-    work?:{
+    work?: {
       latitude: number;
-      longitude:number;
-      address?:string;
+      longitude: number;
+      address?: string;
     }
   }
   lastMail: {
@@ -127,6 +127,12 @@ export enum WhoCanType {
   Nobody = "Nobody",
 }
 
+const LocationSchema = new Schema({
+  latitude: { type: Number, required: true },
+  longitude: { type: Number, required: true },
+  address: { type: String },
+}, { _id: false });
+
 export const UserSchema = new mongoose.Schema(
   {
     email: { type: String, required: true, unique: true },
@@ -146,6 +152,15 @@ export const UserSchema = new mongoose.Schema(
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
     locationUpdatedAt: { type: Date, default: null },
+    myLocations: {
+      type: {
+        home: { type: LocationSchema, default: null },
+        work: { type: LocationSchema, default: null },
+        family: { type: LocationSchema, default: null },
+      },
+      default: { home: null, work: null, family: null },
+      _id: false,
+    },
     uniqueCode: { type: Number, required: true },
     password: { type: String, required: true, select: false },
     lastMail: { type: Object, default: {} },
@@ -221,7 +236,7 @@ export const UserSchema = new mongoose.Schema(
         {
           userId: {
             type: Schema.Types.ObjectId,
-            ref: 'User', 
+            ref: 'User',
             required: true
           },
           relationship: { type: String, required: false },

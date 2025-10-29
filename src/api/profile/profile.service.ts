@@ -64,6 +64,7 @@ import { calculateAge } from "src/core/utils/utils";
 import { UpdateMyDobDto } from "./dto/update-my-dob.dto";
 import { UpdateMyPayoutDto } from "./dto/update-payout.dto";
 import { ISubscriptionPlan } from "../user_modules/user/entities/subscription_plan.entity";
+import { UpdateMyWorkLocationDto } from "./dto/add_or_update_location.dto";
 
 @Injectable()
 export class ProfileService {
@@ -841,4 +842,42 @@ export class ProfileService {
       .findByIdForFamilyMembers(userId).populate('familyMembers.userId');
     return user.familyMembers || [];
   }
+
+
+  async updateMyWorkLocation(
+    userId: string,
+    dto: UpdateMyWorkLocationDto
+  ) {
+    const { type, ...locationData } = dto;
+    const updatePath = `myLocations.${type}`;
+
+    const updatedUser = await this.userModel.findByIdAndUpdate(
+      userId,
+      {
+        $set: {
+          [updatePath]: locationData, // e.g., { "myLocations.home": { latitude: ..., ... } }
+        },
+      },
+      {
+        new: true,
+        select: 'myLocations',
+      },
+    );
+
+    if (!updatedUser) {
+      throw new NotFoundException("User not found.");
+    }
+
+    return updatedUser;
+  }
+
+  async getMyLocations(userId: string) {
+    const user = await this.userModel.findById(userId, 'myLocations');
+    if (!user) {
+      throw new NotFoundException("User not found.");
+    }
+    console.log(user.myLocations)
+    return user.myLocations || { home: null, work: null, family: null };
+  }
+
 }
