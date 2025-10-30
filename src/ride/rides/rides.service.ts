@@ -11,11 +11,12 @@ import { GoogleMapsService } from 'src/google-maps/google-maps.service';
 import { SocketIoService } from 'src/chat/socket_io/socket_io.service';
 import { SocketEventsType } from 'src/core/utils/enums';
 import { UpdateLocationDto } from '../driver/dto/update-location.dto';
-import { LoyaltySetting } from './entity/loyalty_points.entity';
-
+import { RidePointSetting } from './entity/ride-points.entity';
 import PDFDocument from 'pdfkit';
 import { Parser, Transform } from 'json2csv';
 import { PassThrough } from 'stream';
+import { RateRideDto } from './dto/rate_ride.dto';
+
 
 const PRICING_CONFIG = {
   baseFare: 150,
@@ -37,7 +38,6 @@ const PRICING_CONFIG = {
   },
 };
 
-
 @Injectable()
 export class RidesService {
   constructor(
@@ -45,7 +45,7 @@ export class RidesService {
     @InjectModel('Driver') private readonly driverModel: Model<IDriver>,
     @InjectModel('Vehicle') private readonly vehicleModel: Model<IVehicle>,
     @InjectModel('User') private readonly userModel: Model<IUser>,
-    @InjectModel(LoyaltySetting.name) private readonly loyaltySettingModel: Model<LoyaltySetting>,
+    @InjectModel(RidePointSetting.name) private readonly loyaltySettingModel: Model<RidePointSetting>,
     private readonly googleMapsService: GoogleMapsService,
     private readonly socketIoService: SocketIoService
   ) { }
@@ -82,6 +82,8 @@ export class RidesService {
       category: createRideDto.category,
       estimatedFare: estimatedFare,
       systemCommission: systemCommission,
+      status: createRideDto.scheduledTime ? RideStatus.Scheduled : RideStatus.Pending,
+      scheduledTime: createRideDto.scheduledTime ? createRideDto.scheduledTime : null,
     });
 
     await newRide.save();
@@ -114,7 +116,6 @@ export class RidesService {
   }
 
   async findNearbyDriversAndNotify(ride: IRide) {
-    const requiredCommission = ride.systemCommission;
     const vehicles = await this.vehicleModel.find({ category: ride.category, isActive: true }).select('driverId').exec();
     const driverIdsWithMatchingVehicle = vehicles.map(v => v.driverId);
     const nearbyDrivers = await this.driverModel.find({
@@ -201,19 +202,29 @@ export class RidesService {
     if (!rider) {
       throw new NotFoundException('Rider user not found.');
     }
-    const driver = await this.userModel.findById(driverUser._id);
-    if (!driver) {
+    const userDriver = await this.userModel.findById(driverUser._id);
+    if (!userDriver) {
       throw new NotFoundException('Driver user not found.');
     }
 
     // Update driver earnings
+
     const driverEarnings = ride.fare - ride.systemCommission;
-    driver.balance += driverEarnings;
     if (ride.paymentMethod === PaymentMethod.Online) {
+      userDriver.balance += driverEarnings;
       rider.balance -= ride.fare;
-      await rider.save();
-      await driver.save();
     }
+    if (ride.paymentMethod === PaymentMethod.Points) {
+      userDriver.balance += driverEarnings;
+      rider.ridePoints -= fareDetails.totalFareInPoints;
+    }
+    await this.driverModel.findOneAndUpdate(
+      { userId: driverUser._id },
+      { $inc: { totalRides: 1 } }
+    )
+    await rider.save();
+    await userDriver.save();
+
     return await ride.save();
   }
 
@@ -273,9 +284,11 @@ export class RidesService {
 
     const subtotal = baseFare + distanceFare + timeFare;
     const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
-
+    const pointRide = await this.loyaltySettingModel.findOne();
+    const totalFareInPoints = finalFare * (pointRide?.pointsToCurrencyRate || 10);
     return {
       totalFare: Math.ceil(finalFare / 5) * 5,
+      totalFareInPoints,
       breakdown: {
         baseFare: baseFare,
         distanceFare: parseFloat(distanceFare.toFixed(2)),
@@ -290,7 +303,7 @@ export class RidesService {
         duration: `${Math.round(durationInMinutes)} mins`,
       },
     };
-  
+
   }
 
   async getRidesByUser(user: IUser): Promise<IRide[]> {
@@ -366,29 +379,6 @@ export class RidesService {
     return 'good'; // or 'poor'
   }
 
-  // Additional methods for loyalty points management could be added here.
-  async getLoyaltySettings(): Promise<LoyaltySetting> {
-    const settings = await this.loyaltySettingModel.findOne({ isActive: true });
-    if (!settings) {
-      throw new NotFoundException('Loyalty settings not found.');
-    }
-    return settings;
-  }
-
-  // for admin to update loyalty settings
-  async updateLoyaltySettings(updateData: Partial<LoyaltySetting>): Promise<LoyaltySetting> {
-    const settings = await this.loyaltySettingModel.findOneAndUpdate(
-      { isActive: true },
-      updateData,
-      { new: true }
-    );
-    if (!settings) {
-      throw new NotFoundException('Loyalty settings not found.');
-    }
-    return settings;
-  }
-
-  // download ride history
   async generateRidesHistory(userId: string, format: string): Promise<Buffer | PassThrough> {
     const user = await this.userModel.findById(userId);
     if (!user) {
@@ -484,6 +474,74 @@ export class RidesService {
     json2csv.end();
 
     return stream;
+  }
+
+  async rateRide(userId, rideId: string, rideRideDto: RateRideDto): Promise<IRide> {
+    const rating = rideRideDto.rating;
+    const comment = rideRideDto.comment;
+    const ride = await this.rideModel.findById(rideId);
+    if (!ride) {
+      throw new NotFoundException('Ride not found.');
+    }
+    if (ride.status !== RideStatus.Completed) {
+      throw new ConflictException('Can only rate a driver for a completed ride.');
+    }
+    if (ride.userId.toString() !== userId) {
+      throw new ForbiddenException('You are not authorized to rate this ride.');
+    }
+    ride.rating = rating;
+    if (comment) {
+      ride.ratingComment = comment;
+    }
+    await ride.save();
+    const driver = await this.driverModel.findById(ride.driverId)
+    driver.rating = ((driver.rating * driver.totalRides) + rating) / (driver.totalRides + 1);
+    await driver.save();
+    return ride;
+  }
+
+  async redeemPoints(userId, rideId) {
+    const ride = await this.rideModel.findById(rideId);
+    if (!ride) {
+      throw new NotFoundException('Ride not found.');
+    }
+    if (ride.userId.toString() !== userId) {
+      throw new ForbiddenException('You are not authorized to redeem this ride.');
+    }
+    if (ride.status !== RideStatus.Completed) {
+      throw new ConflictException('Can not redeem points for uncompleted Ride.');
+    }
+    if (ride.isPointsRedeemed) {
+      throw new ConflictException('Points have already been redeemed for this ride.');
+    }
+    ride.isPointsRedeemed = true;
+    const ridePointsSetting = await this.loyaltySettingModel.findOne();
+    console.log(ridePointsSetting.pointsPerRide)
+    await this.userModel.findByIdAndUpdate(userId,
+      { $inc: { ridePoints: ridePointsSetting.pointsPerRide } }
+    )
+    await ride.save();
+    return "Points Redeemed successfully"
+  }
+
+  async getLoyaltySettings(): Promise<RidePointSetting> {
+    const settings = await this.loyaltySettingModel.findOne({ isActive: true });
+    if (!settings) {
+      throw new NotFoundException('Loyalty settings not found.');
+    }
+    return settings;
+  }
+
+  async updateLoyaltySettings(updateData: Partial<RidePointSetting>): Promise<RidePointSetting> {
+    const settings = await this.loyaltySettingModel.findOneAndUpdate(
+      { isActive: true },
+      updateData,
+      { new: true }
+    );
+    if (!settings) {
+      throw new NotFoundException('Loyalty settings not found.');
+    }
+    return settings;
   }
 
 }

@@ -8,7 +8,7 @@ export interface CreateTransactionInput {
   amount: number;
   type: TransactionType;
   description: string;
-  commissionPercentage: number; // The service will calculate the rest
+  commissionPercentage: number;
   metadata?: Record<string, any>;
 }
 

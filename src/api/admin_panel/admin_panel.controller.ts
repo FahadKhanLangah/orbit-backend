@@ -54,9 +54,13 @@ export class AdminPanelController {
     private readonly rideService: RidesService,
   ) { }
 
-  // update loyalty points settings
-  @Put("loyalty-points/settings")
-  async updateLoyaltyPointsSettings(@Body() body: any) {
+  @Get('ride-points/settings/get')
+  async getRidePointsSetting() {
+    return await this.rideService.getLoyaltySettings;
+  }
+
+  @Put("ride-points/settings")
+  async updateRidePointsSettings(@Body() body: any) {
     return await this.rideService.updateLoyaltySettings(body);
   }
 

@@ -68,6 +68,7 @@ export interface IUser extends Document {
   updatedAt: Date;
   lastSeenAt: Date;
   loyaltyPoints: number;
+  ridePoints: number;
   balance: number;
   claimedGifts: string[];
   roles: UserRole[];
@@ -207,6 +208,7 @@ export const UserSchema = new mongoose.Schema(
     },
     lastSeenAt: { type: Date, default: Date.now },
     loyaltyPoints: { type: Number, default: 0 },
+    ridePoints: { type: Number, default: 0 },
     balance: { type: Number, default: 0 },
     claimedGifts: { type: [String], default: [] },
     updatedAt: { type: Date },

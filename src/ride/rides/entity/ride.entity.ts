@@ -5,13 +5,15 @@ export enum RideStatus {
   Pending = 'pending',
   Accepted = 'accepted',
   InProgress = 'in_progress',
+  // schedule a ride for future
+  ScheduledForFuture = 'scheduled_for_future',
   Completed = 'completed',
   Cancelled = 'cancelled',
   Scheduled = 'scheduled',
   NoDriversAvailable = 'no_drivers_available'
 }
 
-export enum DownloadRideFormat{
+export enum DownloadRideFormat {
   PDF = 'pdf',
   CSV = 'csv'
 }
@@ -23,7 +25,7 @@ export enum PaymentStatus {
 
 export enum PaymentMethod {
   Cash = 'cash',
-  Wallet = 'wallet',
+  Points = 'points',
   Online = 'online'
 }
 export interface IRide extends Document {
@@ -59,6 +61,9 @@ export interface IRide extends Document {
   category: VehicleCategory;
   paymentMethod: PaymentMethod;
   paymentStatus: PaymentStatus;
+  rating?: number;
+  ratingComment?: string;
+  isPointsRedeemed?: boolean,
   scheduledTime?: Date;
   startedAt?: Date;
   completedAt?: Date;
@@ -102,6 +107,9 @@ export const RideSchema = new Schema({
   category: { type: String, enum: VehicleCategory, required: true },
   paymentMethod: { type: String, enum: PaymentMethod, default: PaymentMethod.Cash },
   paymentStatus: { type: String, enum: PaymentStatus, default: PaymentStatus.Unpaid },
+  rating: { type: Number, min: 1, max: 5 },
+  ratingComment: { type: String, trim: true },
+  isPointsRedeemed: { type: Boolean, default: false },
   scheduledTime: { type: Date, default: null },
   startedAt: { type: Date },
   completedAt: { type: Date },

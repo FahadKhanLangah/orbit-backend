@@ -1,10 +1,13 @@
 import { Type } from 'class-transformer';
 import {
+  IsDate,
   IsLatitude,
   IsLongitude,
   IsNotEmpty,
   IsNotEmptyObject,
+  IsOptional,
   IsString,
+  MinDate,
   ValidateNested,
 } from 'class-validator';
 import { PaymentMethod } from '../entity/ride.entity';
@@ -41,4 +44,10 @@ export class CreateRideDto {
   @IsNotEmpty()
   @IsString()
   category: VehicleCategory;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  @MinDate(new Date(Date.now() + 15 * 60 * 1000), { message: 'Scheduled time must be at least 15 minutes in the future.' })
+  scheduledTime?: Date;
 }

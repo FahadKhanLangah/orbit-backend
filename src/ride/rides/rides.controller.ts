@@ -6,6 +6,7 @@ import { GetFareEstimateDto } from './dto/get-fare-estimate.dto';
 import { Response } from 'express';
 import { PassThrough } from 'stream';
 import { DownloadRideFormat } from './entity/ride.entity';
+import { RateRideDto } from './dto/rate_ride.dto';
 
 
 @UseGuards(VerifiedAuthGuard)
@@ -71,10 +72,10 @@ export class RidesController {
   @Get('history/download')
   async downloadRideHistory(
     @Req() req: any,
-    @Query('format') format: DownloadRideFormat = DownloadRideFormat.PDF, 
+    @Query('format') format: DownloadRideFormat = DownloadRideFormat.PDF,
     @Res() res: Response,
   ) {
-    const userId = req.user._id; 
+    const userId = req.user._id;
     const fileData = await this.rideService.generateRidesHistory(userId, format);
 
     let filename = `ride-history-${userId}`;
@@ -89,12 +90,31 @@ export class RidesController {
         res.send(fileData);
       }
 
-    } else { 
+    } else {
       filename += '.csv';
       res.setHeader('Content-Type', 'text/csv');
       res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
       res.send(fileData);
     }
+  }
+
+  @Patch(':id/rate')
+  async rateRide(
+    @Req() req: any,
+    @Param('id') rideId: string,
+    @Body() body: RateRideDto,
+  ) {
+    const user = req.user;
+    return this.rideService.rateRide(user, rideId, body);
+  }
+
+  @Patch(':id/redeem-points')
+  async redeemPoints(
+    @Req() req: any,
+    @Param('id') rideId: string,
+  ) {
+    const userId = req.user._id;
+    return this.rideService.redeemPoints(userId, rideId);
   }
 }
 

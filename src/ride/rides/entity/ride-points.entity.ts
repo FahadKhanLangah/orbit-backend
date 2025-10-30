@@ -3,7 +3,7 @@ import { Document } from 'mongoose';
 
 
 @Schema({ timestamps: true })
-export class LoyaltySetting extends Document {
+export class RidePointSetting extends Document {
   @Prop({ default: 10 })
   pointsPerRide: number;
 
@@ -15,4 +15,4 @@ export class LoyaltySetting extends Document {
 }
 
 
-export const LoyaltySettingSchema = SchemaFactory.createForClass(LoyaltySetting);
+export const RidePointSchema = SchemaFactory.createForClass(RidePointSetting);
