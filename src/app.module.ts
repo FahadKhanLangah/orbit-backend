@@ -69,6 +69,8 @@ import { TranslationModule } from "./common/transalation/translation.module";
 import { RideModule } from "./ride/ride.module";
 import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { MpessaModule } from './mpessa/mpesa.module';
+import { JobsModule } from './jobs/jobs.module';
+
 
 
 @Module({
@@ -148,7 +150,8 @@ import { MpessaModule } from './mpessa/mpesa.module';
     TranslationModule,
     RideModule,
     GoogleMapsModule,
-    MpessaModule
+    MpessaModule,
+    JobsModule
   ],
   controllers: [AppController],
   providers: [

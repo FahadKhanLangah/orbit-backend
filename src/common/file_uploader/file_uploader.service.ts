@@ -4,7 +4,7 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { Injectable } from "@nestjs/common";
+import { BadRequestException, Injectable } from "@nestjs/common";
 import path from "path";
 import root from "app-root-path";
 import fs from "fs";
@@ -50,9 +50,8 @@ export class FileUploaderService {
       throw new Error("File is missing for verification document upload.");
     }
     const fileExtension = path.extname(file.originalname) || ".tmp"; // Get file extension
-    const key = `verification-docs/${userId}/${
-      S3UploaderTypes.media
-    }-${uuidv4()}${fileExtension}`;
+    const key = `verification-docs/${userId}/${S3UploaderTypes.media
+      }-${uuidv4()}${fileExtension}`;
     await this._putFile(file.buffer, key, userId, false);
     return key;
   }
@@ -67,6 +66,17 @@ export class FileUploaderService {
     const fileExtension = path.extname(file.originalname) || ".jpg"; // Store ads in a dedicated public folder so they can be served directly
     const key = `ads/${userId}-${uuidv4()}${fileExtension}`;
     await this._putFile(file.buffer, key, userId, true); // true for isPublic
+    return key;
+  }
+
+  async uploadPdf(
+    file: Express.Multer.File,
+    userId: string
+  ): Promise<string> {
+    if (!file) throw new BadRequestException('Resume file is required');
+    const fileExtension = path.extname(file.originalname) || ".pdf";
+    const key = `ads/${userId}-${uuidv4()}${fileExtension}`;
+    await this._putFile(file.buffer, key, userId, false);
     return key;
   }
 
