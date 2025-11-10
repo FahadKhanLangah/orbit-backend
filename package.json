@@ -21,6 +21,7 @@
     "@aws-sdk/s3-request-presigner": "^3.327.0",
     "@google-cloud/translate": "^9.2.1",
     "@googlemaps/google-maps-services-js": "^3.4.2",
+    "@googlemaps/routing": "^2.1.1",
     "@nestjs-modules/mailer": "^2.0.2",
     "@nestjs/axios": "^1.0.1",
     "@nestjs/bullmq": "^10.1.0",

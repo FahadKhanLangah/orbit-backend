@@ -25,6 +25,21 @@ export class RidesController {
     return await this.rideService.requestRide(user, createRideDto)
   }
 
+  @Patch("/accept/ride/:rideId/:vehicleId")
+  async acceptRide(
+    @Req() req: any,
+    @Param('rideId') rideId: string,
+    @Param('vehicleId') vehicleId: string
+  ) {
+    return this.rideService.acceptRide(req.user, rideId, vehicleId)
+  }
+
+  @Get('/get/available-rides')
+  async getNewAvailableRides() {
+    return this.rideService.getAvailableRides();
+  }
+
+
   // get my rides 
   @Get('my-rides')
   async getMyRides(@Req() req: any) {

@@ -35,19 +35,14 @@ export class MpesaService {
     this.callbackUrl = process.env.MPESA_CALLBACK_URL;
   }
 
-  // ----------------------------------------
-  // 🔐 1. Get Access Token (via token.util.ts)
-  // ----------------------------------------
   private async getAccessToken(): Promise<string> {
     return getMpesaAccessToken();
   }
 
-  // ----------------------------------------
-  // 💳 2. STK Push (Customer → Business)
-  // ----------------------------------------
   async initiateStkPush(data): Promise<StkPushResponse> {
     try {
       const token = await this.getAccessToken();
+      this.logger.log('Access Token:', token);
       const timestamp = this.getTimestamp();
       const password = Buffer.from(`${this.shortcode}${this.passkey}${timestamp}`).toString('base64');
 
@@ -88,11 +83,6 @@ export class MpesaService {
       throw new Error('Failed to initiate STK Push');
     }
   }
-
-  // ----------------------------------------
-  // 📞 3. Handle Callback
-  // ----------------------------------------
-
 
   async handleCallback(callbackData: any): Promise<void> {
     this.logger.log('--- M-Pesa Callback Received ---');
@@ -165,9 +155,6 @@ export class MpesaService {
     }
   }
 
-  // ----------------------------------------
-  // 💰 4. Commission Calculation (for B2C)
-  // ----------------------------------------
   async calculateCommission(totalAmount: number): Promise<{ commission: number; netAmount: number }> {
     const config = await this.commissionModel.findOne({ isActive: true });
     const rate = config?.percentage || 10;
@@ -176,10 +163,6 @@ export class MpesaService {
     return { commission, netAmount };
   }
 
-
-  // ----------------------------------------
-  // 🕒 Utility - Timestamp (yyyyMMddHHmmss)
-  // ----------------------------------------
   private getTimestamp(): string {
     const now = new Date();
     const YYYY = now.getFullYear();

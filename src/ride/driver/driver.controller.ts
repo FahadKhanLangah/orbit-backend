@@ -1,7 +1,6 @@
 import { Body, Controller, Get, Param, Patch, Post, Req, UploadedFile, UploadedFiles, UseGuards, UseInterceptors } from "@nestjs/common";
 import { DriverService } from "./driver.service";
 import { VerifiedAuthGuard } from "src/core/guards/verified.auth.guard";
-import { imageFileInterceptor } from "src/core/utils/upload_interceptors";
 import { FileFieldsInterceptor } from "@nestjs/platform-express";
 import { UpdateLocationDto } from "./dto/update-location.dto";
 
@@ -65,6 +64,7 @@ export class DriverController {
     console.log(driverId);
     return await this.driverService.getDriverById(driverId);
   }
+
   @Patch('location')
   updateLocation(@Req() req: any, @Body() updateLocationDto: UpdateLocationDto) {
     const user = req.user;

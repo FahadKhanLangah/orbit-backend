@@ -146,7 +146,7 @@ export class RidesService {
       }
     } else {
       console.log("No nearby drivers found for ride request.");
-      await this.rideModel.findByIdAndUpdate(ride._id, { status: RideStatus.NoDriversAvailable });
+      await this.rideModel.findByIdAndUpdate(ride._id, { status: RideStatus.Pending });
       this.socketIoService.io.to(ride.userId.toString()).emit(
         SocketEventsType.v1RideRequested,
         JSON.stringify({
@@ -244,6 +244,24 @@ export class RidesService {
     });
 
     return activeRide;
+  }
+
+  async getAvailableRides() {
+    const rides = await this.rideModel.find({ status: RideStatus.Pending }).exec();
+
+    if (!rides || rides.length === 0) {
+      throw new NotFoundException("No active rides are available");
+    }
+
+    const data = rides.map(r => ({
+      rideId: r._id.toString(),
+      pickup: r.pickup,
+      destination: r.destination,
+      category: r.category,
+      date: r.createdAt || new Date(),
+    }));
+
+    return data;
   }
 
   async updateLocation(user: IUser, dto: UpdateLocationDto): Promise<IDriver> {

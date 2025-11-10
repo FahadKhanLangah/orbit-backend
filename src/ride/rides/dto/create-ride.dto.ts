@@ -13,7 +13,6 @@ import {
 import { PaymentMethod } from '../entity/ride.entity';
 import { VehicleCategory } from 'src/ride/vehicle/entity/vehicle.entity';
 
-
 class LocationDto {
   @IsNotEmpty()
   @IsString()
