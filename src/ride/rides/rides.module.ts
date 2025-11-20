@@ -10,6 +10,7 @@ import { GoogleMapsModule } from 'src/google-maps/google-maps.module';
 import { SocketIoModule } from 'src/chat/socket_io/socket_io.module';
 import { UserSchema } from 'src/api/user_modules/user/entities/user.entity';
 import { RidePointSchema, RidePointSetting } from './entity/ride-points.entity';
+import { PricingConfig, PricingConfigSchema } from './entity/pricing-config.schema';
 
 @Module({
   imports: [
@@ -18,7 +19,8 @@ import { RidePointSchema, RidePointSetting } from './entity/ride-points.entity';
       { name: "Driver", schema: DriverSchema },
       { name: "Vehicle", schema: VehicleSchema },
       { name: "User", schema: UserSchema },
-      { name: RidePointSetting.name, schema: RidePointSchema }
+      { name: RidePointSetting.name, schema: RidePointSchema },
+      { name: PricingConfig.name, schema: PricingConfigSchema }
     ]),
     AuthModule,
     GoogleMapsModule,

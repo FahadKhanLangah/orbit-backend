@@ -16,8 +16,9 @@ import PDFDocument from 'pdfkit';
 import { Parser, Transform } from 'json2csv';
 import { PassThrough } from 'stream';
 import { RateRideDto } from './dto/rate_ride.dto';
+import { PricingConfig, PricingConfigDocument } from './entity/pricing-config.schema';
 
-
+/*
 const PRICING_CONFIG = {
   baseFare: 150,
   perKmRate: {
@@ -37,6 +38,7 @@ const PRICING_CONFIG = {
     fuelType: { Electric: -10, Fuel: 0 },
   },
 };
+*/
 
 @Injectable()
 export class RidesService {
@@ -46,6 +48,8 @@ export class RidesService {
     @InjectModel('Vehicle') private readonly vehicleModel: Model<IVehicle>,
     @InjectModel('User') private readonly userModel: Model<IUser>,
     @InjectModel(RidePointSetting.name) private readonly loyaltySettingModel: Model<RidePointSetting>,
+    @InjectModel(PricingConfig.name)
+    private readonly pricingConfigModel: Model<PricingConfigDocument>,
     private readonly googleMapsService: GoogleMapsService,
     private readonly socketIoService: SocketIoService
   ) { }
@@ -71,9 +75,9 @@ export class RidesService {
       destination: createRideDto.destination,
       category: createRideDto.category,
     });
-
+    const pricingConfig = await this.getConfig();
     const estimatedFare = estimatedFareData.totalFare;
-    const systemCommission = estimatedFare * PRICING_CONFIG.systemCommissionRate;
+    const systemCommission = estimatedFare * pricingConfig.systemCommissionRate;
     const newRide = new this.rideModel({
       userId: user._id,
       pickup: createRideDto.pickup,
@@ -151,7 +155,7 @@ export class RidesService {
         SocketEventsType.v1RideRequested,
         JSON.stringify({
           rideId: ride._id.toString(),
-          status: RideStatus.NoDriversAvailable,
+          status: RideStatus.Pending,
           date: new Date(),
         }),
       );
@@ -289,16 +293,18 @@ export class RidesService {
     const weatherCondition = await this.getWeatherCondition(dto.pickup); // 'bad' or 'normal'
     const roadCondition = await this.getRoadCondition(dto.pickup, dto.destination); // 'poor' or 'good'
 
-    const baseFare = PRICING_CONFIG.baseFare;
-    const distanceFare = distanceInKm * PRICING_CONFIG.perKmRate[dto.category];
-    const timeFare = durationInMinutes * PRICING_CONFIG.perMinuteRate;
+    const pricingConfig = await this.getConfig();
 
-    const nightMultiplier = this.getNightMultiplier();
-    const weatherMultiplier = PRICING_CONFIG.multipliers.weather[weatherCondition];
-    const roadConditionMultiplier = PRICING_CONFIG.multipliers.roadCondition[roadCondition];
+    const baseFare = pricingConfig.baseFare;
+    const distanceFare = distanceInKm * pricingConfig.perKmRate[dto.category];
+    const timeFare = durationInMinutes * pricingConfig.perMinuteRate;
+    const night = pricingConfig.multipliers.night;
+    const nightMultiplier = this.getNightMultiplier(night);
+    const weatherMultiplier = pricingConfig.multipliers.weather[weatherCondition];
+    const roadConditionMultiplier = pricingConfig.multipliers.roadCondition[roadCondition];
 
     const fuelType = (dto.category === VehicleCategory.OrbitGreen) ? 'Electric' : 'Fuel';
-    const fuelTypeAdjustment = PRICING_CONFIG.adjustments.fuelType[fuelType];
+    const fuelTypeAdjustment = pricingConfig.adjustments.fuelType[fuelType];
 
     const subtotal = baseFare + distanceFare + timeFare;
     const finalFare = (subtotal * nightMultiplier * weatherMultiplier * roadConditionMultiplier) + fuelTypeAdjustment;
@@ -374,10 +380,11 @@ export class RidesService {
     return ride;
   }
 
-  private getNightMultiplier(): number {
+  private getNightMultiplier(night): number {
+
     const now = new Date();
     const currentHour = now.getHours();
-    const { startHour, endHour, rate } = PRICING_CONFIG.multipliers.night;
+    const { startHour, endHour, rate } = night;
 
     if (currentHour >= startHour || currentHour < endHour) {
       return rate;
@@ -560,6 +567,20 @@ export class RidesService {
       throw new NotFoundException('Loyalty settings not found.');
     }
     return settings;
+  }
+
+  async getConfig(): Promise<PricingConfig> {
+    let config = await this.pricingConfigModel.findOne();
+    if (!config) {
+      config = await this.pricingConfigModel.create({});
+    }
+    return config;
+  }
+
+  async updateConfig(updateDto: Partial<PricingConfig>) {
+    const config = await this.getConfig();
+    Object.assign(config, updateDto);
+    return config.save();
   }
 
 }

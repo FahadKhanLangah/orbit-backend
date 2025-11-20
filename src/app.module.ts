@@ -70,6 +70,7 @@ import { RideModule } from "./ride/ride.module";
 import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { MpessaModule } from './mpessa/mpesa.module';
 import { JobsModule } from './jobs/jobs.module';
+import { GooglePayModule } from "./google-pay/google-pay.module";
 
 
 
@@ -151,7 +152,8 @@ import { JobsModule } from './jobs/jobs.module';
     RideModule,
     GoogleMapsModule,
     MpessaModule,
-    JobsModule
+    JobsModule,
+    GooglePayModule
   ],
   controllers: [AppController],
   providers: [

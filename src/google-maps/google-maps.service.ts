@@ -108,6 +108,14 @@ export class GoogleMapsService {
     }
   }
 
+  // async getDistanceAndDuration(origin: Location, destination: Location) {
+  //   return {
+  //     distance: 1000,
+  //     duration: 10000,
+  // }
+  //   };
+
+
   private parseDuration(durationString: string): number {
     return parseInt(durationString.replace('s', ''), 10);
   }

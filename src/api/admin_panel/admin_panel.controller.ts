@@ -39,6 +39,7 @@ import { DriverService } from "src/ride/driver/driver.service";
 import { driverProfileStatus } from "src/ride/driver/entity/driver.entity";
 import { GetDriversFilterDto, UpdateDriverStatusDto } from "src/ride/driver/dto/status-dto";
 import { RidesService } from "src/ride/rides/rides.service";
+import { PricingConfig } from "src/ride/rides/entity/pricing-config.schema";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -53,6 +54,16 @@ export class AdminPanelController {
     private readonly driverService: DriverService,
     private readonly rideService: RidesService,
   ) { }
+  @Get("ride/pricing-config")
+  getRidePricingConfig(): Promise<PricingConfig> {
+    return this.rideService.getConfig();
+  }
+
+  @Put("ride/update-pricing-config")
+  updateRidePricingConfig(@Body() updateDto: Partial<PricingConfig>) {
+    return this.rideService.updateConfig(updateDto);
+  }
+
 
   @Get('ride-points/settings/get')
   async getRidePointsSetting() {

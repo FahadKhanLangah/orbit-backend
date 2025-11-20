@@ -10,6 +10,7 @@ import {
   NotFoundException,
   ForbiddenException,
   Inject,
+  ConflictException,
 } from "@nestjs/common";
 import { InjectConnection, InjectModel } from "@nestjs/mongoose";
 import { Connection, Model } from "mongoose";
@@ -52,6 +53,7 @@ import { GiftService } from "../gifts/gift.service";
 import { TransactionType } from "../transactions/schemas/transaction.schema";
 import { TransactionService } from "../transactions/transaction.service";
 import { SettingsService } from "../setting/settings.service";
+import { resOK } from "src/core/utils/res.helpers";
 
 @Injectable()
 export class LiveStreamService {
@@ -75,7 +77,7 @@ export class LiveStreamService {
     private readonly transactionService: TransactionService,
     private readonly settingsService: SettingsService,
     @InjectConnection() private readonly connection: Connection
-  ) {}
+  ) { }
 
   async sendGift(
     streamId: string,
@@ -285,7 +287,7 @@ export class LiveStreamService {
     if (streamCreator.banLiveTo && streamCreator.banLiveTo > new Date()) {
       throw new ForbiddenException(
         "You are banned from creating live streams until " +
-          streamCreator.banLiveTo
+        streamCreator.banLiveTo
       );
     }
 
@@ -1347,9 +1349,8 @@ export class LiveStreamService {
 
     return {
       success: true,
-      message: `Join request ${
-        dto.action === "approve" ? "approved" : "denied"
-      } successfully`,
+      message: `Join request ${dto.action === "approve" ? "approved" : "denied"
+        } successfully`,
     };
   }
 
@@ -1373,6 +1374,21 @@ export class LiveStreamService {
         status: "pending",
       })
       .sort({ requestedAt: -1 });
+  }
+
+  async deleteSavedStream(streamId: string, userId: string) {
+    const stream = await this.liveStreamModel.findById(streamId);
+    if (!stream) {
+      throw new NotFoundException("Stream not found.");
+    }
+
+    if (stream.streamerId.toString() !== userId.toString()) {
+      throw new ConflictException("You are not authorized to delete this stream.");
+    }
+
+    await stream.deleteOne();
+
+    return { message: "Stream deleted successfully" };
   }
 
   /**
@@ -1445,8 +1461,7 @@ export class LiveStreamService {
       }
 
       console.log(
-        `Live stream notification sent to ${
-          tokens.fcm.length + tokens.oneSignal.length
+        `Live stream notification sent to ${tokens.fcm.length + tokens.oneSignal.length
         } devices for stream: ${stream.title}`
       );
       console.log(

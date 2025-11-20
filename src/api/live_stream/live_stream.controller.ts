@@ -50,7 +50,7 @@ export class LiveStreamController {
   constructor(
     private readonly liveStreamService: LiveStreamService,
     private readonly categoryService: CategoryService
-  ) {}
+  ) { }
 
   @Post("/:streamId/invite-cohost")
   async inviteCoHost(
@@ -303,9 +303,9 @@ export class LiveStreamController {
   }
 
   @Delete(":id")
-  async deleteLiveStream(@Param() params: MongoIdDto, @Req() req: any) {
-    // Implementation for deleting/cancelling stream
-    return resOK({ message: "Stream deleted successfully" });
+  async deleteLiveStream(@Param('id') params: MongoIdDto, @Req() req: any) {
+    const userId = req.user._id;
+    return await this.liveStreamService.deleteSavedStream(params.id, userId)
   }
 
   @Post(":id/remove-participant")

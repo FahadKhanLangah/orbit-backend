@@ -39,14 +39,13 @@ export class RidesController {
     return this.rideService.getAvailableRides();
   }
 
-
   // get my rides 
   @Get('my-rides')
   async getMyRides(@Req() req: any) {
     const user = req.user;
     return this.rideService.getRidesByUser(user);
   }
-
+  
   @Post('fare-estimate')
   async getFareEstimate(@Body() getFareEstimateDto: GetFareEstimateDto) {
     return this.rideService.getFareEstimate(getFareEstimateDto);
@@ -132,5 +131,3 @@ export class RidesController {
     return this.rideService.redeemPoints(userId, rideId);
   }
 }
-
-
