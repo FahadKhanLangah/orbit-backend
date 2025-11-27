@@ -701,6 +701,19 @@ export class MessageChannelService {
     return "Message updated successfully";
   }
 
+  // pin or unpin message
+  async pinUnpinMessage(dto: RoomIdAndMsgIdDto, pin: boolean) {
+    await this.middlewareService.isThereRoomMemberOrThrow(
+      dto.roomId,
+      dto.myUser._id
+    );
+    const updateData = await this.messageService.findByIdAndUpdate(dto.messageId, {
+      isPinned: pin
+    });
+    this.socket.io.to(dto.roomId.toString()).emit(SocketEventsType.v1OnUpdateMessage, JSON.stringify(updateData));
+    return pin ? "Message pinned successfully" : "Message unpinned successfully";
+  }
+
   async reactToMessage(dto: RoomIdAndMsgIdDto, emoji: string) {
     await this.middlewareService.isThereRoomMemberOrThrow(
       dto.roomId,

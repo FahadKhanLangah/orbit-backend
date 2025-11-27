@@ -36,9 +36,9 @@ import { MongoMessageIdDto } from "src/core/common/dto/mongo.messageId.dto";
 import { TranslateMessageDto } from "src/chat/message/dto/translate-message.dto";
 
 @UseGuards(VerifiedAuthGuard)
-@V1Controller("channel/:roomId/message") 
+@V1Controller("channel/:roomId/message")
 export class MessageChannelController {
-  constructor(private readonly channelMessageService: MessageChannelService) {}
+  constructor(private readonly channelMessageService: MessageChannelService) { }
 
   @UseInterceptors(
     FilesInterceptor("file", 2, {
@@ -65,8 +65,8 @@ export class MessageChannelController {
       if (!dto._mediaFile)
         throw new BadRequestException(
           "Msg type " +
-            dto.messageType +
-            " required file in multipart or file bigger than the limit!"
+          dto.messageType +
+          " required file in multipart or file bigger than the limit!"
         );
     }
     dto._roomId = roomDtoId.roomId;
@@ -155,6 +155,19 @@ export class MessageChannelController {
     );
   }
 
+  @Patch('/:messageId/:roomId/pin-unpin')
+  async pinUnpinMessage(
+    @Req() req: any,
+    @Param() dto: RoomIdAndMsgIdDto,
+    @Body('pin') pin: boolean
+  ) {
+    dto.myUser = req.user;
+    return resOK(
+      await this.channelMessageService.pinUnpinMessage(
+        dto, pin
+      ))
+  }
+
   @Post("/:messageId/react")
   async reactToMessage(
     @Req() req: any,
@@ -179,7 +192,7 @@ export class MessageChannelController {
     return resOK(await this.channelMessageService.replyFromNotification(dto));
   }
 
-   @Post('/:messageId/translate')
+  @Post('/:messageId/translate')
   async translateMessage(
     @Req() req: any,
     @Param() dto: RoomIdAndMsgIdDto,

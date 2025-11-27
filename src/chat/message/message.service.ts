@@ -29,6 +29,8 @@ import { MessageStatusType, MessageType, SocketEventsType } from "src/core/utils
 import { VoteOnPollDto } from "./dto/VoteOnPollDto";
 import { SocketIoService } from "../socket_io/socket_io.service";
 
+// update message service to handle pin message
+
 @Injectable()
 export class MessageService {
   constructor(
@@ -37,7 +39,7 @@ export class MessageService {
     private readonly groupMessageStatusService: GroupMessageStatusService,
     private readonly s3: FileUploaderService
   ) // private readonly socket: SocketIoService,
-  {}
+  { }
 
   async createInfoMessage(dto: any, session?) {
     let x = await this.messageModel.create([dto.toJson()], { session });
@@ -138,76 +140,6 @@ export class MessageService {
     return updatedMessage;
   }
 
-  // async voteOnPoll(dto: VoteOnPollDto) {
-  //   const userId = dto.myUser._id;
-  //   const { messageId, optionText } = dto;
-
-  //   // 1. Find the message to ensure it's a valid poll
-  //   const message = await this.messageModel.findById(messageId);
-  //   if (!message || message.mT !== MessageType.Poll) {
-  //     throw new NotFoundException("Poll not found.");
-  //   }
-
-  //   // 2. Atomically update the poll
-  //   // - First, pull the user's ID from ALL options (to handle vote changes)
-  //   // - Then, push the user's ID to the selected option
-  //   const updatedMessage = await this.messageModel.findOneAndUpdate(
-  //     { _id: messageId },
-  //     [
-  //       // Using an aggregation pipeline for conditional updates
-  //       {
-  //         $set: {
-  //           "pollData.options": {
-  //             $map: {
-  //               // Iterate over all options
-  //               input: "$pollData.options",
-  //               as: "option",
-  //               in: {
-  //                 // Remove user's vote from every option
-  //                 text: "$$option.text",
-  //                 votes: {
-  //                   $filter: {
-  //                     input: "$$option.votes",
-  //                     cond: { $ne: ["$$this", userId] },
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //       {
-  //         $set: {
-  //           "pollData.options": {
-  //             $map: {
-  //               // Iterate again to add the new vote
-  //               input: "$pollData.options",
-  //               as: "option",
-  //               in: {
-  //                 text: "$$option.text",
-  //                 votes: {
-  //                   $cond: [
-  //                     { $eq: ["$$option.text", optionText] }, // If this is the chosen option
-  //                     { $concatArrays: ["$$option.votes", [userId]] }, // Add the vote
-  //                     "$$option.votes", // Otherwise, keep it as is
-  //                   ],
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         },
-  //       },
-  //     ],
-  //     { new: true } // Return the updated document
-  //   );
-
-  //   if (!updatedMessage) {
-  //     throw new InternalServerErrorException("Failed to update poll.");
-  //   }
-
-  //   return this.prepareTheMessageModel(updatedMessage);
-  // }
-
   async getByIdOrFail(messageId: any, select?: string) {
     let msg = await this.messageModel.findById(messageId, select).lean();
     if (!msg) {
@@ -221,11 +153,6 @@ export class MessageService {
     return this.prepareTheMessageModel(m);
   }
 
-  // async create(dto: SendMessageDto, session?) {
-  //   let x = await this.messageModel.create([dto.toJson()], { session });
-  //   return this.prepareTheMessageModel(x[0]);
-  // }
-
   async createOneFromJson(dto: {}) {
     return this.messageModel.create(dto);
   }
@@ -236,31 +163,6 @@ export class MessageService {
       { session }
     );
   }
-
-  // async insertMany(data: any[], session?) {
-  //     return this.messageModel.insertMany(data, {session});
-  // }
-  //
-  // async findAllMessages(myId: string, roomId: string, dto: MessagesSearchDto) {
-  //     let res: IMessage[] = await this.messageModel.find(null, "+stars", {lean: true}).sort(dto.isAsc == "true" ? "_id" : "-_id").where({
-  //         rId: roomId,
-  //         dF: {$ne: myId},
-  //         ...dto.getFilter()
-  //     }).limit(dto.getLimit());
-  //     for (let msg of res) {
-  //         // msg = await this.s3.getSignedMessage(msg);
-  //         msg['isStared'] = msg.stars.find(value => value.toString() == myId) != null
-  //         if (msg['oneSeenBy']) {
-  //             let x = msg['oneSeenBy']
-  //             let index = x.findIndex(value => value.toString() == myId)
-  //             msg['isOneSeenByMe'] = index != -1
-  //             delete msg['oneSeenBy']
-  //         } else {
-  //             msg['isOneSeenByMe'] = false;
-  //         }
-  //     }
-  //     return res
-  // }
 
   async findAllMessagesAggregation(
     myId: any,

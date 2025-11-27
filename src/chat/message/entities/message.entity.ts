@@ -17,6 +17,13 @@ export interface IPollData extends Document {
   options: IPollOption[];
 }
 
+
+
+// implemention of pin message in chats
+
+
+
+
 export interface IMessage extends Document {
   //senderId
   sId: string;
@@ -68,6 +75,8 @@ export interface IMessage extends Document {
   pollData?: IPollData;
   // disappear Messages
   disappearAt?: Date;
+  // is Message pinned
+  isPinned?: boolean;
   // Message Status
   status: MessageStatusType;
   scheduledAt?: Date;
@@ -165,6 +174,8 @@ export const MessageSchema: Schema = new Schema(
     },
     // disappear Messages
     disappearAt: { type: Date, default: null },
+    // is Message pinned
+    isPinned: { type: Boolean, default: false },
     // Message Status
     status: {
       type: String,
