@@ -306,11 +306,20 @@ export class ProfileService {
       dto.id,
       "userImage fullName bio roles createdAt userPrivacy"
     );
-    if (user.userPrivacy.dpVisibility === DpVisibilityType.Nobody) {
-      user.userImage = "No_image";
+
+    let userObj = user['toObject'] ? user.toObject() : user;
+    const shouldHideDp = this.isBlockedByPrivacy(
+      userObj.userPrivacy?.dpVisibility,
+      userObj.userPrivacy?.dpDeniedList || [],
+      dto.myUser._id.toString()
+    );
+
+    if (shouldHideDp) {
+      userObj.userImage = "No_image";
     }
+
     return {
-      userImage: user.userImage,
+      userImage: userObj.userImage,
       fullName: user.fullName,
       bio: user.bio,
       hasBadge: user.roles.includes(UserRole.HasBadge),
@@ -325,15 +334,23 @@ export class ProfileService {
       dto.id,
       "userImage fullName email userPrivacy bio phoneNumber lastSeenAt createdAt hasBadge"
     );
-    if (user.userPrivacy.dpVisibility === DpVisibilityType.Nobody) {
-      user.userImage = "No_image";
+
+    let userObj = user['toObject'] ? user.toObject() : user;
+    const shouldHideDp = this.isBlockedByPrivacy(
+      userObj.userPrivacy?.dpVisibility,
+      userObj.userPrivacy?.dpDeniedList || [],
+      dto.myUser._id.toString()
+    );
+
+    if (shouldHideDp) {
+      userObj.userImage = "No_image";
     }
     let chatReq = await this.chatRequestService.findOne({
       $or: [{ receiverId: dto.myUser._id }, { senderId: dto.myUser._id }],
       roomType: RoomType.Single,
     });
     res = {
-      ...user,
+      ...userObj,
       ...(await this.banServer.checkBans(
         new MongoPeerIdDto(dto.id, dto.myUser)
       )),
@@ -341,6 +358,21 @@ export class ProfileService {
       chatReq: chatReq,
     };
     return res;
+  }
+
+  private isBlockedByPrivacy(
+    privacySetting: string,
+    deniedList: any[],
+    currentUserId: string
+  ): boolean {
+    if (privacySetting === 'Nobody') return true;
+    if (privacySetting === 'Everyone') return false;
+
+    if (privacySetting === 'EveryoneExcept') {
+      return deniedList.some(id => id.toString() === currentUserId.toString());
+    }
+
+    return false; // Default allow
   }
 
   async updateMyName(dto: UpdateMyNameDto) {

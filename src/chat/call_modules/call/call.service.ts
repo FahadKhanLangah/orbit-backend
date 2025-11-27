@@ -97,12 +97,23 @@ export class CallService {
 
         let peerUser = await this.userService.findByIdOrThrow(roomMember.pId, "userGlobalCallStatus userPrivacy");
 
-        // user privacy check
-        const privacySetting = peerUser.userPrivacy?.whoCanCallMe || WhoCanType.Everyone; // Default to Everyone if not set
 
-        if (privacySetting === WhoCanType.Nobody) {
-            throw new ForbiddenException("This user is not accepting calls.");
+        let userObj = peerUser['toObject'] ? peerUser.toObject() : peerUser;
+        const isCallBlocked = this.isBlockedByPrivacy(
+            userObj.userPrivacy?.dpVisibility,
+            userObj.userPrivacy?.dpDeniedList || [],
+            dto.myUser._id.toString()
+        );
+
+        if (isCallBlocked) {
+            throw new ForbiddenException("This user is not accepting calls at the moment.");
         }
+        // user privacy check
+        // const privacySetting = peerUser.userPrivacy?.whoCanCallMe || WhoCanType.Everyone; // Default to Everyone if not set
+
+        // if (privacySetting === WhoCanType.Nobody) {
+        //     throw new ForbiddenException("This user is not accepting calls.");
+        // }
 
         if (peerUser.userGlobalCallStatus && peerUser.userGlobalCallStatus.roomId) {
             if (dto.roomId != peerUser.userGlobalCallStatus.roomId.toString()) {
@@ -133,6 +144,21 @@ export class CallService {
         await this.updateCallStatusForUser(peerUser._id, callee);
         await this.registerMissedCall(dto, callId, peerUser._id, appConfig.callTimeout);
         return { callId };
+    }
+
+    private isBlockedByPrivacy(
+        privacySetting: string,
+        deniedList: any[],
+        currentUserId: string
+    ): boolean {
+        if (privacySetting === 'Nobody') return true;
+        if (privacySetting === 'Everyone') return false;
+
+        if (privacySetting === 'EveryoneExcept') {
+            return deniedList.some(id => id.toString() === currentUserId.toString());
+        }
+
+        return false; // Default allow
     }
 
     private async registerMissedCall(
