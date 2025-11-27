@@ -97,6 +97,7 @@ export class RidesService {
 
   async acceptRide(driverUser: IUser, rideId: string, vehicleId: string): Promise<IRide> {
     const driver = await this.driverModel.findOne({ userId: driverUser._id });
+    // if driver balance is less than commission, throw error
     if (!driver) {
       throw new ForbiddenException('You are not a registered driver.');
     }
@@ -104,6 +105,12 @@ export class RidesService {
     if (!ride) {
       throw new NotFoundException('Ride not found.');
     }
+
+    const userDriver = await this.userModel.findById(driverUser._id);
+    if (userDriver.balance < ride.systemCommission) {
+      throw new ConflictException('Your wallet balance is too low to accept this ride. Please top up.');
+    }
+
     if (ride.status !== RideStatus.Pending) {
       throw new ConflictException('This ride is no longer available.');
     }

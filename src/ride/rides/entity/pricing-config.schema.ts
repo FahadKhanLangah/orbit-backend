@@ -1,6 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
 
+// this is defined already so admin can set pricing configs for rides
+
 export type PricingConfigDocument = PricingConfig & Document;
 
 @Schema({ timestamps: true })
