@@ -4,7 +4,7 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import { IsArray, IsBoolean, IsEnum, IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
+import { IsArray, IsBoolean, IsEnum, IsMongoId, IsNotEmpty, IsOptional, IsString, ValidateNested } from "class-validator";
 import CommonDto from "../../../core/common/dto/common.dto";
 import { ChatRequestStatus, UserPrivacyTypes } from "../../../core/utils/enums";
 import { DpVisibilityType, WhoCanType } from "src/api/user_modules/user/entities/user.entity";
@@ -46,9 +46,20 @@ export class UpdateMyPrivacyDto extends CommonDto {
     whoCanCallMe: WhoCanType;
 
     @IsOptional()
+    @IsArray()
+    @IsMongoId({ each: true })
+    callDeniedList: string[];
+
+    @IsOptional()
     @IsEnum(DpVisibilityType)
     dpVisibility: DpVisibilityType;
+
+    @IsOptional()
+    @IsArray()
+    @IsMongoId({ each: true })
+    dpDeniedList: string[];
 }
+
 export class UpdateChatReqStatusDto extends CommonDto {
     @IsEnum(ChatRequestStatus)
     status: ChatRequestStatus

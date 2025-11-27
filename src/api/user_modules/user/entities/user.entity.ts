@@ -107,6 +107,7 @@ export interface IUser extends Document {
 export enum DpVisibilityType {
   Everyone = "Everyone",
   Nobody = "Nobody",
+  EveryoneExcept = "EveryoneExcept",
 }
 
 export interface UserPrivacy {
@@ -126,6 +127,7 @@ export interface UserPrivacy {
 export enum WhoCanType {
   Everyone = "Everyone",
   Nobody = "Nobody",
+  EveryoneExcept = "EveryoneExcept",
 }
 
 const LocationSchema = new Schema({
@@ -199,11 +201,27 @@ export const UserSchema = new mongoose.Schema(
         // readReceipts: true by default
         readReceipts: true,
         // who can call me
-        whoCanCallMe: WhoCanType.Everyone,
+        whoCanCallMe: {
+          type: String,
+          enum: Object.values(WhoCanType),
+          default: WhoCanType.Everyone
+        },
+        callDeniedList: {
+          type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+          default: []
+        },
         // who can add me to groups
         whoCanAddMeToGroups: WhoCanType.Everyone,
         // dp visibility
-        dpVisibility: DpVisibilityType.Everyone,
+        dpVisibility: {
+          type: String,
+          enum: Object.values(DpVisibilityType),
+          default: DpVisibilityType.Everyone
+        },
+        dpDeniedList: {
+          type: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+          default: []
+        },
       },
     },
     lastSeenAt: { type: Date, default: Date.now },
