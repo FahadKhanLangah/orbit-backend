@@ -21,7 +21,7 @@ export class JobsController {
     return this.jobsService.createJob(employerId, dto);
   }
 
-   @Get("get-all")
+  @Get("get-all")
   async findAll(
     @Query(
       new ValidationPipe({
@@ -79,5 +79,23 @@ export class JobsController {
   ) {
     const userId = req.user._id;
     return await this.jobsService.getJobApplicationsForEmployer(userId);
+  }
+  // comment on employee
+  @Post('employee/:id/comment')
+  async commentOnEmployee(
+    @Req() req: any,
+    @Param('id') employeeId: string,
+    @Body('comment') comment: string,
+    @Body('rating') rating: number
+  ) {
+    const commenterId = req.user._id;
+    return this.jobsService.commentOnEmployee(employeeId, commenterId, comment, rating);
+  }
+  // get employee comments
+  @Get('employee/:id/comments')
+  async getEmployeeComments(
+    @Param('id') employeeId: string
+  ) {
+    return this.jobsService.getEmployeeComments(employeeId);
   }
 }

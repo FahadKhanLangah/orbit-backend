@@ -7,13 +7,15 @@ import { JobSeekerProfile, JobSeekerProfileSchema } from './entity/job-seeker-pr
 import { AuthModule } from 'src/api/auth/auth.module';
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 import { jobApplicationSchema } from './entity/job-application.entity';
+import { employeeCommentSchema } from './entity/employee-comments.entity';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: Job.name, schema: JobSchema },
       { name: JobSeekerProfile.name, schema: JobSeekerProfileSchema },
-      { name: "Application", schema: jobApplicationSchema }
+      { name: "Application", schema: jobApplicationSchema },
+      { name: "EmployeeComment", schema: employeeCommentSchema }
     ]),
     AuthModule,
     FileUploaderModule

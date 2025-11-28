@@ -8,6 +8,7 @@ import { Job, JobDocument } from './entity/jobs.entity';
 import { FindJobsDto } from './dto/find-job.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { IJobApplication } from './entity/job-application.entity';
+import { IEmployeeComment } from './entity/employee-comments.entity';
 
 @Injectable()
 export class JobsService {
@@ -18,6 +19,8 @@ export class JobsService {
     private readonly jobModel: Model<JobDocument>,
     @InjectModel("Application")
     private readonly applicationModel: Model<IJobApplication>,
+    @InjectModel("EmployeeComment")
+    private readonly commentModel: Model<IEmployeeComment>,
     private s3: FileUploaderService,
   ) { }
 
@@ -179,5 +182,23 @@ export class JobsService {
     } catch (error) {
       throw new Error(error);
     }
+  }
+  // comment on employee
+  async commentOnEmployee(employeeId: string, commenterId: string, comment: string, rating: number) {
+    await this.commentModel.create({
+      employeeId,
+      commenterId,
+      comment,
+      rating
+    })
+    return { message: 'Comment added successfully' };
+  }
+  // get specific employee comments
+  async getEmployeeComments(employeeId: string) {
+    const comments = await this.commentModel.find({ employeeId })
+      .populate('commenterId', 'fullName profilePic')
+      .sort({ createdAt: -1 })
+      .lean();
+    return comments;
   }
 }

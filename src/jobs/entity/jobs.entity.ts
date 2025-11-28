@@ -13,6 +13,7 @@ export enum JobCategory {
   Other = 'other',
 }
 
+
 export type JobDocument = Job & Document;
 
 @Schema({ timestamps: true })
