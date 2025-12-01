@@ -16,6 +16,7 @@ import { CreateS3UploaderDto } from "./create-s3_uploader.dto";
 
 @Injectable()
 export class FileUploaderService {
+
   async uploadLiveStreamVideo(videoBuffer: Buffer, streamerId: string) {
     const key = `live-stream-recordings/${streamerId}/${uuidv4()}.mp4`;
     await this._putFile(videoBuffer, key, streamerId, true);
@@ -79,6 +80,17 @@ export class FileUploaderService {
     await this._putFile(file.buffer, key, userId, false);
     return key;
   }
+
+  async uploadBookCover(file: Express.Multer.File, userId: string): Promise<string> {
+    if (!file) throw new Error("Book cover is missing.");
+
+    const ext = path.extname(file.originalname) || ".jpg";
+    const key = `book-covers/${userId}-${uuidv4()}${ext}`;
+
+    await this._putFile(file.buffer, key, userId, true);
+    return key;
+  }
+
 
   async _putFile(
     fileData: Buffer,

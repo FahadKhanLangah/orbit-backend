@@ -5,6 +5,7 @@ import { CreateJobDto } from './dto/create-job.dto';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { FindJobsDto } from './dto/find-job.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { CreateBookDto } from './dto/create-book.dto';
 
 @UseGuards(VerifiedAuthGuard)
 @Controller('jobs')
@@ -97,5 +98,43 @@ export class JobsController {
     @Param('id') employeeId: string
   ) {
     return this.jobsService.getEmployeeComments(employeeId);
+  }
+
+  //
+  @Post('book/create')
+  @UseInterceptors(FileInterceptor("coverImage"))
+  async createBook(
+    @Req() req: any,
+    @Body(new ValidationPipe()) dto: CreateBookDto,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    const authorId = req.user._id;
+    return this.jobsService.createBook(authorId, dto,file);
+  }
+
+  @Get('books/all')
+  async getAllBooks(
+    @Query('page') page: number,
+    @Query('limit') limit: number
+  ) {
+    return this.jobsService.getAllBooks(page, limit);
+  }
+
+  @Get('book/:id')
+  async getBookDetails(
+    @Req() req: any,
+    @Param('id') bookId: string,
+  ) {
+    const userId = req.user._id;
+    return this.jobsService.getBookDetails(bookId, userId);
+  }
+
+  @Post('book/:id/purchase')
+  async purchaseBook(
+    @Req() req: any,
+    @Param('id') bookId: string,
+  ) {
+    const userId = req.user._id;
+    return this.jobsService.purchaseBook(bookId, userId);
   }
 }

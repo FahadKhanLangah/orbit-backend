@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { JobSeekerProfile, JobSeekerProfileDocument } from './entity/job-seeker-profile.schema';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model } from 'mongoose';
@@ -9,6 +9,9 @@ import { FindJobsDto } from './dto/find-job.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { IJobApplication } from './entity/job-application.entity';
 import { IEmployeeComment } from './entity/employee-comments.entity';
+import { IBook } from './entity/book.entity';
+import { CreateBookDto } from './dto/create-book.dto';
+import { IUser } from 'src/api/user_modules/user/entities/user.entity';
 
 @Injectable()
 export class JobsService {
@@ -21,6 +24,10 @@ export class JobsService {
     private readonly applicationModel: Model<IJobApplication>,
     @InjectModel("EmployeeComment")
     private readonly commentModel: Model<IEmployeeComment>,
+    @InjectModel("Book")
+    private readonly bookModel: Model<IBook>,
+    @InjectModel("User")
+    private readonly userModel: Model<IUser>,
     private s3: FileUploaderService,
   ) { }
 
@@ -200,5 +207,73 @@ export class JobsService {
       .sort({ createdAt: -1 })
       .lean();
     return comments;
+  }
+
+  // create book
+  async createBook(authorId: string, bookData: CreateBookDto, file: Express.Multer.File) {
+    let coverKey: string = null;
+    if (file) {
+      coverKey = await this.s3.uploadBookCover(file, authorId);
+    }
+
+    const book = new this.bookModel({
+      ...bookData,
+      coverImage: coverKey
+    });
+    book.author = authorId;
+    return book.save();
+  }
+
+  async getAllBooks(page: number = 1, limit: number = 20) {
+    const books = await this.bookModel.find().select("_id author title price isForSale previewText purchasedBy likes views createdAt").skip((page - 1) * limit).limit(limit)
+      .populate('author', 'fullName userImage')
+      .sort({ createdAt: -1 });
+    return books;
+  }
+
+  async getBookDetails(bookId: string, userId: string) {
+    const book = await this.bookModel.findById(bookId).populate('author', 'fullName userImage');
+    if (!book) throw new NotFoundException('Book not found');
+    book.views += 1;
+    await book.save();
+    const bookObj = book.toObject();
+    const isAuthor = bookObj.author === userId.toString();
+    const hasPurchased = bookObj.purchasedBy.some(buyerId => buyerId.toString() === userId.toString());
+    if (book.isForSale && book.price > 0) {
+      if (!hasPurchased && !isAuthor) {
+        delete bookObj.fullContent;
+        bookObj['hasAccess'] = false;
+      } else {
+        bookObj['hasAccess'] = true;
+      }
+    } else {
+      bookObj['hasAccess'] = true;
+    }
+
+    return bookObj;
+  }
+
+  async purchaseBook(bookId: string, userId: string) {
+    const book = await this.bookModel.findById(bookId);
+    if (!book) throw new NotFoundException('Book not found');
+    if (!book.isForSale || book.price <= 0) {
+      throw new ConflictException('This book is not for sale');
+    }
+    const hasPurchased = book.purchasedBy.some(buyerId => buyerId.toString() === userId.toString());
+    if (hasPurchased) {
+      throw new ConflictException('You have already purchased this book');
+    }
+    const user = await this.userModel.findById(userId);
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    if (user.balance < book.price) {
+      throw new ConflictException('Insufficient balance to purchase this book');
+    }
+    user.balance -= book.price;
+    await user.save();
+    book.purchasedBy.push(userId);
+    await book.save();
+    return { message: 'Book purchased successfully' };
   }
 }
