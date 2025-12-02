@@ -71,6 +71,7 @@ import { GoogleMapsModule } from './google-maps/google-maps.module';
 import { MpessaModule } from './mpessa/mpesa.module';
 import { JobsModule } from './jobs/jobs.module';
 import { GooglePayModule } from "./google-pay/google-pay.module";
+import { MusicModule } from './music/music.module';
 
 
 
@@ -153,7 +154,8 @@ import { GooglePayModule } from "./google-pay/google-pay.module";
     GoogleMapsModule,
     MpessaModule,
     JobsModule,
-    GooglePayModule
+    GooglePayModule,
+    MusicModule
   ],
   controllers: [AppController],
   providers: [

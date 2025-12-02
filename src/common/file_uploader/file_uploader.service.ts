@@ -91,6 +91,23 @@ export class FileUploaderService {
     return key;
   }
 
+  async uploadMediaFile(
+    file: Express.Multer.File,
+    folder: string,
+    userId: string,
+    isPublic: boolean = true
+  ): Promise<string> {
+
+    if (!file) throw new Error("File is missing.");
+
+    const ext = path.extname(file.originalname) || "";
+
+    const key = `${folder}/${userId}-${uuidv4()}${ext}`;
+
+    await this._putFile(file.buffer, key, userId, isPublic);
+
+    return key;
+  }
 
   async _putFile(
     fileData: Buffer,
