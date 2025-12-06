@@ -72,6 +72,7 @@ import { MpessaModule } from './mpessa/mpesa.module';
 import { JobsModule } from './jobs/jobs.module';
 import { GooglePayModule } from "./google-pay/google-pay.module";
 import { MusicModule } from './music/music.module';
+import { MarketplaceModule } from './marketplace/marketplace.module';
 
 
 
@@ -155,7 +156,8 @@ import { MusicModule } from './music/music.module';
     MpessaModule,
     JobsModule,
     GooglePayModule,
-    MusicModule
+    MusicModule,
+    MarketplaceModule
   ],
   controllers: [AppController],
   providers: [
