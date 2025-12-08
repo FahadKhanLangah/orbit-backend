@@ -1,18 +1,14 @@
 import { Module } from '@nestjs/common';
-import { MarketplaceController } from './marketplace.controller';
-import { MongooseModule } from '@nestjs/mongoose';
-import { MarketUser, marketUserSchema } from './entity/market_user.entity';
-import { MarketPlaceService } from './marketplace.service';
 import { AuthModule } from 'src/api/auth/auth.module';
+import { ListingModule } from './listing/listing.module';
+import { MarketPlaceUser } from './user/marketuser.module';
 
 @Module({
   imports: [
-    MongooseModule.forFeature([
-      { name: MarketUser.name, schema: marketUserSchema }
-    ]),
-    AuthModule
+    ListingModule,
+    MarketPlaceUser,
   ],
-  controllers: [MarketplaceController],
-  providers: [MarketPlaceService]
+  controllers: [],
+  providers: []
 })
 export class MarketplaceModule { }

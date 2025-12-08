@@ -1,5 +1,4 @@
 import mongoose, { Document, Schema } from "mongoose";
-import { IUser } from "src/api/user_modules/user/entities/user.entity";
 export enum MarketUserRole {
   seller = "seller",
   buyer = "buyer"
@@ -8,7 +7,7 @@ export enum MarketUserRole {
 
 export interface IMarketUser extends Document {
   _id: string;
-  userId: mongoose.ObjectId;
+  userId: mongoose.Schema.Types.ObjectId;
   role: MarketUserRole;
   bio: string;
   trustBadge: Boolean
