@@ -1,5 +1,10 @@
 import mongoose, { Document } from 'mongoose';
 
+export enum ListingStatus {
+  DRAFT = "draft",
+  ACTIVE = "active"
+}
+
 export interface IListing extends Document {
   title: string;
   description?: string;
@@ -42,7 +47,7 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     inDays: { type: Number, default: 0 },
     totalImpressions: { type: Number, default: 0 },
   },
-  status: { type: String, default: 'active' },
+  status: { type: String, default: ListingStatus.DRAFT, enum: ListingStatus },
   expiry: { type: Date },
   postBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   hide: { type: Boolean, default: false },

@@ -51,3 +51,40 @@ export class PostListingDto {
   @Type(() => Date)
   expiry?: Date;
 }
+
+export class SaveListingDraftDto {
+  @IsString()
+  @IsOptional()
+  title: string;
+
+  @IsString()
+  @IsOptional()
+  description?: string;
+
+  @IsOptional()
+  @IsNumber()
+  @Type(() => Number)
+  price?: number;
+
+  @IsString()
+  @IsOptional()
+  category: string;
+
+  @IsString()
+  @IsOptional()
+  brand: string;
+
+  @IsString()
+  @IsOptional()
+  condition: string;
+
+  @ValidateNested()
+  @Type(() => LocationDto)
+  @IsOptional()
+  location?: LocationDto;
+
+  @IsOptional()
+  @IsDate()
+  @Type(() => Date)
+  expiry?: Date;
+}

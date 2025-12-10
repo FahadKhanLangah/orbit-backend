@@ -1,16 +1,17 @@
 // listing.controller.ts
-import {  Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe, Patch, Param, Get, Delete } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
-import { PostListingDto } from './dto/post-listing.dto';
+import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { ListingServices } from './listing.service';
+import { ListingStatus } from './entity/listing.entity';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('listing')
 @UsePipes(new ValidationPipe({ transform: true }))
 export class ListingController {
-  constructor(private readonly listingService: ListingServices) {}
+  constructor(private readonly listingService: ListingServices) { }
 
   @Post('post/new')
   @UseInterceptors(FileFieldsInterceptor([
@@ -24,5 +25,60 @@ export class ListingController {
   ) {
     const userId = req.user._id;
     return await this.listingService.postListing(userId, dto, files);
+  }
+
+  @Post('post/draft')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'images', maxCount: 5 },
+    { name: 'video', maxCount: 1 }
+  ]))
+  async saveDraft(
+    @Req() req,
+    @Body() dto: SaveListingDraftDto,
+    @UploadedFiles() files: { images?: Express.Multer.File[], video?: Express.Multer.File[] }
+  ) {
+    return this.listingService.saveDraft(req.user._id, dto, files);
+  }
+
+  @Get('drafts')
+  async getDrafts(@Req() req) {
+    return this.listingService.getDrafts(req.user._id, ListingStatus.DRAFT);
+  }
+
+  @Get('all')
+  async getListings(@Req() req) {
+    return this.listingService.getListings(req.user._id);
+  }
+
+  @Patch('draft/:id')
+  @UseInterceptors(FileFieldsInterceptor([
+    { name: 'images', maxCount: 5 },
+    { name: 'video', maxCount: 1 }
+  ]))
+  async updateDraft(
+    @Param('id') id: string,
+    @Req() req,
+    @Body() dto: SaveListingDraftDto,
+    @UploadedFiles() files: { images?: Express.Multer.File[], video?: Express.Multer.File[] }
+  ) {
+    return this.listingService.updateDraft(id, req.user._id, dto, files);
+  }
+
+  @Post('draft/:id/publish')
+  async publishDraft(@Param('id') id, @Req() req) {
+    const userId = req.user._id;
+    return this.listingService.publishDraft(id, userId);
+  }
+
+  @Delete('draft/:id/delete')
+  async deleteDraft(@Param('id') id, @Req() req) {
+    const userId = req.user._id;
+    return this.listingService.deleteDraft(id, userId);
+  }
+
+  @Delete('draft/:id/delete')
+  async deleteList(@Param('id') id, @Req() req) {
+    const userId = req.user._id;
+    return this.listingService.deleteList(id, userId);
   }
 }

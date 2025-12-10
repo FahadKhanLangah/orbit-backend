@@ -1,9 +1,9 @@
 // listing.service.ts
-import { Injectable, BadRequestException } from '@nestjs/common';
+import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IListing, Listing } from './entity/listing.entity';
-import { PostListingDto } from './dto/post-listing.dto';
+import { IListing, Listing, ListingStatus } from './entity/listing.entity';
+import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 
 @Injectable()
@@ -11,7 +11,8 @@ export class ListingServices {
   constructor(
     @InjectModel(Listing.name) private readonly listingModel: Model<IListing>,
     private readonly fileUploaderServices: FileUploaderService
-  ) {}
+  ) { }
+
   async postListing(userId: string, dto: PostListingDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
     const imageKeys: string[] = [];
     if (files?.images && files.images.length > 0) {
@@ -34,6 +35,7 @@ export class ListingServices {
       price: dto.price,
       category: dto.category,
       condition: dto.condition,
+      brand: dto.brand,
       location: dto.location ? {
         latitude: dto.location.latitude,
         longitude: dto.location.longitude,
@@ -42,10 +44,121 @@ export class ListingServices {
       expiry: dto.expiry,
       image: imageKeys,
       video: videoKey,
+      status: ListingStatus.ACTIVE
     };
     const created = await this.listingModel.create(doc);
     return created;
   }
 
-  
+  async saveDraft(userId: string, dto: SaveListingDraftDto, files) {
+    const images = [];
+    let video = null;
+    if (files?.images) {
+      for (const img of files.images) {
+        const key = await this.fileUploaderServices.uploadMediaFile(img, 'drafts/images', userId);
+        images.push(key);
+      }
+    }
+
+    if (files?.video?.[0]) {
+      video = await this.fileUploaderServices.uploadMediaFile(files.video[0], 'drafts/videos', userId);
+    }
+
+    return this.listingModel.create({
+      postBy: userId,
+      ...dto,
+      image: images,
+      video,
+      status: ListingStatus.DRAFT
+    });
+  }
+
+  async getDrafts(userId, status) {
+    const draftsListing = await this.listingModel.find({
+      postBy: userId,
+      status: status
+    });
+    if (draftsListing.length === 0) {
+      throw new NotFoundException("You have no drafts");
+    }
+    return draftsListing;
+  }
+
+  async getListings(userId) {
+    const draftsListing = await this.listingModel.find({
+      postBy: userId,
+      status: ListingStatus.ACTIVE
+    });
+    if (draftsListing.length === 0) {
+      throw new NotFoundException("No Listing Yet");
+    }
+    return draftsListing;
+  }
+
+  async updateDraft(id: string, userId: string, dto: SaveListingDraftDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
+    const draftPost = await this.listingModel.findById(id);
+
+    if (!draftPost) {
+      throw new NotFoundException("No Post with this ID exists");
+    }
+    if (draftPost.postBy.toString() !== userId.toString()) {
+      throw new ForbiddenException("Not allowed to edit this draft");
+    }
+    if (draftPost.status !== ListingStatus.DRAFT) {
+      throw new BadRequestException("Only draft posts can be edited");
+    }
+
+    const imageKeys: string[] = [];
+    if (files?.images && files.images.length > 0) {
+      for (const file of files.images) {
+        if (!file.buffer) continue;
+        const key = await this.fileUploaderServices.uploadMediaFile(file,
+          draftPost.status === ListingStatus.DRAFT ? 'drafts/images' : 'listings/images',
+          userId, true);
+        imageKeys.push(key);
+      }
+    }
+    let videoKey: string | undefined;
+    if (files?.video && files.video.length > 0) {
+      const vidFile = files.video[0];
+      if (!vidFile.buffer) throw new BadRequestException('Video file buffer is missing');
+      videoKey = await this.fileUploaderServices.uploadMediaFile(vidFile, 'listings/videos', userId, true);
+    }
+    if (imageKeys.length > 0) {
+      draftPost.image.push(...imageKeys);
+    }
+    if (videoKey) {
+      draftPost.video = videoKey;
+    }
+    Object.assign(draftPost, dto);
+    await draftPost.save();
+    return draftPost;
+  }
+
+  async publishDraft(id, userId) {
+    const publishedDraft = await this.listingModel.findOneAndUpdate(
+      { _id: id, postBy: userId },
+      { status: ListingStatus.ACTIVE },
+      { new: true }
+    );
+    return publishedDraft;
+  }
+
+  async deleteDraft(id, userId) {
+    const draft = await this.listingModel.findOne({ _id: id, postBy: userId });
+    if (!draft) {
+      throw new NotFoundException("Draft with this ID does not exist");
+    }
+    await draft.deleteOne();
+    return draft;
+  }
+
+  async deleteList(id, userId) {
+    const draft = await this.listingModel.findOne({ _id: id, postBy: userId });
+    if (!draft) {
+      throw new NotFoundException("Draft with this ID does not exist");
+    }
+    await draft.deleteOne();
+    return draft;
+  }
 }
