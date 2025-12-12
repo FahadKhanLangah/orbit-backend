@@ -6,6 +6,7 @@ import { IListing, Listing, ListingStatus, PricingStructure } from './entity/lis
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { ListingQueryDto } from './dto/listing-query.dto';
+import { Cron } from '@nestjs/schedule';
 
 @Injectable()
 export class ListingServices {
@@ -299,4 +300,21 @@ export class ListingServices {
     };
   }
 
+  async getListingById(id: string) {
+    const listing = await this.listingModel.findById(id);
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+    listing.impressions.totalImpressions += 1;
+    await listing.save();
+
+    return listing;
+  }
+
+  @Cron('0 0 * * *')
+  async resetDailyImpressions() {
+    await this.listingModel.updateMany({}, {
+      $set: { "impressions.inDays": 0 }
+    });
+  }
 }

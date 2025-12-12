@@ -14,6 +14,14 @@ import { ListingQueryDto } from './dto/listing-query.dto';
 export class ListingController {
   constructor(private readonly listingService: ListingServices) { }
 
+
+  @Get()
+  async searchListings(
+    @Query() query: ListingQueryDto,
+  ) {
+    return this.listingService.searchListings(query);
+  }
+
   @Post('post/new')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'images', maxCount: 5 },
@@ -86,10 +94,9 @@ export class ListingController {
     return this.listingService.deleteList(id, userId);
   }
 
-  @Get()
-  async searchListings(
-    @Query() query: ListingQueryDto,
-  ) {
-    return this.listingService.searchListings(query);
+  @Get(':id')
+  async getListing(@Param('id') id: string) {
+    return this.listingService.getListingById(id);
   }
+
 }
