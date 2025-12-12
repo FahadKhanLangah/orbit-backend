@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { IListing, Listing, ListingStatus } from './entity/listing.entity';
+import { IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 
@@ -33,19 +33,19 @@ export class ListingServices {
       title: dto.title,
       description: dto.description,
       price: dto.price,
+      pricing: dto.pricing ? dto.pricing : PricingStructure.FIXED,
       category: dto.category,
       condition: dto.condition,
       brand: dto.brand,
-      location: dto.location ? {
-        latitude: dto.location.latitude,
-        longitude: dto.location.longitude,
-        address: dto.location.address,
-      } : undefined,
       expiry: dto.expiry,
       image: imageKeys,
       video: videoKey,
       status: ListingStatus.ACTIVE
     };
+    if (dto.location) {
+      const geoLocation = dto.location.toGeoJSON();
+      doc.location = geoLocation;
+    }
     const created = await this.listingModel.create(doc);
     return created;
   }
@@ -84,16 +84,70 @@ export class ListingServices {
     return draftsListing;
   }
 
-  async getListings(userId) {
-    const draftsListing = await this.listingModel.find({
+  async getListings(userId: string, query: any) {
+    const {
+      page = 1,
+      limit = 10,
+      search,
+      minPrice,
+      maxPrice,
+      condition,
+      category,
+      brand,
+      lat,
+      lng,
+      radius,
+    } = query;
+
+    const filter: any = {
       postBy: userId,
       status: ListingStatus.ACTIVE
-    });
-    if (draftsListing.length === 0) {
-      throw new NotFoundException("No Listing Yet");
+    };
+
+    if (search) {
+      filter.$text = { $search: search };
     }
-    return draftsListing;
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = Number(minPrice);
+      if (maxPrice) filter.price.$lte = Number(maxPrice);
+    }
+
+    if (condition) filter.condition = condition;
+    if (category) filter.category = category;
+    if (brand) filter.brand = brand;
+    if (lat && lng && radius) {
+      filter.location = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [Number(lng), Number(lat)]
+          },
+          $maxDistance: Number(radius) * 1000
+        }
+      };
+    }
+
+    // Pagination
+    const skip = (page - 1) * limit;
+
+    const listings = await this.listingModel
+      .find(filter)
+      .skip(skip)
+      .limit(Number(limit))
+      .sort({ createdAt: -1 });
+
+    const total = await this.listingModel.countDocuments(filter);
+
+    return {
+      page: Number(page),
+      limit: Number(limit),
+      total,
+      totalPages: Math.ceil(total / limit),
+      data: listings
+    };
   }
+
 
   async updateDraft(id: string, userId: string, dto: SaveListingDraftDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
     const draftPost = await this.listingModel.findById(id);
@@ -130,6 +184,12 @@ export class ListingServices {
     if (videoKey) {
       draftPost.video = videoKey;
     }
+    if (dto.location) {
+      const geoLocation = dto.location.toGeoJSON();
+
+      draftPost.location = geoLocation;
+    }
+
     Object.assign(draftPost, dto);
     await draftPost.save();
     return draftPost;

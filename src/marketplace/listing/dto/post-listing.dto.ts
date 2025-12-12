@@ -4,16 +4,26 @@ import { Type } from 'class-transformer';
 export class LocationDto {
   @IsNumber()
   @Type(() => Number)
-  latitude: number;
+  lat: number;
 
   @IsNumber()
   @Type(() => Number)
-  longitude: number;
+  lng: number;
 
   @IsString()
   @IsOptional()
   address?: string;
+
+  // Helper to convert into GeoJSON object
+  toGeoJSON() {
+    return {
+      type: "Point",
+      coordinates: [this.lng, this.lat],
+      address: this.address,
+    };
+  }
 }
+
 
 export class PostListingDto {
   @IsString()
@@ -28,6 +38,10 @@ export class PostListingDto {
   @IsNumber()
   @Type(() => Number)
   price?: number;
+
+  @IsString()
+  @IsOptional()
+  pricing: string
 
   @IsString()
   @IsNotEmpty()
@@ -65,6 +79,10 @@ export class SaveListingDraftDto {
   @IsNumber()
   @Type(() => Number)
   price?: number;
+
+  @IsString()
+  @IsOptional()
+  pricing: string
 
   @IsString()
   @IsOptional()

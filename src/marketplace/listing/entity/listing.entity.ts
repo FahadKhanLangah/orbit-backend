@@ -4,21 +4,22 @@ export enum ListingStatus {
   DRAFT = "draft",
   ACTIVE = "active"
 }
+export enum PricingStructure {
+  FIXED = "fixed",
+  NEGOTIABLE = "negotiable"
+}
 
 export interface IListing extends Document {
   title: string;
   description?: string;
   price?: number;
+  pricing?: string;
   image: string[];
   category: string;
   brand: string;
   video?: string;
   condition: string;
-  location?: {
-    latitude: number;
-    longitude: number;
-    address?: string;
-  };
+  location?: {};
   impressions: {
     inDays: number;
     totalImpressions: number;
@@ -33,16 +34,25 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   title: { type: String, required: true },
   description: { type: String },
   price: { type: Number },
+  pricing: { type: String, default: PricingStructure.FIXED, enum: PricingStructure },
   image: [{ type: String }], // keys or urls
   category: { type: String, required: true },
   brand: { type: String },
   video: { type: String },
   condition: { type: String, required: true },
   location: {
-    latitude: { type: Number },
-    longitude: { type: Number },
-    address: { type: String },
+    type: {
+      type: String,
+      enum: ["Point"],
+      default: "Point"
+    },
+    coordinates: {
+      type: [Number],  // [lng, lat]
+      index: '2dsphere'
+    },
+    address: { type: String }
   },
+
   impressions: {
     inDays: { type: Number, default: 0 },
     totalImpressions: { type: Number, default: 0 },
@@ -52,5 +62,13 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   postBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   hide: { type: Boolean, default: false },
 }, { timestamps: true });
+
+ListingSchema.index({
+  title: "text",
+  description: "text",
+  category: "text",
+  brand: "text"
+});
+
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);

@@ -1,5 +1,5 @@
 // listing.controller.ts
-import { Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe, Patch, Param, Get, Delete } from '@nestjs/common';
+import { Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe, Patch, Param, Get, Delete, Query } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
@@ -46,8 +46,11 @@ export class ListingController {
   }
 
   @Get('all')
-  async getListings(@Req() req) {
-    return this.listingService.getListings(req.user._id);
+  async getListings(
+    @Req() req,
+    @Query() query: any
+  ) {
+    return this.listingService.getListings(req.user._id,query);
   }
 
   @Patch('draft/:id')
