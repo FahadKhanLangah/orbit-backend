@@ -5,6 +5,7 @@ import { Model } from 'mongoose';
 import { IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
+import { ListingQueryDto } from './dto/listing-query.dto';
 
 @Injectable()
 export class ListingServices {
@@ -221,4 +222,81 @@ export class ListingServices {
     await draft.deleteOne();
     return draft;
   }
+
+  async searchListings(query: ListingQueryDto) {
+    const {
+      search,
+      category,
+      city,
+      minPrice,
+      maxPrice,
+      condition,
+      lat,
+      lng,
+      radius,
+      page = 1,
+      limit = 10,
+      sort
+    } = query;
+
+    const filter: any = { status: ListingStatus.ACTIVE };
+    if (search) filter.$text = { $search: search };
+
+    //  Category Browsing
+    if (category) filter.category = category;
+
+    //  City Filter (based on stored text)
+    if (city) filter["location.address"] = new RegExp(city, "i");
+
+    //  Price Filters
+    if (minPrice || maxPrice) {
+      filter.price = {};
+      if (minPrice) filter.price.$gte = minPrice;
+      if (maxPrice) filter.price.$lte = maxPrice;
+    }
+
+    //  Condition Filter
+    if (condition) filter.condition = condition;
+
+    //  Radius Filter
+    if (lat && lng && radius) {
+      filter.location = {
+        $near: {
+          $geometry: {
+            type: "Point",
+            coordinates: [lng, lat],
+          },
+          $maxDistance: radius * 1000,
+        },
+      };
+    }
+
+    // Pagination
+    const skip = (page - 1) * limit;
+
+    // Sorting
+    const sortQuery: any = {};
+
+    if (sort === "recent") sortQuery.createdAt = -1;
+    if (sort === "priceLow") sortQuery.price = 1;
+    if (sort === "priceHigh") sortQuery.price = -1;
+    if (sort === "trending") sortQuery["impressions.totalImpressions"] = -1;
+
+    const data = await this.listingModel
+      .find(filter)
+      .skip(skip)
+      .limit(limit)
+      .sort(sortQuery);
+
+    const total = await this.listingModel.countDocuments(filter);
+
+    return {
+      page,
+      limit,
+      total,
+      totalPages: Math.ceil(total / limit),
+      data,
+    };
+  }
+
 }

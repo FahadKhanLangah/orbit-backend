@@ -6,6 +6,7 @@ import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { ListingServices } from './listing.service';
 import { ListingStatus } from './entity/listing.entity';
+import { ListingQueryDto } from './dto/listing-query.dto';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('listing')
@@ -50,7 +51,7 @@ export class ListingController {
     @Req() req,
     @Query() query: any
   ) {
-    return this.listingService.getListings(req.user._id,query);
+    return this.listingService.getListings(req.user._id, query);
   }
 
   @Patch('draft/:id')
@@ -83,5 +84,12 @@ export class ListingController {
   async deleteList(@Param('id') id, @Req() req) {
     const userId = req.user._id;
     return this.listingService.deleteList(id, userId);
+  }
+
+  @Get()
+  async searchListings(
+    @Query() query: ListingQueryDto,
+  ) {
+    return this.listingService.searchListings(query);
   }
 }
