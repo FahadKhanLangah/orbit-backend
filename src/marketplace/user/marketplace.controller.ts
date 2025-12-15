@@ -1,4 +1,4 @@
-import { Body, Get, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { MarketPlaceService } from './marketplace.service';
@@ -27,4 +27,21 @@ export class MarketplaceController {
   ) {
     return this.marketPlaceUserServices.getMarkerUserProfile(req.user._id)
   }
+
+  @Get('saved/listing')
+  getSaved(@Req() req) {
+    return this.marketPlaceUserServices.getSavedListing(req.user._id);
+  }
+
+  @Post(':id/save')
+  saveListing(@Req() req, @Param('id') listingId) {
+    return this.marketPlaceUserServices.addUserListing(req.user._id, listingId);
+  }
+
+  @Delete(':id/save')
+  unSaveListing(@Req() req, @Param('id') listingId) {
+    return this.marketPlaceUserServices.removeSavedListing(req.user._id, listingId);
+  }
+
+
 }

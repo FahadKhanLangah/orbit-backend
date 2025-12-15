@@ -9,11 +9,11 @@ import { MarketPlaceService } from "./marketplace.service";
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: MarketUser.name, schema: marketUserSchema }
+      { name: "MarketUser", schema: marketUserSchema }
     ]),
     AuthModule
   ],
   controllers: [MarketplaceController],
   providers: [MarketPlaceService]
 })
-export class MarketPlaceUser { }
+export class MarketPlaceUserModule { }

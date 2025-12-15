@@ -9,7 +9,7 @@ import { AuthModule } from 'src/api/auth/auth.module';
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: Listing.name, schema: ListingSchema }
+      { name: "Listing", schema: ListingSchema }
     ]),
     FileUploaderModule,
     AuthModule

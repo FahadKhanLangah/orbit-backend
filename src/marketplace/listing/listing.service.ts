@@ -11,7 +11,7 @@ import { Cron } from '@nestjs/schedule';
 @Injectable()
 export class ListingServices {
   constructor(
-    @InjectModel(Listing.name) private readonly listingModel: Model<IListing>,
+    @InjectModel("Listing") private readonly listingModel: Model<IListing>,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 

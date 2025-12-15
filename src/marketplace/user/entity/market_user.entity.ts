@@ -10,15 +10,16 @@ export interface IMarketUser extends Document {
   userId: mongoose.Schema.Types.ObjectId;
   role: MarketUserRole;
   bio: string;
-  trustBadge: Boolean
-
+  trustBadge: Boolean,
+  savedListings: []
 }
 export const marketUserSchema = new mongoose.Schema<IMarketUser>(
   {
     userId: { type: Schema.Types.ObjectId, ref: "User", required: true },
     role: { type: String, enum: Object.values(MarketUserRole), default: MarketUserRole.buyer },
     bio: { type: String, default: null },
-    trustBadge: { type: Boolean, default: false }
+    trustBadge: { type: Boolean, default: false },
+    savedListings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing' }]
   }
 )
 
