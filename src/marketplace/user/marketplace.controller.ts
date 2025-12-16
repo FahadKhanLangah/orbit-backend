@@ -3,6 +3,7 @@ import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { MarketPlaceService } from './marketplace.service';
 import { CreateMarketUserDto } from './dto/create-marketUser.dto';
+import { SaveSearchDto } from './dto/save-search.dto';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('marketplace')
@@ -43,5 +44,19 @@ export class MarketplaceController {
     return this.marketPlaceUserServices.removeSavedListing(req.user._id, listingId);
   }
 
+  @Post('saved-searches')
+  async saveSearch(@Req() req, @Body() dto: SaveSearchDto) {
+    return this.marketPlaceUserServices.createSavedSearch(req.user._id, dto);
+  }
+
+  @Get('saved-searches')
+  async getMySavedSearches(@Req() req) {
+    return this.marketPlaceUserServices.getUserSavedSearches(req.user._id);
+  }
+
+  @Delete('saved-searches/:id')
+  async removeSavedSearch(@Req() req, @Param('id') id: string) {
+    return this.marketPlaceUserServices.deleteSavedSearch(req.user._id, id);
+  }
 
 }

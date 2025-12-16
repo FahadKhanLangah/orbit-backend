@@ -4,6 +4,8 @@ import { Model } from "mongoose";
 import { IMarketUser, MarketUser } from "./entity/market_user.entity";
 import { CreateMarketUserDto } from "./dto/create-marketUser.dto";
 import { IMarketUserActivity } from "./entity/market_user_activity.entity";
+import { ISavedSearch } from "./entity/saved-search.entity";
+import { SaveSearchDto } from "./dto/save-search.dto";
 
 
 
@@ -12,6 +14,8 @@ export class MarketPlaceService {
   constructor(
     @InjectModel("MarketUser")
     private readonly marketPlaceUserModel: Model<IMarketUser>,
+    @InjectModel('SavedSearch')
+    private readonly savedSearchModel: Model<ISavedSearch>,
   ) { }
 
   async createProfile(createMarketUserDto: CreateMarketUserDto) {
@@ -58,4 +62,20 @@ export class MarketPlaceService {
     }
     return savedList;
   }
+
+  async createSavedSearch(userId: string, dto: SaveSearchDto) {
+    return this.savedSearchModel.create({
+      user: userId,
+      ...dto
+    });
+  }
+
+  async getUserSavedSearches(userId: string) {
+    return this.savedSearchModel.find({ user: userId }).sort({ createdAt: -1 });
+  }
+
+  async deleteSavedSearch(userId: string, searchId: string) {
+    return this.savedSearchModel.findOneAndDelete({ _id: searchId, user: userId });
+  }
+
 }

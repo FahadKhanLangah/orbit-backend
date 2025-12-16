@@ -18,8 +18,10 @@ export class ListingController {
   @Get()
   async searchListings(
     @Query() query: ListingQueryDto,
+    @Req() req: any
   ) {
-    return this.listingService.searchListings(query);
+    const userId = req.user ? req.user._id : null;
+    return this.listingService.searchListings(query, userId);
   }
 
   @Post('post/new')
@@ -97,6 +99,11 @@ export class ListingController {
   @Get(':id')
   async getListing(@Param('id') id: string) {
     return this.listingService.getListingById(id);
+  }
+
+  @Get('similar/:id')
+  async getSimilar(@Param('id') id: string) {
+    return this.listingService.getSimilarListings(id);
   }
 
 }

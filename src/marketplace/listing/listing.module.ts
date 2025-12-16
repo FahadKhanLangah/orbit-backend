@@ -5,11 +5,13 @@ import { Listing, ListingSchema } from './entity/listing.entity';
 import { ListingServices } from './listing.service';
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 import { AuthModule } from 'src/api/auth/auth.module';
+import { SearchHistorySchema } from './dto/search-history.entity';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
-      { name: "Listing", schema: ListingSchema }
+      { name: "Listing", schema: ListingSchema },
+      { name: 'SearchHistory', schema: SearchHistorySchema }
     ]),
     FileUploaderModule,
     AuthModule

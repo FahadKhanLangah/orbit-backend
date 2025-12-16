@@ -7,11 +7,13 @@ import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { Cron } from '@nestjs/schedule';
+import { ISearchHistory } from './dto/search-history.entity';
 
 @Injectable()
 export class ListingServices {
   constructor(
     @InjectModel("Listing") private readonly listingModel: Model<IListing>,
+    @InjectModel('SearchHistory') private readonly searchHistoryModel: Model<ISearchHistory>,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 
@@ -224,7 +226,7 @@ export class ListingServices {
     return draft;
   }
 
-  async searchListings(query: ListingQueryDto) {
+  async searchListings(query: ListingQueryDto, userId?: string) {
     const {
       search,
       category,
@@ -239,27 +241,21 @@ export class ListingServices {
       limit = 10,
       sort
     } = query;
+    if (userId) {
+      this.logSearchHistory(userId, query).catch(err => console.error('Search log error', err));
+    }
 
     const filter: any = { status: ListingStatus.ACTIVE };
     if (search) filter.$text = { $search: search };
-
-    //  Category Browsing
     if (category) filter.category = category;
-
-    //  City Filter (based on stored text)
     if (city) filter["location.address"] = new RegExp(city, "i");
-
-    //  Price Filters
     if (minPrice || maxPrice) {
       filter.price = {};
       if (minPrice) filter.price.$gte = minPrice;
       if (maxPrice) filter.price.$lte = maxPrice;
     }
-
-    //  Condition Filter
     if (condition) filter.condition = condition;
 
-    //  Radius Filter
     if (lat && lng && radius) {
       filter.location = {
         $near: {
@@ -272,10 +268,7 @@ export class ListingServices {
       };
     }
 
-    // Pagination
     const skip = (page - 1) * limit;
-
-    // Sorting
     const sortQuery: any = {};
 
     if (sort === "recent") sortQuery.createdAt = -1;
@@ -288,9 +281,7 @@ export class ListingServices {
       .skip(skip)
       .limit(limit)
       .sort(sortQuery);
-
     const total = await this.listingModel.countDocuments(filter);
-
     return {
       page,
       limit,
@@ -310,6 +301,53 @@ export class ListingServices {
 
     return listing;
   }
+
+  async getSimilarListings(listingId: string) {
+    const original = await this.listingModel.findById(listingId);
+    if (!original) throw new NotFoundException('Listing not found');
+    const minPrice = original.price ? original.price * 0.8 : 0;
+    const maxPrice = original.price ? original.price * 1.2 : 1000000;
+    const similar = await this.listingModel.find({
+      _id: { $ne: original._id },
+      category: original.category,
+      status: 'active',
+      hide: false,
+      price: { $gte: minPrice, $lte: maxPrice }
+    })
+      .sort({ createdAt: -1 })
+      .limit(6);
+    if (similar.length === 0) {
+      return this.listingModel.find({
+        _id: { $ne: original._id },
+        category: original.category,
+        status: 'active',
+        hide: false
+      }).limit(6);
+    }
+
+    return similar;
+  }
+
+  private async logSearchHistory(userId: string, query: ListingQueryDto) {
+    const { page, limit, sort, ...filtersToSave } = query;
+    if (Object.keys(filtersToSave).length === 0) return;
+    const searchString = filtersToSave.search || "";
+
+    await this.searchHistoryModel.findOneAndUpdate(
+      {
+        user: userId,
+        searchQuery: searchString,
+      },
+      {
+        $set: {
+          filters: filtersToSave,
+          lastSearched: new Date()
+        }
+      },
+      { upsert: true, new: true }
+    );
+  }
+
 
   @Cron('0 0 * * *')
   async resetDailyImpressions() {
