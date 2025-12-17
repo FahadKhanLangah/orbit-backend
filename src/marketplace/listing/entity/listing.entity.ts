@@ -28,6 +28,13 @@ export interface IListing extends Document {
   expiry?: Date;
   postBy: mongoose.Types.ObjectId;
   hide: boolean;
+  deliveryOptions: {
+    pickup: boolean;
+    shipping: boolean;
+    shippingFee?: number;
+  };
+  expiryDate: Date;
+  isExpired: boolean;
 }
 
 export const ListingSchema = new mongoose.Schema<IListing>({
@@ -61,6 +68,16 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   expiry: { type: Date },
   postBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
   hide: { type: Boolean, default: false },
+  deliveryOptions: {
+    pickup: { type: Boolean, default: true },
+    shipping: { type: Boolean, default: false },
+    shippingFee: { type: Number, default: 0 } 
+  },
+  expiryDate: {
+    type: Date,
+    default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+  },
+  isExpired: { type: Boolean, default: false }
 }, { timestamps: true });
 
 ListingSchema.index({

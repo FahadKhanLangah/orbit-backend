@@ -7,6 +7,7 @@ import { Model } from 'mongoose';
 import { SocketIoGateway } from 'src/chat/socket_io/socket_io.gateway';
 import { IMessage } from 'src/chat/message/entities/message.entity';
 import { MessageStatusType } from 'src/core/utils/enums';
+import { IListing } from 'src/marketplace/listing/entity/listing.entity';
 
 @Injectable()
 export class SchedulingService {
@@ -14,8 +15,9 @@ export class SchedulingService {
 
   constructor(
     @InjectModel('Message') private readonly messageModel: Model<IMessage>,
-    private readonly socketGateway: SocketIoGateway, // Inject your gateway
-  ) {}
+    @InjectModel('Listing') private readonly listingModel: Model<IListing>,
+    private readonly socketGateway: SocketIoGateway, 
+  ) { }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async handleScheduledMessages() {
@@ -50,5 +52,14 @@ export class SchedulingService {
         this.logger.error(`Failed to send message ID: ${message._id}`, error);
       }
     }
+  }
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async handleExpiration() {
+    const now = new Date();
+    await this.listingModel.updateMany(
+      { expiryDate: { $lt: now }, isExpired: false },
+      { $set: { isExpired: true, status: 'expired' } }
+    );
+    console.log('Daily Cleanup: Expired listings updated');
   }
 }

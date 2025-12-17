@@ -106,4 +106,10 @@ export class ListingController {
     return this.listingService.getSimilarListings(id);
   }
 
+  @Patch('renew/:id')
+  async renewListing(@Param('id') id, @Req() req) {
+    const userId = req.user._id;
+    return this.listingService.renewListing(id, userId);
+  }
+
 }

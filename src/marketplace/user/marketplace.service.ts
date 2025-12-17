@@ -78,4 +78,12 @@ export class MarketPlaceService {
     return this.savedSearchModel.findOneAndDelete({ _id: searchId, user: userId });
   }
 
+  async blockUser(myUserId: string, targetUserId: string) {
+    return this.marketPlaceUserModel.findOneAndUpdate(
+      { userId: myUserId },
+      { $addToSet: { blockedUsers: targetUserId } },
+      { new: true, upsert: true }
+    );
+  }
+
 }

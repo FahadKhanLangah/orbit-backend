@@ -8,12 +8,15 @@ import { FileUploaderService } from 'src/common/file_uploader/file_uploader.serv
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { Cron } from '@nestjs/schedule';
 import { ISearchHistory } from './dto/search-history.entity';
+import { IMarketUser } from '../user/entity/market_user.entity';
 
 @Injectable()
 export class ListingServices {
   constructor(
     @InjectModel("Listing") private readonly listingModel: Model<IListing>,
     @InjectModel('SearchHistory') private readonly searchHistoryModel: Model<ISearchHistory>,
+    @InjectModel("MarketUser")
+    private readonly marketPlaceUserModel: Model<IMarketUser>,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 
@@ -241,11 +244,15 @@ export class ListingServices {
       limit = 10,
       sort
     } = query;
+    const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
+      const userProfile = await this.marketPlaceUserModel.findOne({ userId });
+      if (userProfile?.blockedUsers?.length) {
+        filter.postBy = { $nin: userProfile.blockedUsers }; // Exclude these sellers
+      }
       this.logSearchHistory(userId, query).catch(err => console.error('Search log error', err));
     }
 
-    const filter: any = { status: ListingStatus.ACTIVE };
     if (search) filter.$text = { $search: search };
     if (category) filter.category = category;
     if (city) filter["location.address"] = new RegExp(city, "i");
@@ -326,6 +333,20 @@ export class ListingServices {
     }
 
     return similar;
+  }
+
+  async renewListing(userId: string, listingId: string) {
+    const listing = await this.listingModel.findOne({ _id: listingId, postBy: userId });
+    if (!listing) throw new NotFoundException("Listing not found or unauthorized");
+
+    const newExpiry = new Date();
+    newExpiry.setDate(newExpiry.getDate() + 30);
+
+    listing.expiryDate = newExpiry;
+    listing.isExpired = false;
+    if (listing.status === 'expired') listing.status = 'active'; // Reactivate
+
+    return listing.save();
   }
 
   private async logSearchHistory(userId: string, query: ListingQueryDto) {

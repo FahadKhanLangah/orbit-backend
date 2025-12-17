@@ -14,7 +14,6 @@ export class LocationDto {
   @IsOptional()
   address?: string;
 
-  // Helper to convert into GeoJSON object
   toGeoJSON() {
     return {
       type: "Point",

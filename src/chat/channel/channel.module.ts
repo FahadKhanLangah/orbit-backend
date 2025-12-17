@@ -40,6 +40,7 @@ import { UserSchema } from "src/api/user_modules/user/entities/user.entity";
 import { SchedulingService } from "./services/scheduling.service";
 import { MessageSchema } from "../message/entities/message.entity";
 import { TranslationModule } from "src/common/transalation/translation.module";
+import { ListingSchema } from "src/marketplace/listing/entity/listing.entity";
 
 @Module({
   controllers: [
@@ -60,7 +61,8 @@ import { TranslationModule } from "src/common/transalation/translation.module";
     MongooseModule.forFeature([
       { name: "room_member", schema: RoomMemberSchema },
       { name: "User", schema: UserSchema },
-      { name: "Message", schema: MessageSchema }, 
+      { name: "Message", schema: MessageSchema },
+      { name: "Listing", schema: ListingSchema }
     ]),
     UserModule,
     MessageModule,
@@ -86,4 +88,4 @@ import { TranslationModule } from "src/common/transalation/translation.module";
   ],
   exports: [ChannelService, MessageChannelService],
 })
-export class ChannelModule {}
+export class ChannelModule { }

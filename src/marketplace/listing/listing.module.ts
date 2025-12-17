@@ -6,18 +6,23 @@ import { ListingServices } from './listing.service';
 import { FileUploaderModule } from 'src/common/file_uploader/file_uploader.module';
 import { AuthModule } from 'src/api/auth/auth.module';
 import { SearchHistorySchema } from './dto/search-history.entity';
+import { OfferSchema } from './entity/offer.entity';
+import { OfferService } from './offer.service';
+import { marketUserSchema } from '../user/entity/market_user.entity';
 
 @Module({
   imports: [
     MongooseModule.forFeature([
       { name: "Listing", schema: ListingSchema },
-      { name: 'SearchHistory', schema: SearchHistorySchema }
+      { name: 'SearchHistory', schema: SearchHistorySchema },
+      { name: 'Offer', schema: OfferSchema },
+      { name: 'MarketUser', schema: marketUserSchema }
     ]),
     FileUploaderModule,
     AuthModule
   ],
   providers: [
-    ListingServices
+    ListingServices, OfferService
   ],
   controllers: [ListingController]
 })

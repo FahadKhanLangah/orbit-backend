@@ -1,4 +1,4 @@
-import { Body, Delete, Get, Param, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { MarketPlaceService } from './marketplace.service';
@@ -57,6 +57,11 @@ export class MarketplaceController {
   @Delete('saved-searches/:id')
   async removeSavedSearch(@Req() req, @Param('id') id: string) {
     return this.marketPlaceUserServices.deleteSavedSearch(req.user._id, id);
+  }
+
+  @Patch('blocked-users/:id')
+  async blockUser(@Req() req, @Param('id') userId: string) {
+    return this.marketPlaceUserServices.blockUser(req.user._id, userId);
   }
 
 }
