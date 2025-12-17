@@ -109,7 +109,7 @@ export class ListingController {
   @Patch('renew/:id')
   async renewListing(@Param('id') id, @Req() req) {
     const userId = req.user._id;
-    return this.listingService.renewListing(id, userId);
+    return this.listingService.renewListing(userId, id);
   }
 
 }
