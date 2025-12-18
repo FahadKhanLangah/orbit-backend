@@ -53,6 +53,9 @@ export class ListingServices {
       const geoLocation = dto.location.toGeoJSON();
       doc.location = geoLocation;
     }
+    if (dto.deliveryOptions) {
+      doc.deliveryOptions = dto.deliveryOptions;
+    }
     const created = await this.listingModel.create(doc);
     return created;
   }

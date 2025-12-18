@@ -63,6 +63,13 @@ export class PostListingDto {
   @IsDate()
   @Type(() => Date)
   expiry?: Date;
+
+  @IsOptional()
+  deliveryOptions?: {
+    pickup: boolean;
+    shipping: boolean;
+    shippingFee?: number;
+  };
 }
 
 export class SaveListingDraftDto {
@@ -104,4 +111,11 @@ export class SaveListingDraftDto {
   @IsDate()
   @Type(() => Date)
   expiry?: Date;
+
+  @IsOptional()
+  deliveryOptions?: {
+    pickup: boolean;
+    shipping: boolean;
+    shippingFee?: number;
+  };
 }
