@@ -40,6 +40,7 @@ import { driverProfileStatus } from "src/ride/driver/entity/driver.entity";
 import { GetDriversFilterDto, UpdateDriverStatusDto } from "src/ride/driver/dto/status-dto";
 import { RidesService } from "src/ride/rides/rides.service";
 import { PricingConfig } from "src/ride/rides/entity/pricing-config.schema";
+import { ListingServices } from "src/marketplace/listing/listing.service";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -53,7 +54,14 @@ export class AdminPanelController {
     private readonly verificationService: VerificationService,
     private readonly driverService: DriverService,
     private readonly rideService: RidesService,
+    private readonly listingService: ListingServices
   ) { }
+
+  @Get("listing/reports")
+  async getListingReports() {
+    return this.listingService.getReports();
+  }
+
   @Get("ride/pricing-config")
   getRidePricingConfig(): Promise<PricingConfig> {
     return this.rideService.getConfig();

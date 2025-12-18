@@ -9,6 +9,7 @@ import { ListingQueryDto } from './dto/listing-query.dto';
 import { Cron } from '@nestjs/schedule';
 import { ISearchHistory } from './dto/search-history.entity';
 import { IMarketUser } from '../user/entity/market_user.entity';
+import { IReport } from './entity/report.entity';
 
 @Injectable()
 export class ListingServices {
@@ -17,6 +18,7 @@ export class ListingServices {
     @InjectModel('SearchHistory') private readonly searchHistoryModel: Model<ISearchHistory>,
     @InjectModel("MarketUser")
     private readonly marketPlaceUserModel: Model<IMarketUser>,
+    @InjectModel("Report") private readonly reportModel: Model<IReport>,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 
@@ -350,6 +352,23 @@ export class ListingServices {
     if (listing.status === 'expired') listing.status = 'active'; // Reactivate
 
     return listing.save();
+  }
+
+  async reportListing(userId: string, listingId: string, reason: string, description?: string) {
+    const listing = await this.listingModel.findById(listingId);
+    if (!listing) throw new NotFoundException("Listing not found");
+    const report = await this.reportModel.create({
+      reporter: userId as any,
+      listing: listingId as any,
+      reason,
+      description
+    });
+    return report;
+  }
+
+  async getReports() {
+    const reports = await this.reportModel.find().populate('reporter').populate('listing');
+    return reports;
   }
 
   private async logSearchHistory(userId: string, query: ListingQueryDto) {

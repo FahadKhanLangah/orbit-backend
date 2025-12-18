@@ -24,6 +24,11 @@ export class ListingController {
     return this.listingService.searchListings(query, userId);
   }
 
+  @Get('reports')
+  async getReports(@Req() req) {
+    return this.listingService.getReports();
+  }
+
   @Post('post/new')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'images', maxCount: 5 },
@@ -111,5 +116,18 @@ export class ListingController {
     const userId = req.user._id;
     return this.listingService.renewListing(userId, id);
   }
+
+
+  @Post('report/:id')
+  async reportListing(
+    @Param('id') id: string,
+    @Req() req: any,
+    @Body('reason') reason: string,
+    @Body('description') description?: string
+  ) {
+    const userId = req.user._id;
+    return this.listingService.reportListing(userId, id, reason, description);
+  }
+
 
 }

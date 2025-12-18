@@ -53,6 +53,7 @@ import { TransactionSchema } from "../transactions/schemas/transaction.schema";
 import { VerificationModule } from "../verification/verification.module";
 import { DriverModule } from "src/ride/driver/driver.module";
 import { RidesModule } from "src/ride/rides/rides.module";
+import { ListingModule } from "src/marketplace/listing/listing.module";
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -100,7 +101,8 @@ import { RidesModule } from "src/ride/rides/rides.module";
     SettingsModule,
     VerificationModule,
     DriverModule,
-    RidesModule
+    RidesModule,
+    ListingModule,
   ],
 })
-export class AdminPanelModule {}
+export class AdminPanelModule { }

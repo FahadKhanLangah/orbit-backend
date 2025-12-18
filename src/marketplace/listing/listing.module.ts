@@ -9,6 +9,7 @@ import { SearchHistorySchema } from './dto/search-history.entity';
 import { OfferSchema } from './entity/offer.entity';
 import { OfferService } from './offer.service';
 import { marketUserSchema } from '../user/entity/market_user.entity';
+import { ReportSchema } from './entity/report.entity';
 
 @Module({
   imports: [
@@ -16,7 +17,8 @@ import { marketUserSchema } from '../user/entity/market_user.entity';
       { name: "Listing", schema: ListingSchema },
       { name: 'SearchHistory', schema: SearchHistorySchema },
       { name: 'Offer', schema: OfferSchema },
-      { name: 'MarketUser', schema: marketUserSchema }
+      { name: 'MarketUser', schema: marketUserSchema },
+      { name: 'Report', schema: ReportSchema }
     ]),
     FileUploaderModule,
     AuthModule
@@ -24,6 +26,7 @@ import { marketUserSchema } from '../user/entity/market_user.entity';
   providers: [
     ListingServices, OfferService
   ],
-  controllers: [ListingController]
+  controllers: [ListingController],
+  exports: [ListingServices]
 })
 export class ListingModule { }
