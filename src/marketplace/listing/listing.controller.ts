@@ -1,5 +1,5 @@
 // listing.controller.ts
-import { Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe, Patch, Param, Get, Delete, Query } from '@nestjs/common';
+import { Post, UseGuards, UseInterceptors, UploadedFiles, Req, Body, UsePipes, ValidationPipe, Patch, Param, Get, Delete, Query, BadRequestException } from '@nestjs/common';
 import { FileFieldsInterceptor } from '@nestjs/platform-express';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
@@ -7,6 +7,7 @@ import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { ListingServices } from './listing.service';
 import { ListingStatus } from './entity/listing.entity';
 import { ListingQueryDto } from './dto/listing-query.dto';
+import { UpdateListingDto } from './dto/update-listing.dto';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('listing')
@@ -95,6 +96,7 @@ export class ListingController {
     return this.listingService.deleteDraft(id, userId);
   }
 
+  // it will delete both draft and published listing
   @Delete('draft/:id/delete')
   async deleteList(@Param('id') id, @Req() req) {
     const userId = req.user._id;
@@ -127,6 +129,27 @@ export class ListingController {
   ) {
     const userId = req.user._id;
     return this.listingService.reportListing(userId, id, reason, description);
+  }
+
+  @Patch(':id')
+  async editListing(
+    @Req() req,
+    @Param('id') listingId: string,
+    @Body() dto: UpdateListingDto
+  ) {
+    return this.listingService.updateListing(req.user._id, listingId, dto);
+  }
+
+  @Patch(':id/visibility')
+  async toggleVisibility(
+    @Req() req,
+    @Param('id') listingId: string,
+    @Body('hide') hide: boolean
+  ) {
+    if (typeof hide !== 'boolean') {
+      throw new BadRequestException('Hide status must be a boolean');
+    }
+    return this.listingService.setListingVisibility(req.user._id, listingId, hide);
   }
 
 

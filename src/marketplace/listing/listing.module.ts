@@ -10,6 +10,8 @@ import { OfferSchema } from './entity/offer.entity';
 import { OfferService } from './offer.service';
 import { marketUserSchema } from '../user/entity/market_user.entity';
 import { ReportSchema } from './entity/report.entity';
+import { ListingAnalyticsController } from './listing-analytics.controller';
+import { ListingEngagementSchema } from './entity/user-engagement.entity';
 
 @Module({
   imports: [
@@ -18,15 +20,15 @@ import { ReportSchema } from './entity/report.entity';
       { name: 'SearchHistory', schema: SearchHistorySchema },
       { name: 'Offer', schema: OfferSchema },
       { name: 'MarketUser', schema: marketUserSchema },
-      { name: 'Report', schema: ReportSchema }
-    ]),
+      { name: 'Report', schema: ReportSchema },
+      { name: 'ListingEngagement', schema: ListingEngagementSchema }]),
     FileUploaderModule,
     AuthModule
   ],
   providers: [
     ListingServices, OfferService
   ],
-  controllers: [ListingController],
+  controllers: [ListingController, ListingAnalyticsController],
   exports: [ListingServices]
 })
 export class ListingModule { }

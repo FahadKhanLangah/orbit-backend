@@ -1,7 +1,7 @@
 // listing.service.ts
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { Model, Types } from 'mongoose';
 import { IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
@@ -10,6 +10,8 @@ import { Cron } from '@nestjs/schedule';
 import { ISearchHistory } from './dto/search-history.entity';
 import { IMarketUser } from '../user/entity/market_user.entity';
 import { IReport } from './entity/report.entity';
+import { IListingEngagement } from './entity/user-engagement.entity';
+import { UpdateListingDto } from './dto/update-listing.dto';
 
 @Injectable()
 export class ListingServices {
@@ -19,6 +21,7 @@ export class ListingServices {
     @InjectModel("MarketUser")
     private readonly marketPlaceUserModel: Model<IMarketUser>,
     @InjectModel("Report") private readonly reportModel: Model<IReport>,
+    @InjectModel('ListingEngagement') private readonly engagementModel: Model<IListingEngagement>,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 
@@ -369,6 +372,109 @@ export class ListingServices {
   async getReports() {
     const reports = await this.reportModel.find().populate('reporter').populate('listing');
     return reports;
+  }
+
+  async recordView(userId: string, listingId: string) {
+    return this.engagementModel.findOneAndUpdate(
+      { user: userId, listing: listingId },
+      {
+        $set: { viewedAt: new Date() },
+        $setOnInsert: { isLiked: false }
+      },
+      { upsert: true, new: true }
+    );
+  }
+
+  async toggleLike(userId: string, listingId: string) {
+    const engagement = await this.engagementModel.findOne({ user: userId, listing: listingId });
+
+    const isCurrentlyLiked = engagement ? engagement.isLiked : false;
+    const newState = !isCurrentlyLiked;
+
+    return this.engagementModel.findOneAndUpdate(
+      { user: userId, listing: listingId },
+      {
+        $set: {
+          isLiked: newState,
+          favoritedAt: newState ? new Date() : undefined
+        },
+        $setOnInsert: { viewedAt: new Date() }
+      },
+      { upsert: true, new: true }
+    );
+  }
+
+  async recordInquiry(userId: string, listingId: string) {
+    return this.engagementModel.findOneAndUpdate(
+      { user: userId, listing: listingId },
+      { $set: { contactedAt: new Date() } },
+      { upsert: true, new: true }
+    );
+  }
+
+  async getStatsForListing(listingId: string) {
+    const stats = await this.engagementModel.aggregate([
+      { $match: { listing: new Types.ObjectId(listingId) } },
+      {
+        $group: {
+          _id: '$listing',
+          totalUniqueViews: { $sum: 1 },
+          totalLikes: {
+            $sum: { $cond: [{ $eq: ['$isLiked', true] }, 1, 0] }
+          },
+          totalInquiries: {
+            $sum: { $cond: [{ $ifNull: ['$contactedAt', false] }, 1, 0] }
+          }
+        }
+      }
+    ]);
+
+    return stats[0] || { totalUniqueViews: 0, totalLikes: 0, totalInquiries: 0 };
+  }
+
+  async getSellerOverallStats(sellerListingIds: string[]) {
+    const objectIds = sellerListingIds.map(id => new Types.ObjectId(id));
+
+    return this.engagementModel.aggregate([
+      { $match: { listing: { $in: objectIds } } },
+      {
+        $group: {
+          _id: null, // Group everything together
+          totalViews: { $sum: 1 },
+          totalLikes: { $sum: { $cond: ['$isLiked', 1, 0] } },
+          totalInquiries: { $sum: { $cond: [{ $ifNull: ['$contactedAt', false] }, 1, 0] } }
+        }
+      }
+    ]);
+  }
+
+  async updateListing(userId: string, listingId: string, dto: UpdateListingDto) {
+    const listing = await this.listingModel.findById(listingId);
+
+    if (!listing) {
+      throw new NotFoundException('Listing not found');
+    }
+
+    if (listing.postBy.toString() !== userId.toString()) {
+      throw new ForbiddenException('You are not allowed to edit this listing');
+    }
+
+    listing.set(dto);
+    return await listing.save();
+  }
+
+  async setListingVisibility(userId: string, listingId: string, shouldHide: boolean) {
+    const listing = await this.listingModel.findById(listingId);
+
+    if (!listing) throw new NotFoundException('Listing not found');
+
+    if (listing.postBy.toString() !== userId.toString()) {
+      throw new ForbiddenException('You are not allowed to hide this listing');
+    }
+
+    listing.hide = shouldHide;
+    listing.status = shouldHide ? ListingStatus.INACTIVE : ListingStatus.ACTIVE;
+    return await listing.save();
   }
 
   private async logSearchHistory(userId: string, query: ListingQueryDto) {

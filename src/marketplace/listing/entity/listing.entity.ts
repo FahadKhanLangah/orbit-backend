@@ -2,7 +2,10 @@ import mongoose, { Document } from 'mongoose';
 
 export enum ListingStatus {
   DRAFT = "draft",
-  ACTIVE = "active"
+  ACTIVE = "active",
+  INACTIVE = "inactive",
+  SOLD = "sold",
+  EXPIRED = "expired"
 }
 export enum PricingStructure {
   FIXED = "fixed",
