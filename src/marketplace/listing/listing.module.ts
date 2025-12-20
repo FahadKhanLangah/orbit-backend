@@ -12,6 +12,9 @@ import { marketUserSchema } from '../user/entity/market_user.entity';
 import { ReportSchema } from './entity/report.entity';
 import { ListingAnalyticsController } from './listing-analytics.controller';
 import { ListingEngagementSchema } from './entity/user-engagement.entity';
+import { ReviewController } from './services/review/review.controller';
+import { ReviewService } from './services/review/review.service';
+import { ReviewSchema } from './services/review/entity/review.entity';
 
 @Module({
   imports: [
@@ -21,14 +24,16 @@ import { ListingEngagementSchema } from './entity/user-engagement.entity';
       { name: 'Offer', schema: OfferSchema },
       { name: 'MarketUser', schema: marketUserSchema },
       { name: 'Report', schema: ReportSchema },
-      { name: 'ListingEngagement', schema: ListingEngagementSchema }]),
+      { name: 'ListingEngagement', schema: ListingEngagementSchema },
+      { name: 'Review', schema: ReviewSchema }
+    ]),
     FileUploaderModule,
     AuthModule
   ],
   providers: [
-    ListingServices, OfferService
+    ListingServices, OfferService, ReviewService
   ],
-  controllers: [ListingController, ListingAnalyticsController],
+  controllers: [ListingController, ListingAnalyticsController, ReviewController],
   exports: [ListingServices]
 })
 export class ListingModule { }

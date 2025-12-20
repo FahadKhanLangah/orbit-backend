@@ -12,6 +12,10 @@ export interface IMarketUser extends Document {
   bio: string;
   trustBadge: Boolean,
   savedListings: [],
+  rating: {
+    average: number;
+    count: number;
+  };
   blockedUsers: mongoose.Types.ObjectId[];
 }
 export const marketUserSchema = new mongoose.Schema<IMarketUser>(
@@ -21,6 +25,10 @@ export const marketUserSchema = new mongoose.Schema<IMarketUser>(
     bio: { type: String, default: null },
     trustBadge: { type: Boolean, default: false },
     savedListings: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Listing' }],
+    rating: {
+      average: { type: Number, default: 0 },
+      count: { type: Number, default: 0 }
+    },
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
   }
 )
