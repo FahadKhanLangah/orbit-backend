@@ -15,6 +15,7 @@ import { ListingEngagementSchema } from './entity/user-engagement.entity';
 import { ReviewController } from './services/review/review.controller';
 import { ReviewService } from './services/review/review.service';
 import { ReviewSchema } from './services/review/entity/review.entity';
+import { ContentModerationService } from 'src/common/services/content-moderation.service';
 
 @Module({
   imports: [
@@ -31,7 +32,7 @@ import { ReviewSchema } from './services/review/entity/review.entity';
     AuthModule
   ],
   providers: [
-    ListingServices, OfferService, ReviewService
+    ListingServices, OfferService, ReviewService, ContentModerationService
   ],
   controllers: [ListingController, ListingAnalyticsController, ReviewController],
   exports: [ListingServices]

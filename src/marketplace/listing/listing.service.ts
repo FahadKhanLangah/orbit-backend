@@ -12,6 +12,7 @@ import { IMarketUser } from '../user/entity/market_user.entity';
 import { IReport } from './entity/report.entity';
 import { IListingEngagement } from './entity/user-engagement.entity';
 import { UpdateListingDto } from './dto/update-listing.dto';
+import { ContentModerationService } from 'src/common/services/content-moderation.service';
 
 @Injectable()
 export class ListingServices {
@@ -22,10 +23,13 @@ export class ListingServices {
     private readonly marketPlaceUserModel: Model<IMarketUser>,
     @InjectModel("Report") private readonly reportModel: Model<IReport>,
     @InjectModel('ListingEngagement') private readonly engagementModel: Model<IListingEngagement>,
+    private readonly moderationService: ContentModerationService,
     private readonly fileUploaderServices: FileUploaderService
   ) { }
 
   async postListing(userId: string, dto: PostListingDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
+    const fullText = `${dto.title} ${dto.description || ''}`;
+    this.moderationService.checkProhibitedContent(fullText);
     const imageKeys: string[] = [];
     if (files?.images && files.images.length > 0) {
       for (const file of files.images) {
@@ -165,6 +169,8 @@ export class ListingServices {
 
 
   async updateDraft(id: string, userId: string, dto: SaveListingDraftDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
+    const fullText = `${dto.title} ${dto.description || ''}`;
+    this.moderationService.checkProhibitedContent(fullText);
     const draftPost = await this.listingModel.findById(id);
 
     if (!draftPost) {
@@ -449,6 +455,8 @@ export class ListingServices {
   }
 
   async updateListing(userId: string, listingId: string, dto: UpdateListingDto) {
+    const fullText = `${dto.title} ${dto.description || ''}`;
+    this.moderationService.checkProhibitedContent(fullText);
     const listing = await this.listingModel.findById(listingId);
 
     if (!listing) {
