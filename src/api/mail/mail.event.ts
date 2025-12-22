@@ -4,12 +4,12 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {Injectable, Logger} from "@nestjs/common";
-import {OnEvent} from "@nestjs/event-emitter";
-import {MailerService} from "@nestjs-modules/mailer";
-import {SendMailEvent} from "../../core/utils/interfaceces";
-import {MailType} from "../../core/utils/enums";
-import {AppConfigService} from "../app_config/app_config.service";
+import { Injectable, Logger } from "@nestjs/common";
+import { OnEvent } from "@nestjs/event-emitter";
+import { MailerService } from "@nestjs-modules/mailer";
+import { SendMailEvent } from "../../core/utils/interfaceces";
+import { MailType } from "../../core/utils/enums";
+import { AppConfigService } from "../app_config/app_config.service";
 
 @Injectable()
 export class MailEvent {
@@ -18,55 +18,121 @@ export class MailEvent {
     constructor(
         private mailerService: MailerService,
         private appConfig: AppConfigService,
-    ) {
-    }
-
+    ) { }
 
     @OnEvent("send.mail")
-    async handleOrderCreatedEvent(event: SendMailEvent) {
+    async handleSendMailEvent(event: SendMailEvent) {
         let appConfig = await this.appConfig.getConfig();
+
+        let templateName = "./confirmation";
+        let subject = "Orbit Chat Notification";
+
+     
+        switch (event.mailType) {
+       
+            case MailType.ResetPassword:
+                templateName = "./password_reset";
+                subject = "Reset Your Password";
+                break;
+
+            case MailType.VerifyEmail:
+                templateName = "./email_verification";
+                subject = "Verify Your Email";
+                break;
+
+            case MailType.ListingSold:
+                templateName = "./listing_sold";
+                subject = "Congratulations! You made a sale 💰";
+                break;
+
+            case MailType.WelcomeUser:
+                templateName = "./welcome";
+                subject = "Welcome to Orbit Marketplace";
+                break;
+
+            default:
+                templateName = "./confirmation";
+                subject = `Verification Code: ${event.code}`;
+                break;
+        }
+
         try {
-            if (event.mailType == MailType.ResetPassword) {
-                this.mailerService.sendMail({
-                    to: event.user.email,
-                    subject: "Orbit Chat",
-                    template: "./password_reset",
-                    context: {
-                        name: event.user.fullName,
-                        code: event.code,
-                        appName: appConfig.appName,
-                    }
-                }).then(value => {
-                });
-            } else if (event.mailType == MailType.VerifyEmail) {
-                await this.mailerService.sendMail({
-                    to: event.user.email,
-                    subject: "Orbit Chat",
-                    template: "./email_verification",
-                    context: {
-                        name: event.user.fullName,
-                        code: event.code,
-                        appName: appConfig.appName
-                    }
-                }).then(value => {
-                });
-            } else {
-                await this.mailerService.sendMail({
-                    to: event.user.email,
-                    subject: "Orbit Chat",
-                    template: "./confirmation",
-                    context: {
-                        name: event.user.fullName,
-                        code: event.code,
-                        appName: appConfig.appName
-                    }
-                }).then(value => {
-                });
-            }
+            await this.mailerService.sendMail({
+                to: event.user.email,
+                subject: `${subject} - ${appConfig.appName}`,
+                template: templateName,
+                context: {
+                    name: event.user.fullName,
+                    code: event.code,
+                    appName: appConfig.appName,
+                    ...(event.context || {})
+                }
+            });
+
+            this.logger.log(`Email sent successfully to ${event.user.email} [Type: ${event.mailType}]`);
 
         } catch (e) {
             this.logger.error(`Failed to send email to ${event.user.email}:`, e);
-            console.error('Email send error:', e);
         }
     }
 }
+
+// @Injectable()
+// export class MailEvent {
+//     private readonly logger = new Logger(MailEvent.name);
+
+//     constructor(
+//         private mailerService: MailerService,
+//         private appConfig: AppConfigService,
+//     ) {
+//     }
+
+
+//     @OnEvent("send.mail")
+//     async handleOrderCreatedEvent(event: SendMailEvent) {
+//         let appConfig = await this.appConfig.getConfig();
+//         try {
+//             if (event.mailType == MailType.ResetPassword) {
+//                 this.mailerService.sendMail({
+//                     to: event.user.email,
+//                     subject: "Orbit Chat",
+//                     template: "./password_reset",
+//                     context: {
+//                         name: event.user.fullName,
+//                         code: event.code,
+//                         appName: appConfig.appName,
+//                     }
+//                 }).then(value => {
+//                 });
+//             } else if (event.mailType == MailType.VerifyEmail) {
+//                 await this.mailerService.sendMail({
+//                     to: event.user.email,
+//                     subject: "Orbit Chat",
+//                     template: "./email_verification",
+//                     context: {
+//                         name: event.user.fullName,
+//                         code: event.code,
+//                         appName: appConfig.appName
+//                     }
+//                 }).then(value => {
+//                 });
+//             } else {
+//                 await this.mailerService.sendMail({
+//                     to: event.user.email,
+//                     subject: "Orbit Chat",
+//                     template: "./confirmation",
+//                     context: {
+//                         name: event.user.fullName,
+//                         code: event.code,
+//                         appName: appConfig.appName
+//                     }
+//                 }).then(value => {
+//                 });
+//             }
+
+//         } catch (e) {
+//             this.logger.error(`Failed to send email to ${event.user.email}:`, e);
+//             console.error('Email send error:', e);
+//         }
+//     }
+// }

@@ -4,17 +4,17 @@
  * MIT license that can be found in the LICENSE file.
  */
 
-import {MailType} from "./enums";
+import { MailType } from "./enums";
 import { IUser } from "../../api/user_modules/user/entities/user.entity";
 
 
-export class PushKeyAndProvider{
+export class PushKeyAndProvider {
 
-    fcm:any[]
-    oneSignal:any[]
-    voipKeys:any[]
+    fcm: any[]
+    oneSignal: any[]
+    voipKeys: any[]
 
-    constructor(fcm: any[], oneSignal: any[],voipKeys:any[]) {
+    constructor(fcm: any[], oneSignal: any[], voipKeys: any[]) {
         this.fcm = fcm;
         this.oneSignal = oneSignal;
         this.voipKeys = voipKeys;
@@ -23,6 +23,7 @@ export class PushKeyAndProvider{
 export class SendMailEvent {
     text: string;
     code: string;
+    context?: any;
     user: IUser;
     mailType: MailType;
 }

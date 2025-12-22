@@ -20,6 +20,10 @@ export enum payoutType {
 export enum MailType {
   VerifyEmail = "verifyEmail",
   ResetPassword = "resetPassword",
+  // new fields
+  ListingSold = 'listing-sold',
+  WelcomeUser = 'welcome-user',
+  SecurityAlert = 'security-alert'
 }
 
 export enum VPushProvider {

@@ -8,7 +8,7 @@ import { i18nApi } from "../../core/utils/res.helpers";
 
 @Injectable()
 export class MailEmitterService {
-  constructor(private readonly eventEmitter: EventEmitter2) {}
+  constructor(private readonly eventEmitter: EventEmitter2) { }
 
   async sendConfirmEmail(user: IUser, mailType: MailType, isDev: boolean) {
     let code = Math.floor(100000 + Math.random() * 900000);
@@ -39,11 +39,11 @@ export class MailEmitterService {
     this.eventEmitter.emit("send.mail", x);
     return code;
   }
-  
+
   async sendResetPasswordLink(user: IUser, resetLink: string, isDev: boolean) {
     console.log(`Sending reset password link to: ${user.email}, isDev: ${isDev}`);
     console.log(`Reset link: ${resetLink}`);
-    
+
     // Always send email for reset password (same as signup email logic)
     // Check rate limiting like signup email does
     if (user.lastMail && user.lastMail.sendAt) {
@@ -60,7 +60,7 @@ export class MailEmitterService {
     x.code = resetLink; // instead of numeric code, send the link
     x.user = user;
     x.mailType = MailType.ResetPassword;
-    
+
     console.log("Emitting send.mail event for reset password");
     this.eventEmitter.emit("send.mail", x);
 
@@ -68,5 +68,20 @@ export class MailEmitterService {
       return `Password reset link has been sent to your email. Dev link: ${resetLink}`;
     }
     return "Password reset link has been sent to your email";
+  }
+
+
+  async sendEmailNotification(user: IUser, type: MailType, context: any = {}) {
+
+    const event = new SendMailEvent();
+    event.user = user;
+    event.mailType = type;
+    event.code = '';
+    event.context = context;
+
+    console.log(`Emitting notification: ${type} for user: ${user.email}`);
+    this.eventEmitter.emit("send.mail", event);
+
+    return true;
   }
 }
