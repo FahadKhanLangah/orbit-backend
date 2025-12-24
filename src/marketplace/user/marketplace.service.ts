@@ -1,11 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { IMarketUser, MarketUser } from "./entity/market_user.entity";
+import { BadgeType, IMarketUser, MarketUser } from "./entity/market_user.entity";
 import { CreateMarketUserDto } from "./dto/create-marketUser.dto";
 import { IMarketUserActivity } from "./entity/market_user_activity.entity";
 import { ISavedSearch } from "./entity/saved-search.entity";
 import { SaveSearchDto } from "./dto/save-search.dto";
+import { Cron, CronExpression } from "@nestjs/schedule";
 
 
 
@@ -83,6 +84,25 @@ export class MarketPlaceService {
       { userId: myUserId },
       { $addToSet: { blockedUsers: targetUserId } },
       { new: true, upsert: true }
+    );
+  }
+
+  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  async updateBadges() {
+
+    await this.marketPlaceUserModel.updateMany(
+      {
+        salesCount: { $gte: 50 },
+        'rating.average': { $gte: 4.5 }
+      },
+      { $addToSet: { badges: BadgeType.TOP_SELLER } }
+    );
+
+    await this.marketPlaceUserModel.updateMany(
+      {
+        $or: [{ salesCount: { $lt: 50 } }, { 'rating.average': { $lt: 4.5 } }]
+      },
+      { $pull: { badges: BadgeType.TOP_SELLER } }
     );
   }
 

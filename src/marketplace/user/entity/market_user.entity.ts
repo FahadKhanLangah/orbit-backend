@@ -4,6 +4,12 @@ export enum MarketUserRole {
   buyer = "buyer"
 }
 
+export enum BadgeType {
+  VERIFIED = 'verified',
+  TOP_SELLER = 'top_seller',
+  FAST_RESPONDER = 'fast_responder'
+}
+
 
 export interface IMarketUser extends Document {
   _id: string;
@@ -17,6 +23,8 @@ export interface IMarketUser extends Document {
     count: number;
   };
   blockedUsers: mongoose.Types.ObjectId[];
+  badges: BadgeType[];
+  salesCount: number;
 }
 export const marketUserSchema = new mongoose.Schema<IMarketUser>(
   {
@@ -29,7 +37,9 @@ export const marketUserSchema = new mongoose.Schema<IMarketUser>(
       average: { type: Number, default: 0 },
       count: { type: Number, default: 0 }
     },
-    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }]
+    blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
+    badges: [{ type: String, enum: Object.values(BadgeType) }],
+    salesCount: { type: Number, default: 0 }
   }
 )
 
