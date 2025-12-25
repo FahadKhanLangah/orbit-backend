@@ -1,5 +1,6 @@
-import { IsOptional, IsString, IsNumber } from "class-validator";
+import { IsOptional, IsString, IsNumber, IsEnum } from "class-validator";
 import { Type } from "class-transformer";
+import { PropertyType, TransactionType } from "../entity/listing.entity";
 
 
 export class ListingQueryDto {
@@ -57,4 +58,16 @@ export class ListingQueryDto {
   @IsOptional()
   @IsString()
   sort?: "recent" | "trending" | "priceLow" | "priceHigh";
+
+  @IsOptional() @IsEnum(TransactionType)
+  transactionType?: TransactionType;
+
+  @IsOptional() @IsEnum(PropertyType)
+  propertyType?: PropertyType;
+
+  @IsOptional() @IsNumber() @Type(() => Number)
+  bedrooms?: number; 
+
+  @IsOptional() @IsNumber() @Type(() => Number)
+  bathrooms?: number;
 }

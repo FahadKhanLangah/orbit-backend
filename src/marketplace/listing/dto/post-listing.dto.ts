@@ -1,5 +1,6 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean } from 'class-validator';
 import { Type } from 'class-transformer';
+import { FurnishingStatus, PropertyType, TransactionType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -21,6 +22,29 @@ export class LocationDto {
       address: this.address,
     };
   }
+}
+
+class PropertyDetailsDto {
+  @IsEnum(PropertyType)
+  type: PropertyType;
+
+  @IsOptional() @IsNumber()
+  bedrooms?: number;
+
+  @IsOptional() @IsNumber()
+  bathrooms?: number;
+
+  @IsOptional() @IsNumber()
+  areaSqFt?: number;
+
+  @IsOptional() @IsEnum(FurnishingStatus)
+  furnishing?: FurnishingStatus;
+
+  @IsOptional() @IsArray() @IsString({ each: true })
+  amenities?: string[];
+
+  @IsOptional() @IsBoolean()
+  petFriendly?: boolean;
 }
 
 
@@ -47,11 +71,11 @@ export class PostListingDto {
   category: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   brand: string;
 
   @IsString()
-  @IsNotEmpty()
+  @IsOptional()
   condition: string;
 
   @ValidateNested()
@@ -70,6 +94,16 @@ export class PostListingDto {
     shipping: boolean;
     shippingFee?: number;
   };
+
+
+  @IsOptional()
+  @IsEnum(TransactionType)
+  transactionType?: TransactionType;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PropertyDetailsDto)
+  propertyDetails?: PropertyDetailsDto;
 }
 
 export class SaveListingDraftDto {

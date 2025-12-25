@@ -16,7 +16,7 @@ export class ListingController {
   constructor(private readonly listingService: ListingServices) { }
 
 
-  @Get()
+  @Get("search")
   async searchListings(
     @Query() query: ListingQueryDto,
     @Req() req: any

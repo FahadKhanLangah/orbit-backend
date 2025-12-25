@@ -56,7 +56,9 @@ export class ListingServices {
       expiry: dto.expiry,
       image: imageKeys,
       video: videoKey,
-      status: ListingStatus.ACTIVE
+      status: ListingStatus.ACTIVE,
+      propertyDetails: dto.propertyDetails,
+      transactionType: dto.transactionType
     };
     if (dto.location) {
       const geoLocation = dto.location.toGeoJSON();
@@ -256,7 +258,8 @@ export class ListingServices {
       radius,
       page = 1,
       limit = 10,
-      sort
+      sort,
+      transactionType, propertyType, bedrooms, bathrooms
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -287,6 +290,21 @@ export class ListingServices {
           $maxDistance: radius * 1000,
         },
       };
+    }
+    if (transactionType) {
+      filter.transactionType = transactionType;
+    }
+
+    // 57. Property Type (Nested field)
+    if (propertyType) {
+      filter['propertyDetails.type'] = propertyType;
+    }
+
+    if (bedrooms) {
+      filter['propertyDetails.bedrooms'] = { $gte: bedrooms };
+    }
+    if (bathrooms) {
+      filter['propertyDetails.bathrooms'] = { $gte: bathrooms };
     }
 
     const skip = (page - 1) * limit;

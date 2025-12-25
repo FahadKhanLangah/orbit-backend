@@ -12,6 +12,28 @@ export enum PricingStructure {
   NEGOTIABLE = "negotiable"
 }
 
+export enum TransactionType {
+  BUY = 'buy',
+  RENT = 'rent',
+  LEASE = 'lease'
+}
+
+export enum PropertyType {
+  HOUSE = 'house',
+  APARTMENT = 'apartment',
+  LAND = 'land',
+  COMMERCIAL = 'commercial',
+  CONDO = 'condo'
+}
+
+export enum FurnishingStatus {
+  FURNISHED = 'furnished',
+  SEMI_FURNISHED = 'semi-furnished',
+  UNFURNISHED = 'unfurnished'
+}
+
+
+
 export interface IListing extends Document {
   title: string;
   description?: string;
@@ -38,6 +60,18 @@ export interface IListing extends Document {
   };
   expiryDate: Date;
   isExpired: boolean;
+  // --- NEW: Real Estate Specifics ---
+  transactionType?: TransactionType; // Buy/Rent/Lease
+
+  propertyDetails?: {
+    type: PropertyType;          // House/Apartment
+    bedrooms?: number;            // Feature 58
+    bathrooms?: number;           // Feature 59
+    areaSqFt?: number;            // Feature 60
+    furnishing?: FurnishingStatus;// Feature 61
+    amenities?: string[];         // Feature 62: ['Pool', 'Gym', 'Parking']
+    petFriendly?: boolean;
+  };
 }
 
 export const ListingSchema = new mongoose.Schema<IListing>({
@@ -49,7 +83,7 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   category: { type: String, required: true },
   brand: { type: String },
   video: { type: String },
-  condition: { type: String, required: true },
+  condition: { type: String },
   location: {
     type: {
       type: String,
@@ -57,10 +91,25 @@ export const ListingSchema = new mongoose.Schema<IListing>({
       default: "Point"
     },
     coordinates: {
-      type: [Number],  // [lng, lat]
+      type: [Number],
       index: '2dsphere'
     },
     address: { type: String }
+  },
+
+  transactionType: {
+    type: String,
+    enum: Object.values(TransactionType),
+    default: TransactionType.BUY
+  },
+  propertyDetails: {
+    type: { type: String, enum: Object.values(PropertyType) },
+    bedrooms: { type: Number },
+    bathrooms: { type: Number },
+    areaSqFt: { type: Number },
+    furnishing: { type: String, enum: Object.values(FurnishingStatus) },
+    amenities: [{ type: String }],
+    petFriendly: { type: Boolean, default: false }
   },
 
   impressions: {
@@ -74,7 +123,7 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   deliveryOptions: {
     pickup: { type: Boolean, default: true },
     shipping: { type: Boolean, default: false },
-    shippingFee: { type: Number, default: 0 } 
+    shippingFee: { type: Number, default: 0 }
   },
   expiryDate: {
     type: Date,
@@ -89,6 +138,9 @@ ListingSchema.index({
   category: "text",
   brand: "text"
 });
+
+ListingSchema.index({ 'propertyDetails.bedrooms': 1, 'propertyDetails.type': 1 });
+ListingSchema.index({ transactionType: 1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);
