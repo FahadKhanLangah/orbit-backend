@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum } from "class-validator";
 import { Type } from "class-transformer";
-import { PropertyType, TransactionType } from "../entity/listing.entity";
+import { FurnishingStatus, PropertyType, TransactionType } from "../entity/listing.entity";
 
 
 export class ListingQueryDto {
@@ -66,8 +66,17 @@ export class ListingQueryDto {
   propertyType?: PropertyType;
 
   @IsOptional() @IsNumber() @Type(() => Number)
-  bedrooms?: number; 
+  bedrooms?: number;
 
   @IsOptional() @IsNumber() @Type(() => Number)
   bathrooms?: number;
+
+  @IsOptional() @IsNumber() @Type(() => Number)
+  minSqFt?: number;
+
+  @IsOptional() @IsEnum(FurnishingStatus)
+  furnishing?: FurnishingStatus;
+
+  @IsOptional() @IsString()
+  amenities?: string;
 }

@@ -169,7 +169,6 @@ export class ListingServices {
     };
   }
 
-
   async updateDraft(id: string, userId: string, dto: SaveListingDraftDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
     const fullText = `${dto.title} ${dto.description || ''}`;
     this.moderationService.checkProhibitedContent(fullText);
@@ -259,7 +258,8 @@ export class ListingServices {
       page = 1,
       limit = 10,
       sort,
-      transactionType, propertyType, bedrooms, bathrooms
+      transactionType, propertyType, bedrooms, bathrooms,
+      minSqFt, furnishing, amenities
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -305,6 +305,20 @@ export class ListingServices {
     }
     if (bathrooms) {
       filter['propertyDetails.bathrooms'] = { $gte: bathrooms };
+    }
+    if (minSqFt) {
+      filter['propertyDetails.areaSqFt'] = { $gte: minSqFt };
+    }
+    if (furnishing) {
+      filter['propertyDetails.furnishing'] = furnishing;
+    }
+
+    if (amenities) {
+      const amenitiesArray = amenities.split(','); 
+
+      filter['propertyDetails.amenities'] = {
+        $all: amenitiesArray 
+      };
     }
 
     const skip = (page - 1) * limit;
