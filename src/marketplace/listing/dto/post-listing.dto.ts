@@ -1,6 +1,6 @@
-import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean } from 'class-validator';
+import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FurnishingStatus, PropertyType, TransactionType } from '../entity/listing.entity';
+import { FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -45,6 +45,33 @@ class PropertyDetailsDto {
 
   @IsOptional() @IsBoolean()
   petFriendly?: boolean;
+}
+
+class VehicleDetailsDto {
+  @IsEnum(VehicleType)
+  type: VehicleType;
+
+  @IsString() @IsNotEmpty()
+  make: string;
+
+  @IsString() @IsNotEmpty()
+  model: string;
+
+  @IsNumber()
+  @Min(1900) @Max(new Date().getFullYear() + 1)
+  year: number;
+
+  @IsNumber() @Min(0)
+  mileage: number;
+
+  @IsEnum(TransmissionType)
+  transmission: TransmissionType;
+
+  @IsEnum(FuelType)
+  fuel: FuelType;
+
+  @IsOptional() @IsString()
+  color?: string;
 }
 
 
@@ -104,6 +131,11 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => PropertyDetailsDto)
   propertyDetails?: PropertyDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VehicleDetailsDto)
+  vehicleDetails?: VehicleDetailsDto;
 }
 
 export class SaveListingDraftDto {
@@ -152,4 +184,9 @@ export class SaveListingDraftDto {
     shipping: boolean;
     shippingFee?: number;
   };
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => VehicleDetailsDto)
+  vehicleDetails?: VehicleDetailsDto;
 }

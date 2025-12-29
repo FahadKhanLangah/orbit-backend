@@ -67,6 +67,9 @@ export class ListingServices {
     if (dto.deliveryOptions) {
       doc.deliveryOptions = dto.deliveryOptions;
     }
+    if (dto.vehicleDetails) {
+      doc.vehicleDetails = dto.vehicleDetails
+    }
     const created = await this.listingModel.create(doc);
     return created;
   }
@@ -259,7 +262,7 @@ export class ListingServices {
       limit = 10,
       sort,
       transactionType, propertyType, bedrooms, bathrooms,
-      minSqFt, furnishing, amenities
+      minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -314,11 +317,34 @@ export class ListingServices {
     }
 
     if (amenities) {
-      const amenitiesArray = amenities.split(','); 
+      const amenitiesArray = amenities.split(',');
 
       filter['propertyDetails.amenities'] = {
-        $all: amenitiesArray 
+        $all: amenitiesArray
       };
+    }
+
+    if (make) {
+      filter['vehicleDetails.make'] = new RegExp(make, 'i');
+    }
+    if (model) {
+      filter['vehicleDetails.model'] = new RegExp(model, 'i');
+    }
+
+    if (minYear) {
+      filter['vehicleDetails.year'] = { $gte: minYear };
+    }
+
+    if (maxMileage) {
+      filter['vehicleDetails.mileage'] = { $lte: maxMileage };
+    }
+
+    if (transmission) {
+      filter['vehicleDetails.transmission'] = transmission;
+    }
+
+    if (fuel) {
+      filter['vehicleDetails.fuel'] = fuel;
     }
 
     const skip = (page - 1) * limit;

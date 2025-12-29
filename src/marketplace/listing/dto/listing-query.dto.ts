@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum } from "class-validator";
 import { Type } from "class-transformer";
-import { FurnishingStatus, PropertyType, TransactionType } from "../entity/listing.entity";
+import { FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType } from "../entity/listing.entity";
 
 
 export class ListingQueryDto {
@@ -79,4 +79,22 @@ export class ListingQueryDto {
 
   @IsOptional() @IsString()
   amenities?: string;
+
+  @IsOptional() @IsString()
+  make?: string;
+
+  @IsOptional() @IsString()
+  model?: string;
+
+  @IsOptional() @IsNumber() @Type(() => Number)
+  minYear?: number;
+
+  @IsOptional() @IsNumber() @Type(() => Number)
+  maxMileage?: number;
+
+  @IsOptional() @IsEnum(TransmissionType)
+  transmission?: TransmissionType;
+
+  @IsOptional() @IsEnum(FuelType)
+  fuel?: FuelType;
 }

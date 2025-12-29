@@ -32,6 +32,30 @@ export enum FurnishingStatus {
   UNFURNISHED = 'unfurnished'
 }
 
+export enum VehicleType {
+  CAR = 'car',
+  BIKE = 'bike',
+  TRUCK = 'truck',
+  BUS = 'bus',
+  BOAT = 'boat',
+  OTHER = 'other'
+}
+
+export enum TransmissionType {
+  AUTOMATIC = 'automatic',
+  MANUAL = 'manual',
+  CVT = 'cvt'
+}
+
+export enum FuelType {
+  PETROL = 'petrol',
+  DIESEL = 'diesel',
+  HYBRID = 'hybrid',
+  ELECTRIC = 'electric',
+  LPG = 'lpg',
+  CNG = 'cng'
+}
+
 
 
 export interface IListing extends Document {
@@ -71,6 +95,18 @@ export interface IListing extends Document {
     furnishing?: FurnishingStatus;// Feature 61
     amenities?: string[];         // Feature 62: ['Pool', 'Gym', 'Parking']
     petFriendly?: boolean;
+  };
+
+  vehicleDetails?: {
+    type: VehicleType;          // Feature 66
+    make: string;               // Feature 67 (e.g. Toyota)
+    model: string;              // Feature 67 (e.g. Corolla)
+    year: number;               // Feature 67 (e.g. 2022)
+    mileage: number;            // Feature 68 (Odometer)
+    transmission: TransmissionType; // Feature 69
+    fuel: FuelType;             // Feature 70
+    color?: string;
+    registeredCity?: string;
   };
 }
 
@@ -116,6 +152,17 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     inDays: { type: Number, default: 0 },
     totalImpressions: { type: Number, default: 0 },
   },
+  vehicleDetails: {
+    type: { type: String, enum: Object.values(VehicleType) },
+    make: { type: String, trim: true },
+    model: { type: String, trim: true },
+    year: { type: Number },
+    mileage: { type: Number },
+    transmission: { type: String, enum: Object.values(TransmissionType) },
+    fuel: { type: String, enum: Object.values(FuelType) },
+    color: { type: String },
+    registeredCity: { type: String }
+  },
   status: { type: String, default: ListingStatus.DRAFT, enum: ListingStatus },
   expiry: { type: Date },
   postBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -141,6 +188,8 @@ ListingSchema.index({
 
 ListingSchema.index({ 'propertyDetails.bedrooms': 1, 'propertyDetails.type': 1 });
 ListingSchema.index({ transactionType: 1 });
+ListingSchema.index({ 'vehicleDetails.make': 1, 'vehicleDetails.model': 1 });
+ListingSchema.index({ 'vehicleDetails.year': -1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);
