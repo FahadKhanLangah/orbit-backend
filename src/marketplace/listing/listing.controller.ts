@@ -25,6 +25,7 @@ export class ListingController {
     return this.listingService.searchListings(query, userId);
   }
 
+
   @Get('reports')
   async getReports(@Req() req) {
     return this.listingService.getReports();
@@ -150,6 +151,22 @@ export class ListingController {
       throw new BadRequestException('Hide status must be a boolean');
     }
     return this.listingService.setListingVisibility(req.user._id, listingId, hide);
+  }
+
+  @Get('negotiation-options/:listingId')
+  async getNegotiationOptions(@Param('listingId') id: string) {
+    const listing = await this.listingService.findById(id);
+    const price = listing.price;
+
+    return {
+      listingId: id,
+      originalPrice: price,
+      quickOffers: [
+        { label: "5% Off", value: price * 0.95 },
+        { label: "10% Off", value: price * 0.90 },
+        { label: "Lowball (15% Off)", value: price * 0.85 }
+      ]
+    };
   }
 
 

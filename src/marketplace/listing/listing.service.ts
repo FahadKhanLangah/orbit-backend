@@ -543,6 +543,11 @@ export class ListingServices {
     return await listing.save();
   }
 
+  async findById(listingId: string) {
+    return this.listingModel.findById(listingId);
+  }
+
+
   private async logSearchHistory(userId: string, query: ListingQueryDto) {
     const { page, limit, sort, ...filtersToSave } = query;
     if (Object.keys(filtersToSave).length === 0) return;
@@ -564,10 +569,12 @@ export class ListingServices {
   }
 
 
-  @Cron('0 0 * * *')
-  async resetDailyImpressions() {
-    await this.listingModel.updateMany({}, {
-      $set: { "impressions.inDays": 0 }
-    });
+
+
+    @Cron('0 0 * * *')
+    async resetDailyImpressions() {
+      await this.listingModel.updateMany({}, {
+        $set: { "impressions.inDays": 0 }
+      });
+    }
   }
-}

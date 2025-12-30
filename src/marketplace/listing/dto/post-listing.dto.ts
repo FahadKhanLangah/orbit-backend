@@ -45,6 +45,14 @@ class PropertyDetailsDto {
 
   @IsOptional() @IsBoolean()
   petFriendly?: boolean;
+
+  @IsOptional()
+  @IsString()
+  vin?: string;
+
+  @IsOptional()
+  @IsString()
+  historyNotes?: string;
 }
 
 class VehicleDetailsDto {
@@ -96,6 +104,10 @@ export class PostListingDto {
   @IsString()
   @IsNotEmpty()
   category: string;
+
+  @IsOptional()
+  @IsString()
+  threeSixtyImageUrl?: string;
 
   @IsString()
   @IsOptional()
@@ -156,6 +168,10 @@ export class SaveListingDraftDto {
   @IsOptional()
   pricing: string
 
+  @IsOptional()
+  @IsString()
+  threeSixtyImageUrl?: string;
+  
   @IsString()
   @IsOptional()
   category: string;

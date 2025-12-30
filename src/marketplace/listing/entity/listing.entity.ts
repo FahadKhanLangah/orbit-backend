@@ -64,6 +64,7 @@ export interface IListing extends Document {
   price?: number;
   pricing?: string;
   image: string[];
+  threeSixtyImageUrl?: string;
   category: string;
   brand: string;
   video?: string;
@@ -87,6 +88,7 @@ export interface IListing extends Document {
   // --- NEW: Real Estate Specifics ---
   transactionType?: TransactionType; // Buy/Rent/Lease
 
+
   propertyDetails?: {
     type: PropertyType;          // House/Apartment
     bedrooms?: number;            // Feature 58
@@ -101,12 +103,14 @@ export interface IListing extends Document {
     type: VehicleType;          // Feature 66
     make: string;               // Feature 67 (e.g. Toyota)
     model: string;              // Feature 67 (e.g. Corolla)
-    year: number;               // Feature 67 (e.g. 2022)
-    mileage: number;            // Feature 68 (Odometer)
-    transmission: TransmissionType; // Feature 69
-    fuel: FuelType;             // Feature 70
+    year: number;
+    mileage: number;
+    transmission: TransmissionType;
+    fuel: FuelType;
     color?: string;
     registeredCity?: string;
+    vin?: string;
+    historyNotes?: string;
   };
 }
 
@@ -116,6 +120,7 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   price: { type: Number },
   pricing: { type: String, default: PricingStructure.FIXED, enum: PricingStructure },
   image: [{ type: String }], // keys or urls
+  threeSixtyImageUrl: { type: String },
   category: { type: String, required: true },
   brand: { type: String },
   video: { type: String },
@@ -161,7 +166,9 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     transmission: { type: String, enum: Object.values(TransmissionType) },
     fuel: { type: String, enum: Object.values(FuelType) },
     color: { type: String },
-    registeredCity: { type: String }
+    registeredCity: { type: String },
+    vin: { type: String, trim: true },
+    historyNotes: { type: String }
   },
   status: { type: String, default: ListingStatus.DRAFT, enum: ListingStatus },
   expiry: { type: Date },
