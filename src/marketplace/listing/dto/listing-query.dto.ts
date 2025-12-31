@@ -1,6 +1,6 @@
-import { IsOptional, IsString, IsNumber, IsEnum } from "class-validator";
+import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean } from "class-validator";
 import { Type } from "class-transformer";
-import { FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType } from "../entity/listing.entity";
+import { Condition, FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType } from "../entity/listing.entity";
 
 
 export class ListingQueryDto {
@@ -97,4 +97,11 @@ export class ListingQueryDto {
 
   @IsOptional() @IsEnum(FuelType)
   fuel?: FuelType;
+
+  @IsOptional() @IsBoolean() @Type(() => Boolean) // Transform "true" string to boolean
+  hasWarranty?: boolean;
+
+  @IsOptional()
+  @IsString()
+  brand?: string;
 }

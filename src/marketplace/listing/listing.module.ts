@@ -29,7 +29,8 @@ import { ContentModerationService } from 'src/common/services/content-moderation
       { name: 'Review', schema: ReviewSchema }
     ]),
     FileUploaderModule,
-    AuthModule
+    AuthModule,
+    
   ],
   providers: [
     ListingServices, OfferService, ReviewService, ContentModerationService

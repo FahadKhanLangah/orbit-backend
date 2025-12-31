@@ -13,6 +13,8 @@ import { IReport } from './entity/report.entity';
 import { IListingEngagement } from './entity/user-engagement.entity';
 import { UpdateListingDto } from './dto/update-listing.dto';
 import { ContentModerationService } from 'src/common/services/content-moderation.service';
+import { NotificationEmitterAdminService } from 'src/api/admin_panel/other/notification_emitter_admin.service';
+import { CreateAdminNotificationDto } from 'src/api/admin_notification/dto/create-admin_notification.dto';
 
 @Injectable()
 export class ListingServices {
@@ -24,7 +26,7 @@ export class ListingServices {
     @InjectModel("Report") private readonly reportModel: Model<IReport>,
     @InjectModel('ListingEngagement') private readonly engagementModel: Model<IListingEngagement>,
     private readonly moderationService: ContentModerationService,
-    private readonly fileUploaderServices: FileUploaderService
+    private readonly fileUploaderServices: FileUploaderService,
   ) { }
 
   async postListing(userId: string, dto: PostListingDto, files?: { images?: Express.Multer.File[], video?: Express.Multer.File[] }) {
@@ -71,6 +73,7 @@ export class ListingServices {
       doc.vehicleDetails = dto.vehicleDetails
     }
     const created = await this.listingModel.create(doc);
+    this.checkAndNotifyUsers(created).catch(err => console.error(err));
     return created;
   }
 
@@ -262,7 +265,8 @@ export class ListingServices {
       limit = 10,
       sort,
       transactionType, propertyType, bedrooms, bathrooms,
-      minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel
+      minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel,
+      brand, hasWarranty,
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -547,6 +551,30 @@ export class ListingServices {
     return this.listingModel.findById(listingId);
   }
 
+  async compareListings(ids: string[]) {
+    if (!ids || ids.length < 2) {
+      throw new BadRequestException("Select at least 2 items to compare.");
+    }
+    if (ids.length > 3) {
+      throw new BadRequestException("You can compare a maximum of 3 items.");
+    }
+
+    // 2. Fetch all listings
+    const listings = await this.listingModel.find({ _id: { $in: ids } });
+
+    if (listings.length !== ids.length) {
+      throw new NotFoundException("One or more items could not be found.");
+    }
+
+    const firstCategory = listings[0].category;
+    const isSameCategory = listings.every(item => item.category === firstCategory);
+
+    if (!isSameCategory) {
+      throw new BadRequestException("All items in comparison must be from the same category.");
+    }
+
+    return listings;
+  }
 
   private async logSearchHistory(userId: string, query: ListingQueryDto) {
     const { page, limit, sort, ...filtersToSave } = query;
@@ -568,13 +596,35 @@ export class ListingServices {
     );
   }
 
+  private async checkAndNotifyUsers(listing: IListing) {
+    if (listing.category !== 'vehicles' || !listing.vehicleDetails) return;
 
+    const { make, model } = listing.vehicleDetails;
+    const matchingSearches = await this.searchHistoryModel.find({
+      isActive: true,
+      alerts: true,
+      'criteria.category': 'vehicles',
+      'criteria.make': make,
+      'criteria.model': { $regex: new RegExp(`^${model}$`, 'i') }
+    }).populate('user', 'email fcmToken');
 
+    for (const search of matchingSearches) {
+      const user = search.user as any;
+      const dto = new CreateAdminNotificationDto();
+      // dto.title = 'New Vehicle Listing Alert';
+      // dto.content = `A new ${make} ${model} listing has been posted that matches your alert criteria. Check it out now!`;
+      // await this.notificationEmitterAdminService.emitNotification(dto);
 
-    @Cron('0 0 * * *')
-    async resetDailyImpressions() {
-      await this.listingModel.updateMany({}, {
-        $set: { "impressions.inDays": 0 }
-      });
+      console.log(dto, user);
     }
   }
+
+
+
+  @Cron('0 0 * * *')
+  async resetDailyImpressions() {
+    await this.listingModel.updateMany({}, {
+      $set: { "impressions.inDays": 0 }
+    });
+  }
+}

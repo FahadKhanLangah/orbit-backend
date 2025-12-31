@@ -56,6 +56,12 @@ export enum FuelType {
   CNG = 'cng'
 }
 
+export enum Condition {
+  NEW = 'new',
+  USED = 'used',
+  REFURBISHED = 'refurbished',
+  OPEN_BOX = 'open_box'
+}
 
 
 export interface IListing extends Document {
@@ -112,6 +118,13 @@ export interface IListing extends Document {
     vin?: string;
     historyNotes?: string;
   };
+
+  warranty?: {
+    available: boolean;
+    duration?: string;
+    expiryDate?: Date;
+  };
+  specifications?: Map<string, string>;
 }
 
 export const ListingSchema = new mongoose.Schema<IListing>({
@@ -183,7 +196,16 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     type: Date,
     default: () => new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
   },
-  isExpired: { type: Boolean, default: false }
+  isExpired: { type: Boolean, default: false },
+  warranty: {
+    available: { type: Boolean, default: false },
+    duration: { type: String },
+    expiryDate: { type: Date }
+  },
+  specifications: {
+    type: Map,
+    of: String
+  }
 }, { timestamps: true });
 
 ListingSchema.index({
@@ -197,6 +219,7 @@ ListingSchema.index({ 'propertyDetails.bedrooms': 1, 'propertyDetails.type': 1 }
 ListingSchema.index({ transactionType: 1 });
 ListingSchema.index({ 'vehicleDetails.make': 1, 'vehicleDetails.model': 1 });
 ListingSchema.index({ 'vehicleDetails.year': -1 });
+ListingSchema.index({ 'warranty.available': 1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);

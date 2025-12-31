@@ -71,6 +71,14 @@ export class ListingController {
     return this.listingService.getListings(req.user._id, query);
   }
 
+  @Get('compare')
+  async compare(@Query('ids') ids: string) {
+    if (!ids) throw new BadRequestException("No IDs provided");
+    const idArray = ids.split(',').map(id => id.trim());
+
+    return this.listingService.compareListings(idArray);
+  }
+
   @Patch('draft/:id')
   @UseInterceptors(FileFieldsInterceptor([
     { name: 'images', maxCount: 5 },
@@ -168,6 +176,8 @@ export class ListingController {
       ]
     };
   }
+
+
 
 
 }

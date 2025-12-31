@@ -24,6 +24,17 @@ export class LocationDto {
   }
 }
 
+class WarrantyDto {
+  @IsBoolean()
+  available: boolean;
+
+  @IsOptional() @IsString()
+  duration?: string;
+
+  @IsOptional() @IsDate() @Type(() => Date)
+  expiryDate?: Date;
+}
+
 class PropertyDetailsDto {
   @IsEnum(PropertyType)
   type: PropertyType;
@@ -117,6 +128,11 @@ export class PostListingDto {
   @IsOptional()
   condition: string;
 
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => WarrantyDto)
+  warranty?: WarrantyDto;
+
   @ValidateNested()
   @Type(() => LocationDto)
   @IsOptional()
@@ -148,6 +164,8 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => VehicleDetailsDto)
   vehicleDetails?: VehicleDetailsDto;
+
+  @IsOptional() specifications?: Record<string, string>;
 }
 
 export class SaveListingDraftDto {
@@ -171,7 +189,7 @@ export class SaveListingDraftDto {
   @IsOptional()
   @IsString()
   threeSixtyImageUrl?: string;
-  
+
   @IsString()
   @IsOptional()
   category: string;
@@ -183,6 +201,11 @@ export class SaveListingDraftDto {
   @IsString()
   @IsOptional()
   condition: string;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => WarrantyDto)
+  warranty?: WarrantyDto;
 
   @ValidateNested()
   @Type(() => LocationDto)
@@ -205,4 +228,6 @@ export class SaveListingDraftDto {
   @ValidateNested()
   @Type(() => VehicleDetailsDto)
   vehicleDetails?: VehicleDetailsDto;
+
+  @IsOptional() specifications?: Record<string, string>;
 }
