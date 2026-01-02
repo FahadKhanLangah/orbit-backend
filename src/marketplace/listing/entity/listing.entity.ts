@@ -63,6 +63,13 @@ export enum Condition {
   OPEN_BOX = 'open_box'
 }
 
+export enum DimensionUnit {
+  CM = 'cm',
+  INCH = 'in',
+  FT = 'ft',
+  M = 'm'
+}
+
 
 export interface IListing extends Document {
   title: string;
@@ -88,6 +95,7 @@ export interface IListing extends Document {
     pickup: boolean;
     shipping: boolean;
     shippingFee?: number;
+    transportNotes?: string;
   };
   expiryDate: Date;
   isExpired: boolean;
@@ -125,6 +133,16 @@ export interface IListing extends Document {
     expiryDate?: Date;
   };
   specifications?: Map<string, string>;
+  dimensions?: {
+    length: number;
+    width: number;
+    height: number;
+    unit: DimensionUnit;
+    weight?: number;
+    weightUnit?: 'kg' | 'lb';
+  };
+
+
 }
 
 export const ListingSchema = new mongoose.Schema<IListing>({
@@ -183,6 +201,14 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     vin: { type: String, trim: true },
     historyNotes: { type: String }
   },
+  dimensions: {
+    length: { type: Number },
+    width: { type: Number },
+    height: { type: Number },
+    unit: { type: String, enum: Object.values(DimensionUnit), default: DimensionUnit.CM },
+    weight: { type: Number },
+    weightUnit: { type: String, enum: ['kg', 'lb'] }
+  },
   status: { type: String, default: ListingStatus.DRAFT, enum: ListingStatus },
   expiry: { type: Date },
   postBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -190,7 +216,8 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   deliveryOptions: {
     pickup: { type: Boolean, default: true },
     shipping: { type: Boolean, default: false },
-    shippingFee: { type: Number, default: 0 }
+    shippingFee: { type: Number, default: 0 },
+    transportNotes: { type: String, maxlength: 300 }
   },
   expiryDate: {
     type: Date,

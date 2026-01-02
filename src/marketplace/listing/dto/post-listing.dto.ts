@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { DimensionUnit, FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -93,6 +93,22 @@ class VehicleDetailsDto {
   color?: string;
 }
 
+class DimensionsDto {
+  @IsNumber()
+  length: number;
+
+  @IsNumber()
+  width: number;
+
+  @IsNumber()
+  height: number;
+
+  @IsEnum(DimensionUnit)
+  unit: DimensionUnit;
+
+  @IsOptional() @IsNumber()
+  weight?: number;
+}
 
 export class PostListingDto {
   @IsString()
@@ -148,6 +164,7 @@ export class PostListingDto {
     pickup: boolean;
     shipping: boolean;
     shippingFee?: number;
+    transportNotes?: string;
   };
 
 
@@ -164,6 +181,11 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => VehicleDetailsDto)
   vehicleDetails?: VehicleDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => DimensionsDto)
+  dimensions?: DimensionsDto;
 
   @IsOptional() specifications?: Record<string, string>;
 }
@@ -222,6 +244,7 @@ export class SaveListingDraftDto {
     pickup: boolean;
     shipping: boolean;
     shippingFee?: number;
+    transportNotes?: string;
   };
 
   @IsOptional()

@@ -575,6 +575,41 @@ export class ListingServices {
 
     return listings;
   }
+  
+  getPhotoGuidelines(category: string): string[] {
+    const guidelines: Record<string, string[]> = {
+      'vehicles': [
+        'Front Corner (Best for cover)',
+        'Rear Angle',
+        'Interior / Dashboard',
+        'Engine Bay',
+        'Trunk / Boot',
+        'Any Scratches/Dents'
+      ],
+      'electronics': [
+        'Screen (On)',
+        'Back / Model Number',
+        'Ports / Connectors',
+        'Accessories included'
+      ],
+      'real-estate': [
+        'Living Room',
+        'Kitchen',
+        'Master Bedroom',
+        'Bathroom',
+        'Exterior / View'
+      ],
+      'furniture': [
+        'Full View',
+        'Texture/Fabric Detail',
+        'Scale reference',
+        'Defects (if any)'
+      ]
+    };
+
+    // Return specific guidelines or a generic default
+    return guidelines[category] || ['Front View', 'Back View', 'Label/Tags', 'Defects'];
+  }
 
   private async logSearchHistory(userId: string, query: ListingQueryDto) {
     const { page, limit, sort, ...filtersToSave } = query;
@@ -618,8 +653,6 @@ export class ListingServices {
       console.log(dto, user);
     }
   }
-
-
 
   @Cron('0 0 * * *')
   async resetDailyImpressions() {

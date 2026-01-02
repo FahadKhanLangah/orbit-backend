@@ -128,6 +128,10 @@ export class ListingController {
     return this.listingService.renewListing(userId, id);
   }
 
+  @Get('photo-guidelines')
+  getPhotoGuidelines(@Query('category') category: string) {
+    return this.listingService.getPhotoGuidelines(category);
+  }
 
   @Post('report/:id')
   async reportListing(
