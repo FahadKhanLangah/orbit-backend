@@ -74,6 +74,7 @@ import { GooglePayModule } from "./google-pay/google-pay.module";
 import { MusicModule } from './music/music.module';
 import { ListingModule } from "./marketplace/listing/listing.module";
 import { MarketPlaceUserModule } from "./marketplace/user/marketuser.module";
+import { ServiceBookingModule } from "./marketplace/booking/service-booking.module";
 
 
 
@@ -160,7 +161,8 @@ import { MarketPlaceUserModule } from "./marketplace/user/marketuser.module";
     GooglePayModule,
     MusicModule,
     ListingModule,
-    MarketPlaceUserModule
+    MarketPlaceUserModule,
+    ServiceBookingModule
   ],
   controllers: [AppController],
   providers: [

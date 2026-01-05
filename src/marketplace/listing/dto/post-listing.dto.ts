@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DimensionUnit, FuelType, FurnishingStatus, PetGender, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { DimensionUnit, FuelType, FurnishingStatus, PetGender, PricingModel, PropertyType, ServiceCategory, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -124,6 +124,24 @@ class ClothingDetailsDto {
   gender?: string;
 }
 
+class ServiceDetailsDto {
+  @IsEnum(ServiceCategory)
+  category: ServiceCategory;
+
+  @IsString() @IsNotEmpty()
+  subCategory: string;
+
+  @IsEnum(PricingModel)
+  pricingModel: PricingModel;
+
+  @IsArray()
+  @IsString({ each: true })
+  availableDays: string[];
+
+  @IsOptional() @IsNumber()
+  experienceYears?: number;
+}
+
 class VaccineDto {
   @IsString() @IsNotEmpty()
   name: string;
@@ -243,6 +261,11 @@ export class PostListingDto {
   petDetails?: PetDetailsDto;
 
   @IsOptional() specifications?: Record<string, string>;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ServiceDetailsDto)
+  serviceDetails?: ServiceDetailsDto;
 }
 
 export class SaveListingDraftDto {
@@ -308,4 +331,9 @@ export class SaveListingDraftDto {
   vehicleDetails?: VehicleDetailsDto;
 
   @IsOptional() specifications?: Record<string, string>;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ServiceDetailsDto)
+  serviceDetails?: ServiceDetailsDto;
 }

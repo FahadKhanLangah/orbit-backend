@@ -80,6 +80,19 @@ export enum PetGender {
   FEMALE = 'female'
 }
 
+export enum ServiceCategory {
+  HOME = 'home',           // Cleaning, Plumbing, Repair
+  PROFESSIONAL = 'professional', // Legal, Accounting, Tech
+  PERSONAL = 'personal',   // Fitness, Beauty, Tutoring
+  EVENTS = 'events'        // Photography, Catering
+}
+
+export enum PricingModel {
+  HOURLY = 'hourly',
+  FIXED = 'fixed',
+  QUOTE = 'quote'
+}
+
 export interface IListing extends Document {
   title: string;
   description?: string;
@@ -108,8 +121,7 @@ export interface IListing extends Document {
   };
   expiryDate: Date;
   isExpired: boolean;
-  // --- NEW: Real Estate Specifics ---
-  transactionType?: TransactionType; // Buy/Rent/Lease
+  transactionType?: TransactionType;
 
 
   propertyDetails?: {
@@ -157,7 +169,6 @@ export interface IListing extends Document {
     gender?: string;
     brand?: string;
   };
-
   petDetails?: {
     animalType: string;
     breed: string;
@@ -171,7 +182,13 @@ export interface IListing extends Document {
     }[];
     certificateImage?: string;
   };
-
+  serviceDetails?: {
+    category: ServiceCategory;
+    subCategory: string;
+    pricingModel: PricingModel;
+    availableDays: string[];
+    experienceYears?: number;
+  };
 }
 
 export const ListingSchema = new mongoose.Schema<IListing>({
@@ -269,7 +286,13 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     gender: { type: String, enum: ['men', 'women', 'unisex', 'kids'] },
     brand: { type: String }
   },
-
+  serviceDetails: {
+    category: { type: String, enum: Object.values(ServiceCategory) },
+    subCategory: { type: String },
+    pricingModel: { type: String, enum: Object.values(PricingModel), default: PricingModel.QUOTE },
+    availableDays: [{ type: String }],
+    experienceYears: { type: Number }
+  },
   petDetails: {
     animalType: { type: String }, // e.g. "Dog"
     breed: { type: String, trim: true },
@@ -294,6 +317,7 @@ ListingSchema.index({ 'vehicleDetails.year': -1 });
 ListingSchema.index({ 'warranty.available': 1 });
 ListingSchema.index({ 'clothingDetails.size': 1, 'clothingDetails.color': 1 });
 ListingSchema.index({ 'petDetails.animalType': 1, 'petDetails.breed': 1 });
+ListingSchema.index({ 'serviceDetails.category': 1, 'serviceDetails.subCategory': 1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);
