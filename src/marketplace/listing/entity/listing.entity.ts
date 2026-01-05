@@ -70,6 +70,15 @@ export enum DimensionUnit {
   M = 'm'
 }
 
+export enum ClothingSize {
+  XS = 'XS', S = 'S', M = 'M', L = 'L', XL = 'XL', XXL = 'XXL',
+  US_30 = '30', US_32 = '32', US_34 = '34'
+}
+
+export enum PetGender {
+  MALE = 'male',
+  FEMALE = 'female'
+}
 
 export interface IListing extends Document {
   title: string;
@@ -141,7 +150,22 @@ export interface IListing extends Document {
     weight?: number;
     weightUnit?: 'kg' | 'lb';
   };
+  clothingDetails?: {
+    size: string;
+    color: string;
+    material?: string;
+    gender?: string;
+    brand?: string;
+  };
 
+  petDetails?: {
+    animalType: string;
+    breed: string;
+    age?: number;
+    ageUnit?: 'months' | 'years';
+    gender?: PetGender;
+    vaccinated?: boolean;
+  };
 
 }
 
@@ -232,6 +256,22 @@ export const ListingSchema = new mongoose.Schema<IListing>({
   specifications: {
     type: Map,
     of: String
+  },
+  clothingDetails: {
+    size: { type: String },
+    color: { type: String },
+    material: { type: String },
+    gender: { type: String, enum: ['men', 'women', 'unisex', 'kids'] },
+    brand: { type: String }
+  },
+
+  petDetails: {
+    animalType: { type: String }, // e.g. "Dog"
+    breed: { type: String, trim: true },
+    age: { type: Number },
+    ageUnit: { type: String, enum: ['months', 'years'] },
+    gender: { type: String, enum: Object.values(PetGender) },
+    vaccinated: { type: Boolean }
   }
 }, { timestamps: true });
 
@@ -247,6 +287,8 @@ ListingSchema.index({ transactionType: 1 });
 ListingSchema.index({ 'vehicleDetails.make': 1, 'vehicleDetails.model': 1 });
 ListingSchema.index({ 'vehicleDetails.year': -1 });
 ListingSchema.index({ 'warranty.available': 1 });
+ListingSchema.index({ 'clothingDetails.size': 1, 'clothingDetails.color': 1 });
+ListingSchema.index({ 'petDetails.animalType': 1, 'petDetails.breed': 1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);

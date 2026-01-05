@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DimensionUnit, FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { DimensionUnit, FuelType, FurnishingStatus, PetGender, PropertyType, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -110,6 +110,34 @@ class DimensionsDto {
   weight?: number;
 }
 
+class ClothingDetailsDto {
+  @IsString() @IsNotEmpty()
+  size: string;
+
+  @IsString() @IsNotEmpty()
+  color: string;
+
+  @IsOptional() @IsString()
+  brand?: string;
+
+  @IsOptional() @IsEnum(['men', 'women', 'unisex', 'kids'])
+  gender?: string;
+}
+
+class PetDetailsDto {
+  @IsString() @IsNotEmpty()
+  animalType: string;
+
+  @IsString() @IsNotEmpty()
+  breed: string;
+
+  @IsOptional() @IsEnum(PetGender)
+  gender?: PetGender;
+
+  @IsOptional() @IsNumber()
+  age?: number;
+}
+
 export class PostListingDto {
   @IsString()
   @IsNotEmpty()
@@ -186,6 +214,17 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => DimensionsDto)
   dimensions?: DimensionsDto;
+
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => ClothingDetailsDto)
+  clothingDetails?: ClothingDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => PetDetailsDto)
+  petDetails?: PetDetailsDto;
 
   @IsOptional() specifications?: Record<string, string>;
 }

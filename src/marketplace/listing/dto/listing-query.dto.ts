@@ -104,4 +104,16 @@ export class ListingQueryDto {
   @IsOptional()
   @IsString()
   brand?: string;
+
+  @IsOptional() @IsString()
+  size?: string;
+
+  @IsOptional() @IsString()
+  color?: string;
+
+  @IsOptional() @IsString()
+  animalType?: string;
+
+  @IsOptional() @IsString()
+  breed?: string;
 }

@@ -70,7 +70,13 @@ export class ListingServices {
       doc.deliveryOptions = dto.deliveryOptions;
     }
     if (dto.vehicleDetails) {
-      doc.vehicleDetails = dto.vehicleDetails
+      doc.vehicleDetails = dto.vehicleDetails;
+    }
+    if (dto.clothingDetails) {
+      doc.clothingDetails = dto.clothingDetails;
+    }
+    if (dto.petDetails) {
+      doc.clothingDetails = dto.clothingDetails;
     }
     const created = await this.listingModel.create(doc);
     this.checkAndNotifyUsers(created).catch(err => console.error(err));
@@ -266,7 +272,7 @@ export class ListingServices {
       sort,
       transactionType, propertyType, bedrooms, bathrooms,
       minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel,
-      brand, hasWarranty,
+      brand, hasWarranty, size, color, animalType, breed
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -349,6 +355,25 @@ export class ListingServices {
 
     if (fuel) {
       filter['vehicleDetails.fuel'] = fuel;
+    }
+    if (size) {
+      filter['clothingDetails.size'] = size;
+    }
+    if (color) {
+      filter['clothingDetails.color'] = new RegExp(color, 'i');
+    }
+    if (animalType) {
+      filter['petDetails.animalType'] = new RegExp(animalType, 'i');
+    }
+    if (hasWarranty) {
+      filter['clothingDetails.hasWarranty'] = hasWarranty;
+    }
+    if (brand) {
+      filter['clothingDetails.brand'] = brand;
+    }
+
+    if (breed) {
+      filter['petDetails.breed'] = new RegExp(breed, 'i');
     }
 
     const skip = (page - 1) * limit;
@@ -575,7 +600,7 @@ export class ListingServices {
 
     return listings;
   }
-  
+
   getPhotoGuidelines(category: string): string[] {
     const guidelines: Record<string, string[]> = {
       'vehicles': [
