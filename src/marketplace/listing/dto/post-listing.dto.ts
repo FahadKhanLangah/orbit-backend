@@ -124,6 +124,14 @@ class ClothingDetailsDto {
   gender?: string;
 }
 
+class VaccineDto {
+  @IsString() @IsNotEmpty()
+  name: string;
+
+  @IsDate() @Type(() => Date)
+  dateAdministered: Date;
+}
+
 class PetDetailsDto {
   @IsString() @IsNotEmpty()
   animalType: string;
@@ -136,6 +144,14 @@ class PetDetailsDto {
 
   @IsOptional() @IsNumber()
   age?: number;
+
+  @IsBoolean()
+  vaccinated: boolean;
+
+  @IsOptional()
+  @ValidateNested({ each: true })
+  @Type(() => VaccineDto)
+  vaccinations?: VaccineDto[];
 }
 
 export class PostListingDto {

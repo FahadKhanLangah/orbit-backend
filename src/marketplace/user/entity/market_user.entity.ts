@@ -7,7 +7,8 @@ export enum MarketUserRole {
 export enum BadgeType {
   VERIFIED = 'verified',
   TOP_SELLER = 'top_seller',
-  FAST_RESPONDER = 'fast_responder'
+  FAST_RESPONDER = 'fast_responder',
+  VERIFIED_BREEDER = 'verified_breeder'
 }
 
 
@@ -25,6 +26,12 @@ export interface IMarketUser extends Document {
   blockedUsers: mongoose.Types.ObjectId[];
   badges: BadgeType[];
   salesCount: number;
+  breederLicense: {
+    licenseNumber?: string,
+    documentImage?: string,
+    status?: string,
+    submittedAt?: Date
+  }
 }
 export const marketUserSchema = new mongoose.Schema<IMarketUser>(
   {
@@ -39,7 +46,13 @@ export const marketUserSchema = new mongoose.Schema<IMarketUser>(
     },
     blockedUsers: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }],
     badges: [{ type: String, enum: Object.values(BadgeType) }],
-    salesCount: { type: Number, default: 0 }
+    salesCount: { type: Number, default: 0 },
+    breederLicense: {
+      licenseNumber: { type: String },
+      documentImage: { type: String },
+      status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
+      submittedAt: { type: Date }
+    }
   }
 )
 

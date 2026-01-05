@@ -54,6 +54,7 @@ import { VerificationModule } from "../verification/verification.module";
 import { DriverModule } from "src/ride/driver/driver.module";
 import { RidesModule } from "src/ride/rides/rides.module";
 import { ListingModule } from "src/marketplace/listing/listing.module";
+import { MarketPlaceUserModule } from "src/marketplace/user/marketuser.module";
 @Module({
   controllers: [AdminPanelController],
   providers: [
@@ -103,6 +104,7 @@ import { ListingModule } from "src/marketplace/listing/listing.module";
     DriverModule,
     RidesModule,
     ListingModule,
+    MarketPlaceUserModule
   ],
 })
 export class AdminPanelModule { }

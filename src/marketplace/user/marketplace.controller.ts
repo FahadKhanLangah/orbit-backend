@@ -1,15 +1,18 @@
-import { Body, Delete, Get, Param, Patch, Post, Req, UseGuards } from '@nestjs/common';
+import { Body, Delete, Get, Param, Patch, Post, Req, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { MarketPlaceService } from './marketplace.service';
 import { CreateMarketUserDto } from './dto/create-marketUser.dto';
 import { SaveSearchDto } from './dto/save-search.dto';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('marketplace')
 export class MarketplaceController {
   constructor(
-    private readonly marketPlaceUserServices: MarketPlaceService
+    private readonly marketPlaceUserServices: MarketPlaceService,
+    private readonly fileUploader: FileUploaderService
   ) { }
 
   @Post("user/create")
@@ -62,6 +65,17 @@ export class MarketplaceController {
   @Patch('blocked-users/:id')
   async blockUser(@Req() req, @Param('id') userId: string) {
     return this.marketPlaceUserServices.blockUser(req.user._id, userId);
+  }
+
+  @Post('breeder-verification')
+  @UseInterceptors(FileInterceptor('licenseDoc'))
+  async applyForBreeder(
+    @Req() req,
+    @Body('licenseNumber') licenseNumber: string,
+    @UploadedFile() file: Express.Multer.File
+  ) {
+    const key = await this.fileUploader.uploadMediaFile(file, 'licenses', req.user._id);
+    return this.marketPlaceUserServices.submitBreederLicense(req.user._id, licenseNumber, key);
   }
 
 }

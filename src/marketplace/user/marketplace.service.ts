@@ -19,6 +19,43 @@ export class MarketPlaceService {
     private readonly savedSearchModel: Model<ISavedSearch>,
   ) { }
 
+  async submitBreederLicense(userId: string, licenseNumber: string, documentKey: string) {
+    return this.marketPlaceUserModel.findOneAndUpdate(
+      { userId: userId },
+      {
+        breederLicense: {
+          licenseNumber,
+          documentImage: documentKey,
+          status: 'pending',
+          submittedAt: new Date()
+        }
+      },
+      { new: true, upsert: true }
+    );
+  }
+
+  async getBreaderListforVerification(status: 'pending' | 'approved' | 'rejected' = 'pending') {
+    const breaderList = this.marketPlaceUserModel.find({
+      'breederLicense.status': status
+    })
+      .populate('userId', 'fullName email userImage')
+      .sort({ 'breederLicense.submittedAt': 1 });
+    if (!breaderList) {
+      throw new NotFoundException("No Breader List for verification is present");
+    }
+    return breaderList;
+  }
+
+  async approveBreeder(targetUserId: string) {
+    const user = await this.marketPlaceUserModel.findOne({ userId: targetUserId });
+    if (!user) throw new NotFoundException("User not found");
+    user.breederLicense.status = 'approved';
+    if (!user.badges.includes(BadgeType.VERIFIED_BREEDER)) {
+      user.badges.push(BadgeType.VERIFIED_BREEDER);
+    }
+    return user.save();
+  }
+
   async createProfile(createMarketUserDto: CreateMarketUserDto) {
     const existingMarketUser = await this.marketPlaceUserModel.findOne({ userId: createMarketUserDto.userId })
     if (existingMarketUser) {

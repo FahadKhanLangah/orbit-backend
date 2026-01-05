@@ -41,6 +41,7 @@ import { GetDriversFilterDto, UpdateDriverStatusDto } from "src/ride/driver/dto/
 import { RidesService } from "src/ride/rides/rides.service";
 import { PricingConfig } from "src/ride/rides/entity/pricing-config.schema";
 import { ListingServices } from "src/marketplace/listing/listing.service";
+import { MarketPlaceService } from "src/marketplace/user/marketplace.service";
 
 @UseGuards(IsSuperAdminGuard)
 @V1Controller("admin-panel")
@@ -54,7 +55,8 @@ export class AdminPanelController {
     private readonly verificationService: VerificationService,
     private readonly driverService: DriverService,
     private readonly rideService: RidesService,
-    private readonly listingService: ListingServices
+    private readonly listingService: ListingServices,
+    private readonly marketPlaceUserServices: MarketPlaceService
   ) { }
 
   @Get("listing/reports")
@@ -459,5 +461,16 @@ export class AdminPanelController {
     @Body() status: UpdateDriverStatusDto
   ) {
     return this.driverService.updateDriverStatus(Param.id, status)
+  }
+
+  @Get('/market-place/verification')
+  async getVerificationList(@Query('status') status: 'pending' | 'approved' | 'rejected') {
+    const filterStatus = status || 'pending';
+    return this.marketPlaceUserServices.getBreaderListforVerification(filterStatus);
+  }
+
+  @Patch('/market-place/approve-breeder/:userId')
+  async approveBreeder(@Param('userId') userId: string) {
+    return this.marketPlaceUserServices.approveBreeder(userId);
   }
 }

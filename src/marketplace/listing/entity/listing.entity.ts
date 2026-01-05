@@ -165,6 +165,11 @@ export interface IListing extends Document {
     ageUnit?: 'months' | 'years';
     gender?: PetGender;
     vaccinated?: boolean;
+    vaccinations?: {
+      name: string;
+      dateAdministered: Date;
+    }[];
+    certificateImage?: string;
   };
 
 }

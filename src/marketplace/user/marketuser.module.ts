@@ -5,6 +5,7 @@ import { AuthModule } from "src/api/auth/auth.module";
 import { MarketplaceController } from "./marketplace.controller";
 import { MarketPlaceService } from "./marketplace.service";
 import { SavedSearchSchema } from "./entity/saved-search.entity";
+import { FileUploaderModule } from "src/common/file_uploader/file_uploader.module";
 
 
 @Module({
@@ -13,9 +14,11 @@ import { SavedSearchSchema } from "./entity/saved-search.entity";
       { name: "MarketUser", schema: marketUserSchema },
       { name: "SavedSearch", schema: SavedSearchSchema }
     ]),
-    AuthModule
+    AuthModule,
+    FileUploaderModule
   ],
   controllers: [MarketplaceController],
-  providers: [MarketPlaceService]
+  providers: [MarketPlaceService],
+  exports: [MarketPlaceService]
 })
 export class MarketPlaceUserModule { }
