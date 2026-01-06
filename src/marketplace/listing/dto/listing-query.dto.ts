@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean } from "class-validator";
 import { Type } from "class-transformer";
-import { Condition, FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType } from "../entity/listing.entity";
+import { AgeGroup, Condition, FuelType, FurnishingStatus, PropertyType, TransactionType, TransmissionType } from "../entity/listing.entity";
 
 
 export class ListingQueryDto {
@@ -116,4 +116,7 @@ export class ListingQueryDto {
 
   @IsOptional() @IsString()
   breed?: string;
+
+  @IsOptional() @IsEnum(AgeGroup)
+  ageGroup?: AgeGroup;
 }

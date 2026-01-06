@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
+import { AgeGroup, Gender, IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
 import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { ListingQueryDto } from './dto/listing-query.dto';
@@ -77,6 +77,19 @@ export class ListingServices {
     }
     if (dto.petDetails) {
       doc.clothingDetails = dto.clothingDetails;
+    }
+    if (dto.kidsDetails) {
+      const { ageGroup,gender } = dto.kidsDetails;
+      const warnings = dto.kidsDetails.safetyWarnings || [];
+      console.log("Age group in service", ageGroup);
+      if ((ageGroup === AgeGroup.NEWBORN || ageGroup === AgeGroup.TODDLER)) {
+        if (!warnings.includes("Choking Hazard - Small Parts")) {
+          warnings.push("Choking Hazard - Small Parts");
+        }
+      }
+      dto.kidsDetails.safetyWarnings = warnings;
+      doc.kidsDetails.ageGroup = ageGroup || AgeGroup.NOT_SPECIFIED;
+      doc.kidsDetails.gender = gender || Gender.NOT_SPECIFIED;
     }
     const created = await this.listingModel.create(doc);
     this.checkAndNotifyUsers(created).catch(err => console.error(err));
@@ -272,7 +285,7 @@ export class ListingServices {
       sort,
       transactionType, propertyType, bedrooms, bathrooms,
       minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel,
-      brand, hasWarranty, size, color, animalType, breed
+      brand, hasWarranty, size, color, animalType, breed,
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -308,7 +321,6 @@ export class ListingServices {
       filter.transactionType = transactionType;
     }
 
-    // 57. Property Type (Nested field)
     if (propertyType) {
       filter['propertyDetails.type'] = propertyType;
     }
@@ -374,6 +386,10 @@ export class ListingServices {
 
     if (breed) {
       filter['petDetails.breed'] = new RegExp(breed, 'i');
+    }
+
+    if (query.ageGroup) {
+      filter['kidsDetails.ageGroup'] = query.ageGroup;
     }
 
     const skip = (page - 1) * limit;

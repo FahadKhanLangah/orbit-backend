@@ -81,16 +81,34 @@ export enum PetGender {
 }
 
 export enum ServiceCategory {
-  HOME = 'home',           // Cleaning, Plumbing, Repair
-  PROFESSIONAL = 'professional', // Legal, Accounting, Tech
-  PERSONAL = 'personal',   // Fitness, Beauty, Tutoring
-  EVENTS = 'events'        // Photography, Catering
+  HOME = 'home',
+  PROFESSIONAL = 'professional',
+  PERSONAL = 'personal',
+  EVENTS = 'events'
 }
 
 export enum PricingModel {
   HOURLY = 'hourly',
   FIXED = 'fixed',
   QUOTE = 'quote'
+}
+
+export enum AgeGroup {
+  NEWBORN = '0-12m',
+  TODDLER = '1-3y',
+  PRESCHOOL = '3-5y',
+  SCHOOL_AGE = '5-12y',
+  TEEN = '12y+',
+  NOT_SPECIFIED = "not-specified"
+}
+
+export enum Gender {
+  MALE = "male",
+  FEMALE = "female",
+  UNISEX = "unisex",
+  NOT_SPECIFIED = "not-specified",
+  BOY = "boy",
+  GIRL = "girl"
 }
 
 export interface IListing extends Document {
@@ -122,7 +140,6 @@ export interface IListing extends Document {
   expiryDate: Date;
   isExpired: boolean;
   transactionType?: TransactionType;
-
 
   propertyDetails?: {
     type: PropertyType;          // House/Apartment
@@ -188,6 +205,11 @@ export interface IListing extends Document {
     pricingModel: PricingModel;
     availableDays: string[];
     experienceYears?: number;
+  };
+  kidsDetails?: {
+    ageGroup: string;
+    gender?: string;
+    safetyWarnings: string[];
   };
 }
 
@@ -300,6 +322,11 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     ageUnit: { type: String, enum: ['months', 'years'] },
     gender: { type: String, enum: Object.values(PetGender) },
     vaccinated: { type: Boolean }
+  },
+  kidsDetails: {
+    ageGroup: { type: String, enum: Object.values(AgeGroup) },
+    gender: { type: String, enum: Gender },
+    safetyWarnings: [{ type: String }]
   }
 }, { timestamps: true });
 
@@ -309,7 +336,7 @@ ListingSchema.index({
   category: "text",
   brand: "text"
 });
-
+ListingSchema.index({ 'kidsDetails.ageGroup': 1 });
 ListingSchema.index({ 'propertyDetails.bedrooms': 1, 'propertyDetails.type': 1 });
 ListingSchema.index({ transactionType: 1 });
 ListingSchema.index({ 'vehicleDetails.make': 1, 'vehicleDetails.model': 1 });

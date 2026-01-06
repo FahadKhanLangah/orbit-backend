@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { DimensionUnit, FuelType, FurnishingStatus, PetGender, PricingModel, PropertyType, ServiceCategory, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, PetGender, PricingModel, PropertyType, ServiceCategory, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -172,6 +172,19 @@ class PetDetailsDto {
   vaccinations?: VaccineDto[];
 }
 
+class KidsDetailsDto {
+  @IsEnum(AgeGroup)
+  ageGroup: AgeGroup;
+
+  @IsOptional() @IsEnum(Gender)
+  gender?: Gender;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  safetyWarnings?: string[];
+}
+
 export class PostListingDto {
   @IsString()
   @IsNotEmpty()
@@ -266,6 +279,11 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => ServiceDetailsDto)
   serviceDetails?: ServiceDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => KidsDetailsDto)
+  kidsDetails?: KidsDetailsDto;
 }
 
 export class SaveListingDraftDto {
@@ -282,9 +300,9 @@ export class SaveListingDraftDto {
   @Type(() => Number)
   price?: number;
 
-  @IsString()
   @IsOptional()
-  pricing: string
+  @IsEnum(PricingModel)
+  pricing: PricingModel = PricingModel.FIXED
 
   @IsOptional()
   @IsString()
@@ -336,4 +354,9 @@ export class SaveListingDraftDto {
   @ValidateNested()
   @Type(() => ServiceDetailsDto)
   serviceDetails?: ServiceDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => KidsDetailsDto)
+  kidsDetails?: KidsDetailsDto;
 }
