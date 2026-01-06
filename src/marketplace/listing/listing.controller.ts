@@ -42,7 +42,7 @@ export class ListingController {
     @UploadedFiles() files: { images?: Express.Multer.File[], video?: Express.Multer.File[] }
   ) {
     const userId = req.user._id;
-    return await this.listingService.postListing(userId, dto, files);
+    return await this.listingService.createListing(userId, dto, files);
   }
 
   @Post('post/draft')

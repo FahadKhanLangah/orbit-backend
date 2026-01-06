@@ -172,7 +172,7 @@ class PetDetailsDto {
   vaccinations?: VaccineDto[];
 }
 
-class KidsDetailsDto {
+export class KidsDetailsDto {
   @IsEnum(AgeGroup)
   ageGroup: AgeGroup;
 
