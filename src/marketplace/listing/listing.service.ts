@@ -39,7 +39,7 @@ export class ListingServices {
   ) {
     // 1. Moderation Check
     const fullText = `${dto.title} ${dto.description || ''}`;
-    // await this.moderationService.checkProhibitedContent(fullText); // Assuming this might be async
+    await this.moderationService.checkProhibitedContent(fullText); // Assuming this might be async
 
     // 2. Parallel File Uploads (Performance Optimization)
     const [imageKeys, videoKey] = await Promise.all([
@@ -68,8 +68,11 @@ export class ListingServices {
       vehicleDetails: dto.vehicleDetails,
       propertyDetails: dto.propertyDetails,
       clothingDetails: dto.clothingDetails,
-      petDetails: dto.petDetails, // Fixed the copy-paste bug from original code
+      petDetails: dto.petDetails,
       serviceDetails: dto.serviceDetails,
+      sportsDetails: dto.sportsDetails,
+      hobbyDetails: dto.hobbyDetails
+
     };
 
     // 4. Handle Category Specific Logic (Extracted for readability)
@@ -87,6 +90,31 @@ export class ListingServices {
 
     return createdListing;
   }
+
+  // async sendBulkInquiry(senderId: string, receiverId: string, listingId: string, quantity: number, targetPrice: number) {
+
+  //   // 1. Create or Get Conversation
+  //   const conversation = await this.getOrCreateConversation(senderId, receiverId, listingId);
+
+  //   // 2. Create the Inquiry Message
+  //   // This message is marked as a 'bulk_request' so the UI can style it differently (e.g., Yellow Box)
+  //   const message = await this.messageModel.create({
+  //     conversationId: conversation._id,
+  //     sender: senderId,
+  //     content: `I am interested in a bulk order.\nQuantity: ${quantity}\nTarget Price: ${targetPrice}`,
+  //     type: 'bulk_request', // Custom type for Frontend UI
+  //     metaData: {
+  //       quantity,
+  //       targetPrice,
+  //       listingId
+  //     }
+  //   });
+
+  //   // 3. Emit Socket Event
+  //   this.chatGateway.server.to(receiverId).emit('new_message', message);
+
+  //   return message;
+  // }
 
   async saveDraft(userId: string, dto: SaveListingDraftDto, files) {
     const images = [];
@@ -278,6 +306,7 @@ export class ListingServices {
       transactionType, propertyType, bedrooms, bathrooms,
       minSqFt, furnishing, amenities, make, model, minYear, maxMileage, transmission, fuel,
       brand, hasWarranty, size, color, animalType, breed,
+      sportActivity, author, instrumentType, isCollectible
     } = query;
     const filter: any = { status: ListingStatus.ACTIVE };
     if (userId) {
@@ -382,6 +411,22 @@ export class ListingServices {
 
     if (query.ageGroup) {
       filter['kidsDetails.ageGroup'] = query.ageGroup;
+    }
+
+    if (sportActivity) {
+      filter['sportsDetails.activity'] = sportActivity;
+    }
+
+    if (author) {
+      filter['hobbyDetails.author'] = new RegExp(author, 'i');
+    }
+
+    if (instrumentType) {
+      filter['hobbyDetails.instrumentType'] = new RegExp(instrumentType, 'i');
+    }
+
+    if (isCollectible) {
+      filter['hobbyDetails.isCollectible'] = true;
     }
 
     const skip = (page - 1) * limit;

@@ -111,6 +111,22 @@ export enum Gender {
   GIRL = "girl"
 }
 
+export enum SportActivity {
+  GYM = 'gym',
+  HIKING = 'hiking',
+  CAMPING = 'camping',
+  TEAM_SPORTS = 'team_sports',
+  WATER_SPORTS = 'water_sports',
+  CYCLING = 'cycling'
+}
+
+export enum HobbyType {
+  BOOK = 'book',
+  INSTRUMENT = 'instrument',
+  ART = 'art',
+  OTHER = 'other'
+}
+
 export interface IListing extends Document {
   title: string;
   description?: string;
@@ -210,6 +226,20 @@ export interface IListing extends Document {
     ageGroup: string;
     gender?: string;
     safetyWarnings: string[];
+  };
+  sportsDetails?: {
+    activity: SportActivity;
+    size?: string;
+    gender?: Gender;
+  };
+
+  hobbyDetails?: {
+    type: HobbyType;            // Book vs Instrument
+    author?: string;            // Feature 99
+    isbn?: string;
+    genre?: string;
+    instrumentType?: string;    // Guitar, Piano, etc.
+    isCollectible: boolean;     // Marks item as Rare/Vintage
   };
 }
 
@@ -327,7 +357,23 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     ageGroup: { type: String, enum: Object.values(AgeGroup) },
     gender: { type: String, enum: Gender },
     safetyWarnings: [{ type: String }]
+  },
+
+  sportsDetails: {
+    activity: { type: String, enum: Object.values(SportActivity) },
+    size: { type: String },
+    gender: { type: String }
+  },
+
+  hobbyDetails: {
+    type: { type: String, enum: Object.values(HobbyType) },
+    author: { type: String },
+    isbn: { type: String },
+    genre: { type: String },
+    instrumentType: { type: String },
+    isCollectible: { type: Boolean, default: false } // Feature 100
   }
+
 }, { timestamps: true });
 
 ListingSchema.index({
@@ -345,6 +391,9 @@ ListingSchema.index({ 'warranty.available': 1 });
 ListingSchema.index({ 'clothingDetails.size': 1, 'clothingDetails.color': 1 });
 ListingSchema.index({ 'petDetails.animalType': 1, 'petDetails.breed': 1 });
 ListingSchema.index({ 'serviceDetails.category': 1, 'serviceDetails.subCategory': 1 });
+ListingSchema.index({ 'sportsDetails.activity': 1 });
+ListingSchema.index({ 'hobbyDetails.author': 1, 'hobbyDetails.type': 1 });
+ListingSchema.index({ 'hobbyDetails.isCollectible': 1 });
 
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);

@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, PetGender, PricingModel, PropertyType, ServiceCategory, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, HobbyType, PetGender, PricingModel, PropertyType, ServiceCategory, SportActivity, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
 
 export class LocationDto {
   @IsNumber()
@@ -185,6 +185,35 @@ export class KidsDetailsDto {
   safetyWarnings?: string[];
 }
 
+class SportsDetailsDto {
+  @IsEnum(SportActivity)
+  activity: SportActivity;
+
+  @IsOptional() @IsString()
+  size?: string;
+
+  @IsOptional() @IsEnum(Gender)
+  gender?: Gender;
+}
+
+class HobbyDetailsDto {
+  @IsEnum(HobbyType)
+  type: HobbyType;
+
+  @IsOptional() @IsString()
+  author?: string;
+
+  @IsOptional() @IsString()
+  isbn?: string;
+
+  @IsOptional() @IsString()
+  instrumentType?: string; // e.g. "Electric Guitar"
+
+  // Feature 100
+  @IsOptional() @IsBoolean()
+  isCollectible?: boolean;
+}
+
 export class PostListingDto {
   @IsString()
   @IsNotEmpty()
@@ -284,6 +313,16 @@ export class PostListingDto {
   @ValidateNested()
   @Type(() => KidsDetailsDto)
   kidsDetails?: KidsDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SportsDetailsDto)
+  sportsDetails?: SportsDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => HobbyDetailsDto)
+  hobbyDetails?: HobbyDetailsDto;
 }
 
 export class SaveListingDraftDto {
@@ -359,4 +398,14 @@ export class SaveListingDraftDto {
   @ValidateNested()
   @Type(() => KidsDetailsDto)
   kidsDetails?: KidsDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => SportsDetailsDto)
+  sportsDetails?: SportsDetailsDto;
+
+  @IsOptional()
+  @ValidateNested()
+  @Type(() => HobbyDetailsDto)
+  hobbyDetails?: HobbyDetailsDto;
 }
