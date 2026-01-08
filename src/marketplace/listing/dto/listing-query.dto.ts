@@ -1,6 +1,6 @@
 import { IsOptional, IsString, IsNumber, IsEnum, IsBoolean } from "class-validator";
 import { Type } from "class-transformer";
-import { AgeGroup, Condition, FuelType, FurnishingStatus, PropertyType, SportActivity, TransactionType, TransmissionType } from "../entity/listing.entity";
+import { AgeGroup, Condition, FuelType, FurnishingStatus, PropertyType, SportActivity, TransactionType, TransmissionType } from "../enums/listing.enum";
 
 
 export class ListingQueryDto {

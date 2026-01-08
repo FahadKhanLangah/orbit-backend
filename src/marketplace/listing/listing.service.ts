@@ -2,7 +2,7 @@
 import { Injectable, BadRequestException, NotFoundException, ForbiddenException, Logger } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
-import { AgeGroup, Gender, IListing, Listing, ListingStatus, PricingStructure } from './entity/listing.entity';
+import { IListing, } from './entity/listing.entity';
 import { KidsDetailsDto, PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
 import { ListingQueryDto } from './dto/listing-query.dto';
@@ -15,6 +15,7 @@ import { UpdateListingDto } from './dto/update-listing.dto';
 import { ContentModerationService } from 'src/common/services/content-moderation.service';
 import { NotificationEmitterAdminService } from 'src/api/admin_panel/other/notification_emitter_admin.service';
 import { CreateAdminNotificationDto } from 'src/api/admin_notification/dto/create-admin_notification.dto';
+import { AgeGroup, Gender, ListingStatus } from './enums/listing.enum';
 
 @Injectable()
 export class ListingServices {
@@ -498,7 +499,7 @@ export class ListingServices {
 
     listing.expiryDate = newExpiry;
     listing.isExpired = false;
-    if (listing.status === 'expired') listing.status = 'active'; // Reactivate
+    if (listing.status === ListingStatus.EXPIRED) listing.status = ListingStatus.ACTIVE; // Reactivate
 
     return listing.save();
   }
@@ -654,6 +655,21 @@ export class ListingServices {
     return listings;
   }
 
+  async getAdminDashboardStats() {
+    const totalListings = await this.listingModel.countDocuments();
+    const activeListings = await this.listingModel.countDocuments({ status: ListingStatus.ACTIVE });
+    const draftListings = await this.listingModel.countDocuments({ status: ListingStatus.DRAFT });
+    const expiredListings = await this.listingModel.countDocuments({ status: ListingStatus.EXPIRED });
+    const totalMarketUsers = await this.marketPlaceUserModel.countDocuments();
+    return {
+      totalListings,
+      activeListings,
+      draftListings,
+      expiredListings,
+      totalMarketUsers
+    };
+  }
+
   getPhotoGuidelines(category: string): string[] {
     const guidelines: Record<string, string[]> = {
       'vehicles': [
@@ -743,7 +759,6 @@ export class ListingServices {
 
     return Promise.all(uploadPromises);
   }
-
 
   private async uploadVideo(files: Express.Multer.File[], userId: string): Promise<string | undefined> {
     if (!files || files.length === 0) return undefined;

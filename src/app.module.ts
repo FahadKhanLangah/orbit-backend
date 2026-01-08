@@ -75,6 +75,7 @@ import { MusicModule } from './music/music.module';
 import { ListingModule } from "./marketplace/listing/listing.module";
 import { MarketPlaceUserModule } from "./marketplace/user/marketuser.module";
 import { ServiceBookingModule } from "./marketplace/booking/service-booking.module";
+import { MarketPlaceAdminModule } from "./marketplace/admin/marketplace_admin.module";
 
 
 
@@ -162,7 +163,8 @@ import { ServiceBookingModule } from "./marketplace/booking/service-booking.modu
     MusicModule,
     ListingModule,
     MarketPlaceUserModule,
-    ServiceBookingModule
+    ServiceBookingModule,
+    MarketPlaceAdminModule
   ],
   controllers: [AppController],
   providers: [

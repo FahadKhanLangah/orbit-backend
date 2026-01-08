@@ -1,12 +1,12 @@
 import { ConflictException, Injectable, NotFoundException } from "@nestjs/common";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
-import { BadgeType, IMarketUser, MarketUser } from "./entity/market_user.entity";
+import { IMarketUser } from "./entity/market_user.entity";
 import { CreateMarketUserDto } from "./dto/create-marketUser.dto";
-import { IMarketUserActivity } from "./entity/market_user_activity.entity";
 import { ISavedSearch } from "./entity/saved-search.entity";
 import { SaveSearchDto } from "./dto/save-search.dto";
 import { Cron, CronExpression } from "@nestjs/schedule";
+import { BadgeType } from "./enums/market.enums";
 
 
 

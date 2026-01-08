@@ -1,6 +1,6 @@
 import { IsString, IsNotEmpty, IsNumber, IsOptional, ValidateNested, IsDate, IsEnum, IsArray, IsBoolean, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
-import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, HobbyType, PetGender, PricingModel, PropertyType, ServiceCategory, SportActivity, TransactionType, TransmissionType, VehicleType } from '../entity/listing.entity';
+import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, HobbyType, PetGender, PricingModel, PropertyType, ServiceCategory, SportActivity, TransactionType, TransmissionType, VehicleType } from '../enums/listing.enum';
 
 export class LocationDto {
   @IsNumber()

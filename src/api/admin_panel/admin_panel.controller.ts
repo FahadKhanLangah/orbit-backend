@@ -473,4 +473,9 @@ export class AdminPanelController {
   async approveBreeder(@Param('userId') userId: string) {
     return this.marketPlaceUserServices.approveBreeder(userId);
   }
+
+  @Get('/market-place/stats')
+  async getMarketPlaceStats() {
+    return this.listingService.getAdminDashboardStats();
+  }
 }

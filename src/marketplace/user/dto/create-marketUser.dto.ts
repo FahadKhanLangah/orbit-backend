@@ -1,5 +1,6 @@
 import { IsEnum, IsOptional, IsString } from "class-validator";
-import { MarketUserRole } from "../entity/market_user.entity";
+import { MarketUserRole } from "../enums/market.enums";
+
 
 export class CreateMarketUserDto {
   @IsString()

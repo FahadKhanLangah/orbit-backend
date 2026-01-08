@@ -1,18 +1,5 @@
 import mongoose, { Document, Schema } from "mongoose";
-export enum MarketUserRole {
-  seller = "seller",
-  buyer = "buyer"
-}
-
-export enum BadgeType {
-  VERIFIED = 'verified',
-  TOP_SELLER = 'top_seller',
-  FAST_RESPONDER = 'fast_responder',
-  VERIFIED_BREEDER = 'verified_breeder',
-  WHOLESALE_SELLER = 'wholesale_seller'
-}
-
-
+import { BadgeType, MarketUserRole } from "../enums/market.enums";
 
 
 export interface IMarketUser extends Document {
@@ -34,7 +21,14 @@ export interface IMarketUser extends Document {
     documentImage?: string,
     status?: string,
     submittedAt?: Date
-  }
+  },
+  isBanned: boolean;
+  banReason?: string;
+  warnings: {
+    reason: string;
+    date: Date;
+    adminId?: string;
+  }[];
 }
 export const marketUserSchema = new mongoose.Schema<IMarketUser>(
   {
@@ -55,7 +49,13 @@ export const marketUserSchema = new mongoose.Schema<IMarketUser>(
       documentImage: { type: String },
       status: { type: String, enum: ['pending', 'approved', 'rejected'], default: 'pending' },
       submittedAt: { type: Date }
-    }
+    },
+    isBanned: { type: Boolean, default: false },
+    banReason: { type: String },
+    warnings: [{
+      reason: { type: String },
+      date: { type: Date, default: Date.now }
+    }]
   }
 )
 

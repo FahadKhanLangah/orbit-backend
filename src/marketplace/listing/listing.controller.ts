@@ -5,9 +5,9 @@ import { PostListingDto, SaveListingDraftDto } from './dto/post-listing.dto';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
 import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { ListingServices } from './listing.service';
-import { ListingStatus } from './entity/listing.entity';
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
+import { ListingStatus } from './enums/listing.enum';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('listing')
