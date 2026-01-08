@@ -7,7 +7,7 @@ import { V1Controller } from 'src/core/common/v1-controller.decorator';
 import { ListingServices } from './listing.service';
 import { ListingQueryDto } from './dto/listing-query.dto';
 import { UpdateListingDto } from './dto/update-listing.dto';
-import { ListingStatus } from './enums/listing.enum';
+import { ListingPlanType, ListingStatus } from './enums/listing.enum';
 
 @UseGuards(VerifiedAuthGuard)
 @V1Controller('listing')
@@ -181,7 +181,18 @@ export class ListingController {
     };
   }
 
+  @Get('featured')
+  async getFeatured() {
+    return this.listingService.getFeaturedListings();
+  }
 
+  @Post(':id/promote')
+  async promote(
+    @Param('id') id: string,
+    @Body() body: { plan: ListingPlanType, days: number }
+  ) {
+    return this.listingService.promoteListing(id, body.plan, body.days);
+  }
 
 
 }

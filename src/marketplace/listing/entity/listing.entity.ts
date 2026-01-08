@@ -1,5 +1,5 @@
 import mongoose, { Document } from 'mongoose';
-import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, HobbyType, ListingStatus, PetGender, PricingModel, PricingStructure, PropertyType, ServiceCategory, SportActivity, TransactionType, TransmissionType, VehicleType } from '../enums/listing.enum';
+import { AgeGroup, DimensionUnit, FuelType, FurnishingStatus, Gender, HobbyType, ListingPlanType, ListingStatus, PetGender, PricingModel, PricingStructure, PropertyType, ServiceCategory, SportActivity, TransactionType, TransmissionType, VehicleType } from '../enums/listing.enum';
 
 export interface IListing extends Document {
   title: string;
@@ -108,12 +108,18 @@ export interface IListing extends Document {
   };
 
   hobbyDetails?: {
-    type: HobbyType;            // Book vs Instrument
-    author?: string;            // Feature 99
+    type: HobbyType;
+    author?: string;
     isbn?: string;
     genre?: string;
-    instrumentType?: string;    // Guitar, Piano, etc.
-    isCollectible: boolean;     // Marks item as Rare/Vintage
+    instrumentType?: string;
+    isCollectible: boolean;
+  };
+  promotion: {
+    isBoosted: boolean;
+    isFeatured: boolean;
+    expiryDate?: Date;
+    planType?: ListingPlanType;
   };
 }
 
@@ -232,13 +238,11 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     gender: { type: String, enum: Gender },
     safetyWarnings: [{ type: String }]
   },
-
   sportsDetails: {
     activity: { type: String, enum: Object.values(SportActivity) },
     size: { type: String },
     gender: { type: String }
   },
-
   hobbyDetails: {
     type: { type: String, enum: Object.values(HobbyType) },
     author: { type: String },
@@ -246,8 +250,13 @@ export const ListingSchema = new mongoose.Schema<IListing>({
     genre: { type: String },
     instrumentType: { type: String },
     isCollectible: { type: Boolean, default: false } // Feature 100
+  },
+  promotion: {
+    isBoosted: { type: Boolean, default: false },
+    isFeatured: { type: Boolean, default: false },
+    expiryDate: { type: Date },
+    planType: { type: String }
   }
-
 }, { timestamps: true });
 
 ListingSchema.index({
@@ -268,6 +277,7 @@ ListingSchema.index({ 'serviceDetails.category': 1, 'serviceDetails.subCategory'
 ListingSchema.index({ 'sportsDetails.activity': 1 });
 ListingSchema.index({ 'hobbyDetails.author': 1, 'hobbyDetails.type': 1 });
 ListingSchema.index({ 'hobbyDetails.isCollectible': 1 });
-
+ListingSchema.index({ 'promotion.isBoosted': -1, createdAt: -1 });
+ListingSchema.index({ 'promotion.isFeatured': -1 });
 
 export const Listing = mongoose.model<IListing>('Listing', ListingSchema);

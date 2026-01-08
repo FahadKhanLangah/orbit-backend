@@ -15,7 +15,7 @@ import { UpdateListingDto } from './dto/update-listing.dto';
 import { ContentModerationService } from 'src/common/services/content-moderation.service';
 import { NotificationEmitterAdminService } from 'src/api/admin_panel/other/notification_emitter_admin.service';
 import { CreateAdminNotificationDto } from 'src/api/admin_notification/dto/create-admin_notification.dto';
-import { AgeGroup, Gender, ListingStatus } from './enums/listing.enum';
+import { AgeGroup, Gender, ListingPlanType, ListingStatus } from './enums/listing.enum';
 
 @Injectable()
 export class ListingServices {
@@ -431,7 +431,9 @@ export class ListingServices {
     }
 
     const skip = (page - 1) * limit;
-    const sortQuery: any = {};
+    const sortQuery: any = {
+      'promotion.isBoosted': -1,
+    };
 
     if (sort === "recent") sortQuery.createdAt = -1;
     if (sort === "priceLow") sortQuery.price = 1;
@@ -768,6 +770,41 @@ export class ListingServices {
 
     return this.fileUploaderServices.uploadMediaFile(videoFile, this.VIDEO_PATH, userId, true);
   }
+
+  async promoteListing(listingId: string, plan: string, days: number) {
+    const expiry = new Date();
+    expiry.setDate(expiry.getDate() + days);
+
+    const update: any = {
+      'promotion.expiryDate': expiry,
+      'promotion.planType': plan
+    };
+
+    if (plan === ListingPlanType.BASIC_BOST) {
+      update['promotion.isBoosted'] = true;
+    } else if (plan === ListingPlanType.PREMIUM_FEATURED) {
+      update['promotion.isFeatured'] = true;
+    } else if (plan === ListingPlanType.PLANTINUM_BUNDLE) {
+      update['promotion.isBoosted'] = true;
+      update['promotion.isFeatured'] = true;
+    }
+
+    return this.listingModel.findByIdAndUpdate(listingId, update, { new: true });
+  }
+
+  // 2. Feature 106: Get Homepage Featured Items
+  async getFeaturedListings() {
+    // Only fetch active featured items that haven't expired
+    return this.listingModel.find({
+      'promotion.isFeatured': true,
+      'promotion.expiryDate': { $gt: new Date() }, // Not expired
+      status: 'active'
+    })
+      .sort({ createdAt: -1 }) // Newest featured first
+      .limit(10);
+  }
+
+
 
 
   private processKidsDetails(details: KidsDetailsDto) {

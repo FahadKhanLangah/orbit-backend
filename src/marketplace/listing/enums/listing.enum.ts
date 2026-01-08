@@ -126,3 +126,9 @@ export enum HobbyType {
   ART = 'art',
   OTHER = 'other'
 }
+
+export enum ListingPlanType {
+  BASIC_BOST = 'basic_boost',
+  PREMIUM_FEATURED = 'premium_featured',
+  PLANTINUM_BUNDLE = 'platinum_bundle'
+}
