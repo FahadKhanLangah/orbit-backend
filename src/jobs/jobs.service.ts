@@ -3,7 +3,7 @@ import { JobSeekerProfile, JobSeekerProfileDocument } from './entity/job-seeker-
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, Types } from 'mongoose';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
-import { CreateJobDto } from './dto/create-job.dto';
+import { CreateJobDto, UpdateJobDto } from './dto/create-job.dto';
 import { Job, JobDocument } from './entity/jobs.entity';
 import { FindJobsDto } from './dto/find-job.dto';
 import { FileUploaderService } from 'src/common/file_uploader/file_uploader.service';
@@ -88,6 +88,28 @@ export class JobsService {
       message: 'Application submitted successfully',
       data: appliedJob
     };
+  }
+
+  async updateJob(jobId: string, updateData: UpdateJobDto, userId: string): Promise<Job> {
+    const updatedJob = await this.jobModel
+      .findOneAndUpdate({ _id: jobId, employerId: userId }, updateData, { new: true })
+      .exec();
+
+    if (!updatedJob) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    return updatedJob;
+  }
+
+  async deleteJob(jobId: string, userId: string): Promise<{ message: string }> {
+    const result = await this.jobModel.findOneAndDelete({ _id: jobId, employerId: userId }).exec();
+
+    if (!result) {
+      throw new NotFoundException(`Job with ID ${jobId} not found`);
+    }
+
+    return { message: 'Job deleted successfully' };
   }
 
   async createJob(userId: string, createJobDto: CreateJobDto) {

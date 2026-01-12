@@ -1,7 +1,7 @@
-import { Body, Controller, Get, Param, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors, ValidationPipe } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Patch, Post, Put, Query, Req, UploadedFile, UseGuards, UseInterceptors, ValidationPipe } from '@nestjs/common';
 import { JobsService } from './jobs.service';
 import { VerifiedAuthGuard } from 'src/core/guards/verified.auth.guard';
-import { CreateJobDto } from './dto/create-job.dto';
+import { CreateJobDto, UpdateJobDto } from './dto/create-job.dto';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { FindJobsDto } from './dto/find-job.dto';
 import { FileInterceptor } from '@nestjs/platform-express';
@@ -59,6 +59,22 @@ export class JobsController {
       body.jobId,
       body.note
     );
+  }
+
+  @Patch(':id')
+  async updateJob(
+    @Param('id') jobId: string,
+    @Body() updateJobDto: UpdateJobDto,
+    @Req() req: any
+  ) {
+    const userId = req.user._id;
+    return this.jobsService.updateJob(jobId, updateJobDto, userId);
+  }
+
+  @Delete(':id')
+  async deleteJob(@Param('id') jobId: string, @Req() req: any) {
+    const userId = req.user._id;
+    return this.jobsService.deleteJob(jobId, userId);
   }
 
   @UseInterceptors(FileInterceptor("resume"))

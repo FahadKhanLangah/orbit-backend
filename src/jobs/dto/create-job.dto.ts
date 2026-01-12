@@ -1,5 +1,6 @@
 import { IsString, IsNotEmpty, IsEnum, MinLength, MaxLength } from 'class-validator';
 import { JobCategory } from '../entity/jobs.entity';
+import { PartialType } from '@nestjs/mapped-types';
 
 
 export class CreateJobDto {
@@ -31,3 +32,5 @@ export class CreateJobDto {
   @IsNotEmpty()
   location: string;
 }
+
+export class UpdateJobDto extends PartialType(CreateJobDto) { }
