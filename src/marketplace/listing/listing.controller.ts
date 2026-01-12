@@ -25,7 +25,6 @@ export class ListingController {
     return this.listingService.searchListings(query, userId);
   }
 
-
   @Get('reports')
   async getReports(@Req() req) {
     return this.listingService.getReports();
@@ -193,6 +192,5 @@ export class ListingController {
   ) {
     return this.listingService.promoteListing(id, body.plan, body.days);
   }
-
 
 }

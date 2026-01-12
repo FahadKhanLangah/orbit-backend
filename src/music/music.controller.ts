@@ -32,19 +32,37 @@ export class MusicController {
     return this.mediaService.uploadVideo(req.user._id, file, dto);
   }
 
-  @Get("audio/list")
-  getAudioList(
-    @Query() query: any
-  ) {
-    return this.mediaService.getAllAudio(query?.limit, query?.offset);
+  @Get('audio/list')
+  getAudioList(@Query() query: any) {
+    const limit = query?.limit ? parseInt(query.limit) : 10;
+    const offset = query?.offset ? parseInt(query.offset) : 0;
+    const search = query?.search || ''; // Extract search term
+
+    return this.mediaService.getAllAudio(limit, offset, search);
   }
 
-  @Get("video/list")
-  getVideoList(
-    @Query() query: any
-  ) {
-    return this.mediaService.getAllVideos(query?.limit, query?.offset);
+  @Get('video/list')
+  getVideoList(@Query() query: any) {
+    const limit = query?.limit ? parseInt(query.limit) : 10;
+    const offset = query?.offset ? parseInt(query.offset) : 0;
+    const search = query?.search || '';
+
+    return this.mediaService.getAllVideos(limit, offset, search);
   }
+
+  // @Get("audio/list")
+  // getAudioList(
+  //   @Query() query: any
+  // ) {
+  //   return this.mediaService.getAllAudio(query?.limit, query?.offset);
+  // }
+
+  // @Get("video/list")
+  // getVideoList(
+  //   @Query() query: any
+  // ) {
+  //   return this.mediaService.getAllVideos(query?.limit, query?.offset);
+  // }
 
   @Get("audio/:id")
   getAudioById(

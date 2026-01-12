@@ -1,7 +1,7 @@
 import { BadRequestException, ConflictException, Injectable, NotFoundException } from '@nestjs/common';
 import { JobSeekerProfile, JobSeekerProfileDocument } from './entity/job-seeker-profile.schema';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, Types } from 'mongoose';
 import { CreateJobSeekerDto } from './dto/create-job-seeker.dto';
 import { CreateJobDto } from './dto/create-job.dto';
 import { Job, JobDocument } from './entity/jobs.entity';
@@ -12,6 +12,7 @@ import { IEmployeeComment } from './entity/employee-comments.entity';
 import { IBook } from './entity/book.entity';
 import { CreateBookDto } from './dto/create-book.dto';
 import { IUser } from 'src/api/user_modules/user/entities/user.entity';
+import { JobShare } from './entity/job-share.schema';
 
 @Injectable()
 export class JobsService {
@@ -28,6 +29,7 @@ export class JobsService {
     private readonly bookModel: Model<IBook>,
     @InjectModel("User")
     private readonly userModel: Model<IUser>,
+    @InjectModel(JobShare.name) private jobShareModel: Model<JobShare>,
     private s3: FileUploaderService,
   ) { }
 
@@ -121,6 +123,31 @@ export class JobsService {
       throw new NotFoundException('Job not found.');
     }
     return job;
+  }
+
+  async forwardJob(senderId: string, receiverId: string, jobId: string, note?: string) {
+
+    // 1. Validation: Don't let users forward to themselves
+    if (senderId === receiverId) {
+      throw new BadRequestException('You cannot forward a job to yourself.');
+    }
+
+    // 2. Validation: Check if the job actually exists
+    const jobExists = await this.jobModel.exists({ _id: jobId });
+    if (!jobExists) {
+      throw new NotFoundException('Job not found');
+    }
+
+    // 3. Action: Create the share record
+    const share = await this.jobShareModel.create({
+      senderId: new Types.ObjectId(senderId),
+      receiverId: new Types.ObjectId(receiverId),
+      jobId: new Types.ObjectId(jobId),
+      note: note || "Check out this job!",
+    });
+
+    // 4. Result: Return the populated data so the Flutter app can show a confirmation
+    return share.populate('jobId', 'title companyName');
   }
 
   async createOrUpdateProfile(userId: string, dto: CreateJobSeekerDto): Promise<JobSeekerProfile> {

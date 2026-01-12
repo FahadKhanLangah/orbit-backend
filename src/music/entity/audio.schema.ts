@@ -21,3 +21,5 @@ export const AudioSchema = new Schema(
   },
   { timestamps: true }
 );
+
+AudioSchema.index({ title: 'text', description: 'text' });

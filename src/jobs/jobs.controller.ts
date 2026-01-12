@@ -46,6 +46,21 @@ export class JobsController {
     return this.jobsService.getJobDetails(jobId);
   }
 
+  @Post('forward')
+  async forwardJob(
+    @Req() req,
+    @Body() body: { receiverId: string; jobId: string; note?: string }
+  ) {
+    const senderId = req.user._id;
+    console.log(req.user._id);
+    return this.jobsService.forwardJob(
+      senderId,
+      body.receiverId,
+      body.jobId,
+      body.note
+    );
+  }
+
   @UseInterceptors(FileInterceptor("resume"))
   @Post(':id/apply')
   async applyForJob(
@@ -109,7 +124,7 @@ export class JobsController {
     @UploadedFile() file: Express.Multer.File
   ) {
     const authorId = req.user._id;
-    return this.jobsService.createBook(authorId, dto,file);
+    return this.jobsService.createBook(authorId, dto, file);
   }
 
   @Get('books/all')

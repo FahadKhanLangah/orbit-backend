@@ -56,7 +56,7 @@ import { ChannelService } from "../../chat/channel/services/channel.service";
 import { ProfileNotificationEmitter } from "./profile_notification_emitter";
 import { UserSearchFilterDto } from "./dto/user-search-filter.dto";
 import { BanService } from "../ban/ban.service";
-import { UpdateMyGenderDto } from "./dto/update-my-gender.dto";
+import { UpdateMyGenderDto, UpdateMyProfessionDto } from "./dto/update-my-gender.dto";
 import { UpdateMyLocationDto } from "./dto/update-my-location.dto";
 import { InjectModel } from "@nestjs/mongoose";
 import { Model } from "mongoose";
@@ -233,6 +233,20 @@ export class ProfileService {
     return this.userService.findById(dto.myUser._id);
   }
 
+  async updateMyProfession(dto: UpdateMyProfessionDto) {
+    const user = await this.userService.findById(dto.myUser._id);
+    if (!user) {
+      throw new BadRequestException("User not found");
+    }
+
+    await this.userService.findByIdAndUpdate(dto.myUser._id, {
+      profession: dto.profession
+    });
+
+    // Return updated user document
+    return this.userService.findById(dto.myUser._id);
+  }
+
   async updateMyLocation(dto: UpdateMyLocationDto) {
     try {
       console.log("Update location DTO:", JSON.stringify(dto, null, 2));
@@ -298,8 +312,6 @@ export class ProfileService {
     );
     return res;
   }
-
-
 
   async getPublicProfile(dto: MongoIdDto) {
     let user = await this.userService.findByIdOrThrow(

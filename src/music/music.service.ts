@@ -67,17 +67,40 @@ export class MusicService {
     return video.save();
   }
 
-  async getAllAudio(limit?: number, offset?: number) {
-    return this.audioModel.find().populate("userId", "fullName userImage").limit(limit || 0).skip(offset || 0);
+  async getAllAudio(limit?: number, offset?: number, search?: string) {
+    const filter = this.getSearchFilter(search);
+
+    return this.audioModel
+      .find(filter)
+      .populate('userId', 'fullName userImage')
+      .sort({ createdAt: -1 })
+      .limit(limit || 0)
+      .skip(offset || 0)
+      .exec();
   }
+
+  async getAllVideos(limit?: number, offset?: number, search?: string) {
+    const filter = this.getSearchFilter(search);
+
+    return this.videoModel
+      .find(filter)
+      .populate('userId', 'fullName userImage')
+      .sort({ createdAt: -1 })
+      .limit(limit || 0)
+      .skip(offset || 0)
+      .exec();
+  }
+
+  // async getAllAudio(limit?: number, offset?: number) {
+  //   return this.audioModel.find().populate("userId", "fullName userImage").limit(limit || 0).skip(offset || 0);
+  // }
+
+  // async getAllVideos(limit?: number, offset?: number) {
+  //   return this.videoModel.find().populate("userId", "fullName userImage").limit(limit || 0).skip(offset || 0);
+  // }
 
   async getAudioById(id: string) {
     return this.audioModel.findById(id).populate("userId", "fullName userImage");
-  }
-
-  async getAllVideos(limit?: number, offset?: number) {
-
-    return this.videoModel.find().populate("userId", "fullName userImage").limit(limit || 0).skip(offset || 0);
   }
 
   async getVideoById(id: string) {
@@ -97,6 +120,16 @@ export class MusicService {
     return {
       message: "Support request initiated",
       supportId: saved._id
+    };
+  }
+
+  private getSearchFilter(search: string) {
+    if (!search) return {};
+    return {
+      $or: [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+      ],
     };
   }
 

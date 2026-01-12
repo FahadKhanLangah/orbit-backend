@@ -26,6 +26,7 @@ export interface IUser extends Document {
   phoneNumber?: string;
   // Gender enum male female
   gender?: string;
+  profession?: string;
   // Location fields for nearby users feature
   latitude?: number;
   longitude?: number;
@@ -152,6 +153,7 @@ export const UserSchema = new mongoose.Schema(
       enum: ["male", "female", "other"],
       default: "male",
     },
+    profession: { type: String, default: "Not Specified" },
     latitude: { type: Number, default: null },
     longitude: { type: Number, default: null },
     locationUpdatedAt: { type: Date, default: null },

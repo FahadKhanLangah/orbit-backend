@@ -21,3 +21,5 @@ export const VideoSchema = new Schema(
   },
   { timestamps: true }
 );
+
+VideoSchema.index({ title: 'text', description: 'text' });

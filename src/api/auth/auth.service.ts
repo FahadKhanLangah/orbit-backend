@@ -654,6 +654,7 @@ export class AuthService {
       // @ts-ignore
       lastMail: {},
       userImage: appConfig.userIcon,
+      profession: dto.profession || ""
     });
     if (countryData) {
       let countryId = await this.userCountryService.setUserCountry(

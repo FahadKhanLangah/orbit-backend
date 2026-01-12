@@ -41,9 +41,11 @@ export class Job {
 
   @Prop({ type: Boolean, default: true })
   isActive: boolean;
+
+  @Prop({ type: Number, default: 0 })
+  sharesCount: number;
 }
 
 export const JobSchema = SchemaFactory.createForClass(Job);
 
-// Create a text index for the search bar
 JobSchema.index({ title: 'text', description: 'text' });

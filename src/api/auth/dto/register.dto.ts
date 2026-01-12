@@ -9,13 +9,14 @@ import {
 
     IsEnum,
     IsNotEmpty,
+    IsOptional,
     MaxLength,
     MinLength, ValidateIf,
 } from "class-validator";
-import {Trim} from 'class-sanitizer'
-import {usersMaxNameSize, usersMaxPasswordSize, usersMimePasswordSize} from "../../../core/utils/constants";
-import {Platform, RegisterMethod} from "../../../core/utils/enums";
-import {i18nApi} from "../../../core/utils/res.helpers";
+import { Trim } from 'class-sanitizer'
+import { usersMaxNameSize, usersMaxPasswordSize, usersMimePasswordSize } from "../../../core/utils/constants";
+import { Platform, RegisterMethod } from "../../../core/utils/enums";
+import { i18nApi } from "../../../core/utils/res.helpers";
 
 
 export default class RegisterDto {
@@ -25,7 +26,7 @@ export default class RegisterDto {
     @Allow()
     @Trim()
     @ValidateIf(object => object['method'] == RegisterMethod.email)
-    @IsEmail({}, {message: i18nApi.emailMustBeValid})
+    @IsEmail({}, { message: i18nApi.emailMustBeValid })
     email: string;
 
     @IsNotEmpty()
@@ -33,6 +34,8 @@ export default class RegisterDto {
     @MaxLength(usersMaxNameSize)
     fullName: string;
 
+    @IsOptional()
+    profession?: string;
 
     @IsNotEmpty()
     @Trim()

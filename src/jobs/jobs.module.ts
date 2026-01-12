@@ -10,6 +10,7 @@ import { jobApplicationSchema } from './entity/job-application.entity';
 import { employeeCommentSchema } from './entity/employee-comments.entity';
 import { BookSchema } from './entity/book.entity';
 import { UserSchema } from 'src/api/user_modules/user/entities/user.entity';
+import { JobShare, JobShareSchema } from './entity/job-share.schema';
 
 @Module({
   imports: [
@@ -20,6 +21,7 @@ import { UserSchema } from 'src/api/user_modules/user/entities/user.entity';
       { name: "EmployeeComment", schema: employeeCommentSchema },
       { name: "Book", schema: BookSchema },
       { name: "User", schema: UserSchema },
+      { name: JobShare.name, schema: JobShareSchema }
     ]),
     AuthModule,
     FileUploaderModule
