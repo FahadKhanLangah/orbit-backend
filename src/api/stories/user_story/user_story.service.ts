@@ -579,4 +579,24 @@ export class UserStoryService {
         nextYear.setFullYear(nextYear.getFullYear() + 1);
         return nextYear;
     }
+
+    private async saveToMemories(userId: any, story: any) {
+        try {
+            console.log('Attempting to save story to memories...');
+
+            await this.memoryService.create({
+                userId: userId.toString(),
+                storyId: story["_id"].toString(),
+                originalStoryData: story['toObject'] ? story['toObject']() : story,
+                savedAt: new Date(),
+                reminderDate: this.calculateReminderDate(),
+                isReminderEnabled: true,
+                tags: ['auto-saved'],
+            });
+
+            console.log('Successfully saved story to memories');
+        } catch (error) {
+            console.error('Failed to save story to memories:', error);
+        }
+    }
 }
