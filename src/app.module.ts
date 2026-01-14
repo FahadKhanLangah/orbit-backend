@@ -76,6 +76,7 @@ import { ListingModule } from "./marketplace/listing/listing.module";
 import { MarketPlaceUserModule } from "./marketplace/user/marketuser.module";
 import { ServiceBookingModule } from "./marketplace/booking/service-booking.module";
 import { MarketPlaceAdminModule } from "./marketplace/admin/marketplace_admin.module";
+import { PaystackModule } from "./paystack/paystack.module";
 
 
 
@@ -164,7 +165,8 @@ import { MarketPlaceAdminModule } from "./marketplace/admin/marketplace_admin.mo
     ListingModule,
     MarketPlaceUserModule,
     ServiceBookingModule,
-    MarketPlaceAdminModule
+    MarketPlaceAdminModule,
+    PaystackModule,
   ],
   controllers: [AppController],
   providers: [
